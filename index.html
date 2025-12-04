@@ -3,328 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrera Infinita 3D con Sensores</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #303030;
-        }
-        #scene-container {
-            width: 100vw;
-            height: 100vh;
-        }
-        #controls {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #ff6f00;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        #status-message {
-            position: absolute;
-            top: 80px;
-            color: #fff;
-            font-weight: bold;
-            z-index: 10;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-        .action-buttons {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            z-index: 10;
-        }
-        .action-buttons button {
-            background-color: #17a2b8;
-            font-size: 1em;
-            width: 120px;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
+    <title>Mapeo de Trayectoria 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
+
+
+<style>
+
+
+    body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+#container {
+    width: 100vw;
+    height: 100vh;
+}
+#ui-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 100;
+}
+#startButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+#debug-info {
+    margin-top: 10px;
+    font-size: 12px;
+}
+    
+</style>
+
+    
 <body>
-
-    <div id="controls">
-        <button id="start-sensors-button">Iniciar Carrera 🏁</button>
+    <div id="container">
+        </div>
+    <div id="ui-overlay">
+        <button id="startButton">INICIAR RASTREO (Start)</button>
+        <div id="status">Esperando inicio...</div>
+        <div id="debug-info">
+            Altura Z: 0.00 m<br>
+            Presión: 0.00 hPa<br>
+            Deriva: 0.00 m/s
+        </div>
     </div>
-    <p id="status-message">Haz clic para iniciar sobre HTTPS...</p>
-
-    <div id="scene-container"></div>
-
-    <div class="action-buttons">
-        <button id="reverse-button">Reversa</button>
-        <button id="brake-button">Freno</button>
-    </div>
-
     <script>
-        // --- VARIABLES GLOBALES Y DE SIMULACIÓN ---
-        let permissionGranted = false;
-        const statusMessage = document.getElementById('status-message');
-        const startButton = document.getElementById('start-sensors-button');
+      
+// --- [ 1. CONFIGURACIÓN INICIAL DE THREE.JS ] ---
+const container = document.getElementById('container');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 
-        // Three.js
-        let scene, camera, renderer, vehicleGroup, road, asphaltTexture;
+renderer.setSize(window.innerWidth, window.innerHeight);
+container.appendChild(renderer.domElement);
 
-        // Propiedades de la simulación del carro
-        const MAX_FORWARD_SPEED = 0.5;
-        const MAX_REVERSE_SPEED = -0.15;
-        const CAR_STEERING_FACTOR = 0.005; // Ajuste fino para la dirección
-        const JUMP_ACCELERATION_THRESHOLD = 50;
-        const REVERSE_TILT_THRESHOLD = -70; // Inclinación fuerte hacia atrás para reversa
+scene.background = new THREE.Color(0x1a1a1a);
+const light = new THREE.AmbientLight(0x404040); // soft white light
+scene.add(light);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+scene.add(directionalLight);
 
-        let velocity = 0;
-        let rotationAngle = 0; // Ángulo del carro en el plano XZ
-        let verticalVelocity = 0;
-        const GRAVITY_SIM = -0.005;
+// Inicialmente, la cámara se coloca detrás y mirando al origen
+camera.position.set(0, 5, 10);
+camera.lookAt(0, 0, 0);
 
-        // --- INICIALIZACIÓN DE THREE.JS ---
+// Objeto que representa la trayectoria del usuario
+const pathGeometry = new THREE.BufferGeometry();
+const MAX_POINTS = 5000;
+const positions = new Float32Array(MAX_POINTS * 3);
+pathGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const material = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 });
+const line = new THREE.Line(pathGeometry, material);
+scene.add(line);
 
-        function initThreeJS() {
-            const container = document.getElementById('scene-container');
-            const width = window.innerWidth;
-            const height = window.innerHeight;
+// --- [ 2. FUSIÓN DE SENSORES Y VARIABLES DE ESTADO ] ---
+let tracking = false;
+const position = new THREE.Vector3(0, 0, 0); // Posición (x, y, z)
+let velocity = new THREE.Vector3(0, 0, 0); // Velocidad (vx, vy, vz)
+let orientation = 0; // Ángulo de rotación en el plano (Heading)
+let numPoints = 0;
 
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x383838); // Ambiente más oscuro para carretera
+// Variables para PDR (Pedestrian Dead Reckoning)
+let stepDetectionThreshold = 10.0; // Umbral de aceleración para detectar un paso
+let stepLength = 0.75; // Longitud promedio de un paso en metros
+let lastAcceleration = 0;
 
-            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            
-            // Posición de la cámara detrás del carro
-            camera.position.set(0, 2.5, 5); 
-            camera.lookAt(0, 0, 0);
+// Variables Barómetro
+let seaLevelPressure = 1013.25; // Presión de referencia a nivel del mar (hPa)
+let initialPressure = null; // Presión al inicio del tracking
+let pressureAltitude = 0; // Altitud calculada por barómetro
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(width, height);
-            container.appendChild(renderer.domElement);
-            
-            // 1. PISTA INFINITA (Road)
-            const loader = new THREE.TextureLoader();
-            // Creamos una textura simple de carretera (simulación de franjas)
-            const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 1024;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#444';
-            ctx.fillRect(0, 0, 128, 1024);
-            ctx.fillStyle = '#ffcc00'; // Líneas amarillas
-            ctx.fillRect(60, 0, 8, 1024);
-            asphaltTexture = new THREE.CanvasTexture(canvas);
-            asphaltTexture.wrapS = asphaltTexture.wrapT = THREE.RepeatWrapping;
-            asphaltTexture.repeat.set(1, 100); // Repetimos mucho verticalmente
+// --- [ 3. PROCESAMIENTO DE DATOS DEL BARÓMETRO Y ALTITUD ] ---
 
-            const roadGeometry = new THREE.PlaneGeometry(10, 1000); // Larga en el eje Z
-            const roadMaterial = new THREE.MeshLambertMaterial({ map: asphaltTexture, side: THREE.DoubleSide });
-            road = new THREE.Mesh(roadGeometry, roadMaterial);
-            road.rotation.x = Math.PI / 2;
-            road.position.y = 0;
-            road.position.z = -500; // Centrar el inicio de la pista
-            scene.add(road);
+// Fórmula barométrica para altitud (derivada de la ecuación hipsométrica)
+function calculateAltitude(pressure, referencePressure) {
+    if (pressure === 0 || referencePressure === 0) return 0;
+    // La constante 1/5.257 es una aproximación de la atmósfera estándar
+    return 44330 * (1.0 - Math.pow(pressure / referencePressure, 1 / 5.257));
+}
 
-            // 2. VEHÍCULO (Simulación de un Auto 3D)
-            vehicleGroup = new THREE.Group();
-            
-            // Chasis
-            const chassisGeometry = new THREE.BoxGeometry(1.8, 0.5, 3.5);
-            const chassisMaterial = new THREE.MeshPhongMaterial({ color: 0x00aaff });
-            const chassis = new THREE.Mesh(chassisGeometry, chassisMaterial);
-            chassis.position.y = 0.5;
-            vehicleGroup.add(chassis);
-            
-            // Cabina
-            const cabinGeometry = new THREE.BoxGeometry(1.5, 0.8, 1.5);
-            const cabinMaterial = new THREE.MeshPhongMaterial({ color: 0xeeeeee });
-            const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
-            cabin.position.set(0, 1.2, 0.5);
-            vehicleGroup.add(cabin);
+function handlePressure(e) {
+    const pressure = e.reading.pressure;
+    document.getElementById('debug-info').innerHTML = `Presión: ${pressure.toFixed(2)} hPa`;
 
-            // Ruedas (Cilindros para mejor representación)
-            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
-            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x111111 });
-            
-            const wheelPositions = [
-                { x: 1.1, z: 1.2 },  // Delantera Derecha
-                { x: -1.1, z: 1.2 }, // Delantera Izquierda
-                { x: 1.1, z: -1.2 }, // Trasera Derecha
-                { x: -1.1, z: -1.2 }  // Trasera Izquierda
-            ];
+    if (initialPressure === null) {
+        initialPressure = pressure;
+        // Ajustamos la posición Z inicial a 0
+        position.z = 0;
+    }
 
-            wheelPositions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-                wheel.rotation.z = Math.PI / 2; // Orientar el cilindro como una rueda
-                wheel.position.set(pos.x, 0.4, pos.z);
-                vehicleGroup.add(wheel);
-            });
-            
-            // Referencias a las ruedas delanteras para la simulación de giro y rodamiento
-            leftWheel = vehicleGroup.children.find(c => c.position.x < 0 && c.position.z > 0);
-            rightWheel = vehicleGroup.children.find(c => c.position.x > 0 && c.position.z > 0);
+    // Calculamos la altitud relativa usando la presión inicial como referencia
+    // (Esto simula el cambio de piso o desnivel)
+    const newAltitude = calculateAltitude(pressure, initialPressure);
+    
+    // Suavizado y aplicación al eje Y (Altura en Three.js)
+    // Aplicamos una corrección suavizada (Factor de amortiguación: 0.1)
+    position.y += (newAltitude - position.y) * 0.1;
+    pressureAltitude = newAltitude;
+}
 
-            scene.add(vehicleGroup);
+// --- [ 4. PROCESAMIENTO DE DATOS INERCIALES (IMU) ] ---
 
-            // Luces y Ambientación
-            const ambientLight = new THREE.AmbientLight(0x606060);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 10, 5).normalize();
-            scene.add(directionalLight);
+function handleMotion(e) {
+    if (!tracking) return;
 
-            window.addEventListener('resize', onWindowResize, false);
-            animate();
-        }
+    const dt = 1 / 60; // Asumiendo ~60 FPS/Hz
+    
+    // Aceleración (m/s^2)
+    const acc = e.acceleration;
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+    // Orientación (Giroscopio)
+    const gyro = e.rotationRate;
+    // Acumular la rotación en el eje Y (vertical)
+    orientation += gyro.y * dt;
+    
+    // --- [ DETECCIÓN DE PASOS (PDR) ] ---
+    
+    // Usamos la aceleración total (magnitud) para detectar un paso
+    const magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
 
-        // --- LÓGICA DE SIMULACIÓN Y RENDERIZADO ---
+    if (magnitude > stepDetectionThreshold && lastAcceleration <= stepDetectionThreshold) {
+        // Paso detectado. 
+        // 1. Calcular el desplazamiento (stepLength)
+        // 2. Usar la orientación para proyectar en X y Z (plano horizontal)
+        const dx = stepLength * Math.sin(orientation);
+        const dz = stepLength * Math.cos(orientation);
 
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (permissionGranted) {
-                // 1. Aplicar Salto y Gravedad
-                vehicleGroup.position.y += verticalVelocity;
-                verticalVelocity += GRAVITY_SIM;
-                
-                if (vehicleGroup.position.y <= 0) {
-                    vehicleGroup.position.y = 0;
-                    verticalVelocity = 0;
-                }
-
-                // 2. Movimiento y Traslación del Vehículo
-                // En la pista infinita, solo movemos el carro en X y la pista en Z
-                
-                // Aplicar fricción (desaceleración suave)
-                velocity *= 0.98;
-                if (Math.abs(velocity) < 0.001) velocity = 0;
-
-                // Aplicar giro
-                vehicleGroup.rotation.y = rotationAngle;
-                
-                // Mover el carro lateralmente (Eje X)
-                vehicleGroup.position.x += rotationAngle * velocity * 0.5; // Deslizamiento
-
-                // Limitar el carro al ancho de la pista
-                vehicleGroup.position.x = Math.max(-4, Math.min(4, vehicleGroup.position.x));
-
-                // 3. Ilusión de Pista Infinita
-                // Desplazar la textura de la carretera en el eje Z
-                asphaltTexture.offset.y += velocity * 0.1;
-                
-                // 4. Actualizar Cámara
-                // La cámara sigue al carro lateralmente, pero se mantiene fija en Z (la pista se mueve)
-                camera.position.x = vehicleGroup.position.x;
-                camera.position.y = vehicleGroup.position.y + 2.5; 
-                camera.lookAt(vehicleGroup.position.x, vehicleGroup.position.y + 1, vehicleGroup.position.z);
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        // --- MANEJADORES DE SENSORES (CONTROL DEL CARRO) ---
-
-        function handleOrientation(event) {
-            if (!permissionGranted) return;
-
-            const beta = event.beta;   // Inclinación Frontal/Trasera
-            const gamma = event.gamma; // Inclinación Lateral (Dirección)
-
-            // 1. Control de Dirección (Giroscopio/Fusión)
-            // Usamos Gamma para controlar el ángulo de giro del carro
-            const steeringControl = Math.max(-45, Math.min(45, gamma)) / 45; // -1.0 a 1.0
-            rotationAngle -= steeringControl * CAR_STEERING_FACTOR;
-            
-            // 2. Control de Aceleración/Reversa (Giroscopio/Fusión)
-            // Si no está el freno de mano puesto
-            if (velocity > MAX_REVERSE_SPEED) {
-                // Aceleración hacia adelante (inclinación hacia el monitor, Beta > 0)
-                if (beta > 15) { // Empuje suave
-                    velocity = Math.min(velocity + 0.01, MAX_FORWARD_SPEED);
-                } else if (beta < -15 && beta > REVERSE_TILT_THRESHOLD) { 
-                    // Freno suave
-                    velocity = Math.max(velocity - 0.01, 0); 
-                }
-            }
-
-            // Detección de Reversa por Sensor: Inclinación fuerte hacia atrás
-            if (beta < REVERSE_TILT_THRESHOLD) {
-                // Si el usuario inclina fuertemente hacia atrás, activa la reversa
-                velocity = Math.max(velocity - 0.01, MAX_REVERSE_SPEED);
-                statusMessage.textContent = '¡Reversa Activa! Inclinación Detectada.';
-            } else if (velocity < 0) {
-                 // Si está en reversa, mantenerla con un poco de inercia
-                 velocity = Math.max(velocity, MAX_REVERSE_SPEED);
-            }
-        }
-
-        function handleMotion(event) {
-            if (!permissionGranted) return;
-
-            // 3. Salto (Acelerómetro Z)
-            const acc = event.acceleration;
-            if (acc && vehicleGroup.position.y === 0) {
-                const accZ = acc.z !== null ? acc.z : 0;
-                // Umbral de salto: movimiento rápido hacia arriba
-                if (accZ > JUMP_ACCELERATION_THRESHOLD) {
-                    verticalVelocity = 0.3; 
-                    statusMessage.textContent = '¡Salto activado!';
-                    setTimeout(() => statusMessage.textContent = 'Sensores activos.', 1000);
-                }
-            }
-        }
-
-        // --- CONTROLES VIRTUALES ---
-
-        document.getElementById('brake-button').addEventListener('mousedown', () => velocity *= 0.8); // Freno suave al hacer click
-        document.getElementById('brake-button').addEventListener('touchstart', () => velocity *= 0.8);
+        // Aplicamos el desplazamiento a la posición
+        position.x += dx;
+        position.z += dz;
         
-        document.getElementById('reverse-button').addEventListener('mousedown', () => {
-            if (velocity > 0) velocity = 0; // Detener si va adelante
-            velocity = Math.max(velocity - 0.01, MAX_REVERSE_SPEED);
-        });
-        document.getElementById('reverse-button').addEventListener('touchstart', () => {
-            if (velocity > 0) velocity = 0;
-            velocity = Math.max(velocity - 0.01, MAX_REVERSE_SPEED);
-        });
+        // El eje Y (altura) ya está siendo corregido por el barómetro
         
-
-        // --- LÓGICA DE INICIO Y PERMISOS ---
-
-        async function requestSensorPermissions() {
-             // **NOTA:** El código de solicitud de permisos debe ser similar al del ejemplo anterior.
-             // Se omite el bloque `if (typeof DeviceOrientationEvent.requestPermission === 'function')` aquí por brevedad.
-            
-            // Simular concesión
-            permissionGranted = true;
-            statusMessage.textContent = '✅ Sensores de movimiento activos. ¡Acelera inclinando hacia adelante!';
-            startButton.style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
-
-            window.addEventListener('deviceorientation', handleOrientation);
-            window.addEventListener('devicemotion', handleMotion);
+        // Agregar el punto a la geometría de la línea
+        if (numPoints < MAX_POINTS) {
+            positions[numPoints * 3] = position.x;
+            positions[numPoints * 3 + 1] = position.y; 
+            positions[numPoints * 3 + 2] = position.z;
+            numPoints++;
+            pathGeometry.setDrawRange(0, numPoints);
+            pathGeometry.attributes.position.needsUpdate = true;
         }
+    }
+    lastAcceleration = magnitude;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initThreeJS();
-            startButton.addEventListener('click', requestSensorPermissions);
-        });
+    // Actualizar la cámara para seguir al usuario
+    // Colocamos la cámara detrás del usuario, mirando hacia adelante
+    camera.position.x = position.x - 5 * Math.sin(orientation);
+    camera.position.y = position.y + 3; // Ligeramente por encima
+    camera.position.z = position.z - 5 * Math.cos(orientation);
+    
+    camera.lookAt(position.x, position.y, position.z);
+    
+    // Actualizar la información de depuración
+    document.getElementById('debug-info').innerHTML = `
+        Altura Y (Baro): ${position.y.toFixed(2)} m<br>
+        Presión Altitud: ${pressureAltitude.toFixed(2)} m<br>
+        Orientación (Yaw): ${(orientation * 180 / Math.PI).toFixed(2)} °
+    `;
+}
+
+// --- [ 5. INICIALIZACIÓN DE SENSORES Y BUCLE DE RENDERIZADO ] ---
+
+// Función principal de inicialización
+async function initTracking() {
+    document.getElementById('status').innerText = 'Solicitando permisos...';
+    
+    // 1. Permisos (Solo en iOS se necesita la solicitud explícita)
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission !== 'granted') {
+            document.getElementById('status').innerText = 'Permiso denegado para sensores de movimiento.';
+            return;
+        }
+    }
+
+    // 2. Inicialización del Acelerómetro/Giroscopio
+    window.addEventListener('devicemotion', handleMotion);
+
+    // 3. Inicialización del Barómetro (PressureSensor API, experimental y requiere HTTPS)
+    try {
+        if ('PressureSensor' in window) {
+            const sensor = new PressureSensor({ frequency: 1 }); // 1Hz es suficiente
+            sensor.onreading = handlePressure;
+            sensor.onerror = (event) => {
+                document.getElementById('status').innerText = 'Error con Barómetro. Usando solo IMU+PDR.';
+            };
+            sensor.start();
+        } else {
+             document.getElementById('status').innerText = 'Barómetro (PressureSensor) no soportado. Usando solo IMU+PDR.';
+        }
+    } catch (error) {
+         document.getElementById('status').innerText = 'Excepción al iniciar Barómetro. Usando solo IMU+PDR.';
+    }
+
+    tracking = true;
+    document.getElementById('status').innerText = 'RASTREANDO...';
+}
+
+// Bucle principal de renderizado (simula la cuerda o raya)
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+// --- [ 6. MANEJADOR DE EVENTOS ] ---
+
+document.getElementById('startButton').addEventListener('click', () => {
+    if (!tracking) {
+        initTracking();
+    }
+});
+
+// Ajustar la escena cuando la ventana cambie de tamaño
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Iniciar el bucle de renderizado
+animate();
+
+
+        
     </script>
 </body>
 </html>
