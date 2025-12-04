@@ -1,0 +1,1 @@
+una herramienta de productividad basada en JavaScript Vanilla diseñada para ejecutar y temporizar flujos de trabajo predefinidos (procesos y tareas) con la máxima eficiencia. Su característica principal es el control total mediante comandos de voz, permitiendo al usuario gestionar tareas y procesos sin tocar el teclado.
