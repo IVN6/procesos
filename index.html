@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Conducción Infinita por Sensores</title>
+    <title>Carrera Infinita 3D con Sensores</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             background-color: #303030;
         }
         #scene-container {
@@ -28,15 +24,16 @@
         button {
             padding: 10px 20px;
             font-size: 16px;
-            background-color: #008cba; /* Un color más de coche */
+            background-color: #ff6f00;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            margin: 5px;
         }
         #status-message {
             position: absolute;
-            top: 70px;
+            top: 80px;
             color: #fff;
             font-weight: bold;
             z-index: 10;
@@ -44,16 +41,18 @@
             padding: 5px 10px;
             border-radius: 5px;
         }
-        #speed-display {
+        .action-buttons {
             position: absolute;
             bottom: 20px;
-            left: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
             z-index: 10;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-size: 1.2em;
+        }
+        .action-buttons button {
+            background-color: #17a2b8;
+            font-size: 1em;
+            width: 120px;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
@@ -61,12 +60,16 @@
 <body>
 
     <div id="controls">
-        <button id="start-sensors-button">Iniciar Conducción 🚀</button>
+        <button id="start-sensors-button">Iniciar Carrera 🏁</button>
     </div>
-    <p id="status-message">Esperando la activación de sensores...</p>
-    <div id="speed-display">Velocidad: <span id="current-speed">0.0</span> km/h</div>
+    <p id="status-message">Haz clic para iniciar sobre HTTPS...</p>
 
     <div id="scene-container"></div>
+
+    <div class="action-buttons">
+        <button id="reverse-button">Reversa</button>
+        <button id="brake-button">Freno</button>
+    </div>
 
     <script>
         // --- VARIABLES GLOBALES Y DE SIMULACIÓN ---
@@ -74,22 +77,20 @@
         const statusMessage = document.getElementById('status-message');
         const startButton = document.getElementById('start-sensors-button');
 
-        // Three.js Variables
-        let scene, camera, renderer, vehicleGroup, floor;
-        const FLOOR_SIZE = 500; // Un plano grande
-        const TILE_SIZE = 10; // Para el patrón del suelo
+        // Three.js
+        let scene, camera, renderer, vehicleGroup, road, asphaltTexture;
 
-        // Propiedades de la simulación
-        const ACCELERATION_FACTOR = 0.005; 
-        const STEERING_FACTOR = 0.008; 
-        const MAX_SPEED = 0.5;
-        const JUMP_ACCELERATION_THRESHOLD = 50; 
-        const GRAVITY_SIM = -0.01;
+        // Propiedades de la simulación del carro
+        const MAX_FORWARD_SPEED = 0.5;
+        const MAX_REVERSE_SPEED = -0.15;
+        const CAR_STEERING_FACTOR = 0.005; // Ajuste fino para la dirección
+        const JUMP_ACCELERATION_THRESHOLD = 50;
+        const REVERSE_TILT_THRESHOLD = -70; // Inclinación fuerte hacia atrás para reversa
 
-        let velocity = 0; // Velocidad del coche
-        let rotationAngle = 0; // Ángulo de orientación del coche
-        let verticalVelocity = 0; 
-        let currentCarPitch = 0; // Inclinación del coche (para realismo)
+        let velocity = 0;
+        let rotationAngle = 0; // Ángulo del carro en el plano XZ
+        let verticalVelocity = 0;
+        const GRAVITY_SIM = -0.005;
 
         // --- INICIALIZACIÓN DE THREE.JS ---
 
@@ -99,73 +100,91 @@
             const height = window.innerHeight;
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb); // Cielo azul
+            scene.background = new THREE.Color(0x383838); // Ambiente más oscuro para carretera
 
             camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
             
+            // Posición de la cámara detrás del carro
+            camera.position.set(0, 2.5, 5); 
+            camera.lookAt(0, 0, 0);
+
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(width, height);
             container.appendChild(renderer.domElement);
+            
+            // 1. PISTA INFINITA (Road)
+            const loader = new THREE.TextureLoader();
+            // Creamos una textura simple de carretera (simulación de franjas)
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#444';
+            ctx.fillRect(0, 0, 128, 1024);
+            ctx.fillStyle = '#ffcc00'; // Líneas amarillas
+            ctx.fillRect(60, 0, 8, 1024);
+            asphaltTexture = new THREE.CanvasTexture(canvas);
+            asphaltTexture.wrapS = asphaltTexture.wrapT = THREE.RepeatWrapping;
+            asphaltTexture.repeat.set(1, 100); // Repetimos mucho verticalmente
 
-            // 1. ESCENARIO (SUELO INFINITO)
-            const textureLoader = new THREE.TextureLoader();
-            const texture = textureLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg');
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(FLOOR_SIZE / TILE_SIZE, FLOOR_SIZE / TILE_SIZE); // Repetir textura
+            const roadGeometry = new THREE.PlaneGeometry(10, 1000); // Larga en el eje Z
+            const roadMaterial = new THREE.MeshLambertMaterial({ map: asphaltTexture, side: THREE.DoubleSide });
+            road = new THREE.Mesh(roadGeometry, roadMaterial);
+            road.rotation.x = Math.PI / 2;
+            road.position.y = 0;
+            road.position.z = -500; // Centrar el inicio de la pista
+            scene.add(road);
 
-            const floorGeometry = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE);
-            const floorMaterial = new THREE.MeshLambertMaterial({ map: texture, side: THREE.DoubleSide });
-            floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = Math.PI / 2;
-            scene.add(floor);
-
-            // 2. CARRO MEJORADO (Grupo de Vehículo)
+            // 2. VEHÍCULO (Simulación de un Auto 3D)
             vehicleGroup = new THREE.Group();
             
-            // Cuerpo Principal (Caja más detallada)
-            const bodyGeometry = new THREE.BoxGeometry(2, 1, 4);
-            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x00ccff });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.position.y = 1.0; 
-            vehicleGroup.add(body);
-
-            // Cabina (Caja más pequeña y arriba)
-            const cabinGeometry = new THREE.BoxGeometry(1.5, 0.75, 1.5);
-            const cabinMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            // Chasis
+            const chassisGeometry = new THREE.BoxGeometry(1.8, 0.5, 3.5);
+            const chassisMaterial = new THREE.MeshPhongMaterial({ color: 0x00aaff });
+            const chassis = new THREE.Mesh(chassisGeometry, chassisMaterial);
+            chassis.position.y = 0.5;
+            vehicleGroup.add(chassis);
+            
+            // Cabina
+            const cabinGeometry = new THREE.BoxGeometry(1.5, 0.8, 1.5);
+            const cabinMaterial = new THREE.MeshPhongMaterial({ color: 0xeeeeee });
             const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
-            cabin.position.set(0, 1.75, 0.5);
+            cabin.position.set(0, 1.2, 0.5);
             vehicleGroup.add(cabin);
 
-            // Ruedas (Cilindros para un mejor realismo)
-            const wheelGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16);
-            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
-
+            // Ruedas (Cilindros para mejor representación)
+            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
+            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x111111 });
+            
             const wheelPositions = [
-                { x: -1.2, z: 1.5 }, { x: 1.2, z: 1.5 }, // Delanteras
-                { x: -1.2, z: -1.5 }, { x: 1.2, z: -1.5 }  // Traseras
+                { x: 1.1, z: 1.2 },  // Delantera Derecha
+                { x: -1.1, z: 1.2 }, // Delantera Izquierda
+                { x: 1.1, z: -1.2 }, // Trasera Derecha
+                { x: -1.1, z: -1.2 }  // Trasera Izquierda
             ];
+
             wheelPositions.forEach(pos => {
                 const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-                wheel.position.set(pos.x, 0.5, pos.z);
-                wheel.rotation.z = Math.PI / 2; // Gira el cilindro para que quede como rueda
+                wheel.rotation.z = Math.PI / 2; // Orientar el cilindro como una rueda
+                wheel.position.set(pos.x, 0.4, pos.z);
                 vehicleGroup.add(wheel);
             });
             
-            // Posicionamos el vehículo en (0, 0, 0)
-            vehicleGroup.position.y = 0;
+            // Referencias a las ruedas delanteras para la simulación de giro y rodamiento
+            leftWheel = vehicleGroup.children.find(c => c.position.x < 0 && c.position.z > 0);
+            rightWheel = vehicleGroup.children.find(c => c.position.x > 0 && c.position.z > 0);
+
             scene.add(vehicleGroup);
 
-            // Luces
+            // Luces y Ambientación
             const ambientLight = new THREE.AmbientLight(0x606060);
             scene.add(ambientLight);
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(50, 50, 50).normalize();
+            directionalLight.position.set(5, 10, 5).normalize();
             scene.add(directionalLight);
 
             window.addEventListener('resize', onWindowResize, false);
-            camera.position.set(0, 3, 5);
-            camera.lookAt(0, 1, 0); // La cámara mira el carro
+            animate();
         }
 
         function onWindowResize() {
@@ -180,27 +199,7 @@
             requestAnimationFrame(animate);
 
             if (permissionGranted) {
-                // 1. **Manejo de Velocidad y Fricción**
-                velocity *= 0.98; // Fricción constante para desacelerar
-                
-                // 2. **Movimiento del Escenario (Ilusión Infinita)**
-                // El carro NO se mueve en X/Z; el mundo se mueve bajo el carro.
-                // Movimiento inverso del suelo:
-                const deltaX = Math.sin(rotationAngle) * velocity;
-                const deltaZ = Math.cos(rotationAngle) * velocity;
-                
-                floor.position.x -= deltaX;
-                floor.position.z -= deltaZ;
-
-                // 3. **Reposicionamiento del Suelo (Tiling / Loop)**
-                // Si el suelo se mueve más allá de sus límites, lo reseteamos para simular el infinito.
-                if (floor.position.x > FLOOR_SIZE / 2) floor.position.x -= FLOOR_SIZE;
-                if (floor.position.x < -FLOOR_SIZE / 2) floor.position.x += FLOOR_SIZE;
-                if (floor.position.z > FLOOR_SIZE / 2) floor.position.z -= FLOOR_SIZE;
-                if (floor.position.z < -FLOOR_SIZE / 2) floor.position.z += FLOOR_SIZE;
-
-
-                // 4. **Salto (Gravedad y Posición Vertical)**
+                // 1. Aplicar Salto y Gravedad
                 vehicleGroup.position.y += verticalVelocity;
                 verticalVelocity += GRAVITY_SIM;
                 
@@ -208,16 +207,32 @@
                     vehicleGroup.position.y = 0;
                     verticalVelocity = 0;
                 }
+
+                // 2. Movimiento y Traslación del Vehículo
+                // En la pista infinita, solo movemos el carro en X y la pista en Z
                 
-                // 5. **Actualización de Rotación y Cámara**
+                // Aplicar fricción (desaceleración suave)
+                velocity *= 0.98;
+                if (Math.abs(velocity) < 0.001) velocity = 0;
+
+                // Aplicar giro
                 vehicleGroup.rotation.y = rotationAngle;
                 
-                // Efecto de inclinación del carro basado en la rotación lateral (para inmersión)
-                // Usamos una pequeña porción del giro para inclinar ligeramente el carro
-                vehicleGroup.rotation.z = -currentCarPitch * 0.5; 
+                // Mover el carro lateralmente (Eje X)
+                vehicleGroup.position.x += rotationAngle * velocity * 0.5; // Deslizamiento
+
+                // Limitar el carro al ancho de la pista
+                vehicleGroup.position.x = Math.max(-4, Math.min(4, vehicleGroup.position.x));
+
+                // 3. Ilusión de Pista Infinita
+                // Desplazar la textura de la carretera en el eje Z
+                asphaltTexture.offset.y += velocity * 0.1;
                 
-                // Actualizar Display de Velocidad (convertimos a algo más parecido a km/h)
-                document.getElementById('current-speed').textContent = (Math.abs(velocity) * 100).toFixed(1);
+                // 4. Actualizar Cámara
+                // La cámara sigue al carro lateralmente, pero se mantiene fija en Z (la pista se mueve)
+                camera.position.x = vehicleGroup.position.x;
+                camera.position.y = vehicleGroup.position.y + 2.5; 
+                camera.lookAt(vehicleGroup.position.x, vehicleGroup.position.y + 1, vehicleGroup.position.z);
             }
 
             renderer.render(scene, camera);
@@ -228,74 +243,88 @@
         function handleOrientation(event) {
             if (!permissionGranted) return;
 
-            const beta = event.beta;   // Inclinación Frontal (Velocidad)
+            const beta = event.beta;   // Inclinación Frontal/Trasera
             const gamma = event.gamma; // Inclinación Lateral (Dirección)
-            
-            // 1. Aceleración/Freno (Controlado por Beta)
-            const normalizedBeta = Math.max(-45, Math.min(45, beta));
-            const accelerationControl = normalizedBeta / 45; 
 
-            // Si inclinamos hacia adelante, aceleramos, si no, aplicamos más fricción.
-            if (accelerationControl > 0.1) {
-                velocity += accelerationControl * ACCELERATION_FACTOR;
-                velocity = Math.min(MAX_SPEED, velocity);
-            } else if (accelerationControl < -0.1) {
-                // Freno o Reversa
-                velocity += accelerationControl * ACCELERATION_FACTOR * 0.5;
-                velocity = Math.max(-MAX_SPEED * 0.2, velocity);
-            }
+            // 1. Control de Dirección (Giroscopio/Fusión)
+            // Usamos Gamma para controlar el ángulo de giro del carro
+            const steeringControl = Math.max(-45, Math.min(45, gamma)) / 45; // -1.0 a 1.0
+            rotationAngle -= steeringControl * CAR_STEERING_FACTOR;
             
-            // 2. Dirección (Controlado por Gamma)
-            const normalizedGamma = Math.max(-45, Math.min(45, gamma));
-            const steeringControl = normalizedGamma / 45; 
+            // 2. Control de Aceleración/Reversa (Giroscopio/Fusión)
+            // Si no está el freno de mano puesto
+            if (velocity > MAX_REVERSE_SPEED) {
+                // Aceleración hacia adelante (inclinación hacia el monitor, Beta > 0)
+                if (beta > 15) { // Empuje suave
+                    velocity = Math.min(velocity + 0.01, MAX_FORWARD_SPEED);
+                } else if (beta < -15 && beta > REVERSE_TILT_THRESHOLD) { 
+                    // Freno suave
+                    velocity = Math.max(velocity - 0.01, 0); 
+                }
+            }
 
-            // El giro depende de la velocidad (evitar giros bruscos en reversa)
-            if (Math.abs(velocity) > 0.01) {
-                const turnFactor = velocity > 0 ? 1 : 0.5; // Gira menos en reversa
-                rotationAngle -= steeringControl * turnFactor * STEERING_FACTOR;
+            // Detección de Reversa por Sensor: Inclinación fuerte hacia atrás
+            if (beta < REVERSE_TILT_THRESHOLD) {
+                // Si el usuario inclina fuertemente hacia atrás, activa la reversa
+                velocity = Math.max(velocity - 0.01, MAX_REVERSE_SPEED);
+                statusMessage.textContent = '¡Reversa Activa! Inclinación Detectada.';
+            } else if (velocity < 0) {
+                 // Si está en reversa, mantenerla con un poco de inercia
+                 velocity = Math.max(velocity, MAX_REVERSE_SPEED);
             }
-            
-            // Guardar el pitch actual para la inclinación visual del carro
-            currentCarPitch = steeringControl;
         }
 
         function handleMotion(event) {
             if (!permissionGranted) return;
 
-            // 3. Salto (Controlado por aceleración en Z)
-            const acc = event.accelerationIncludingGravity; // Usamos este para ser más sensibles
-            
+            // 3. Salto (Acelerómetro Z)
+            const acc = event.acceleration;
             if (acc && vehicleGroup.position.y === 0) {
                 const accZ = acc.z !== null ? acc.z : 0;
-                // Una sacudida positiva en Z
+                // Umbral de salto: movimiento rápido hacia arriba
                 if (accZ > JUMP_ACCELERATION_THRESHOLD) {
-                    verticalVelocity = 0.5; 
+                    verticalVelocity = 0.3; 
                     statusMessage.textContent = '¡Salto activado!';
                     setTimeout(() => statusMessage.textContent = 'Sensores activos.', 1000);
                 }
             }
         }
 
-        // --- LÓGICA DE PERMISOS E INICIO (Mismo Bloque) ---
+        // --- CONTROLES VIRTUALES ---
+
+        document.getElementById('brake-button').addEventListener('mousedown', () => velocity *= 0.8); // Freno suave al hacer click
+        document.getElementById('brake-button').addEventListener('touchstart', () => velocity *= 0.8);
+        
+        document.getElementById('reverse-button').addEventListener('mousedown', () => {
+            if (velocity > 0) velocity = 0; // Detener si va adelante
+            velocity = Math.max(velocity - 0.01, MAX_REVERSE_SPEED);
+        });
+        document.getElementById('reverse-button').addEventListener('touchstart', () => {
+            if (velocity > 0) velocity = 0;
+            velocity = Math.max(velocity - 0.01, MAX_REVERSE_SPEED);
+        });
+        
+
+        // --- LÓGICA DE INICIO Y PERMISOS ---
+
         async function requestSensorPermissions() {
-            // Se asume que el código de solicitud de permisos (DeviceOrientationEvent.requestPermission) 
-            // del ejemplo anterior está aquí para compatibilidad con iOS/Safari.
+             // **NOTA:** El código de solicitud de permisos debe ser similar al del ejemplo anterior.
+             // Se omite el bloque `if (typeof DeviceOrientationEvent.requestPermission === 'function')` aquí por brevedad.
             
-            // --- SIMULACIÓN DE CONCESIÓN DE PERMISOS ---
+            // Simular concesión
             permissionGranted = true;
-            statusMessage.textContent = '✅ Sensores de movimiento activos. ¡A Conducir!';
+            statusMessage.textContent = '✅ Sensores de movimiento activos. ¡Acelera inclinando hacia adelante!';
             startButton.style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
 
             window.addEventListener('deviceorientation', handleOrientation);
             window.addEventListener('devicemotion', handleMotion);
         }
 
-        // --- INICIALIZACIÓN GENERAL ---
         document.addEventListener('DOMContentLoaded', () => {
             initThreeJS();
             startButton.addEventListener('click', requestSensorPermissions);
         });
-        
     </script>
 </body>
 </html>
