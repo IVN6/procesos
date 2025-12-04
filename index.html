@@ -3,177 +3,400 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sensores del Móvil (Giroscopio y Fusión) en Web</title>
+    <title>Explorador de Sensores 3D</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            margin: 20px;
-            text-align: center;
-            background-color: #f4f7f9;
-        }
-        h2, h3 {
+            margin: 0;
+            overflow: hidden; /* Oculta barras de desplazamiento para la experiencia 3D */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f0f0; /* Default light mode */
             color: #333;
+            transition: background-color 0.5s, color 0.5s;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        .dark-mode {
+            background-color: #222;
+            color: #eee;
+        }
+        #canvas-container {
+            width: 80vmin; /* Visualización 3D responsiva */
+            height: 80vmin;
+            max-width: 500px;
+            max-height: 500px;
+            border-radius: 50%; /* Para la esfera */
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            background-color: #eee;
+            position: relative;
+        }
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
         }
         button {
             padding: 10px 20px;
             font-size: 16px;
-            margin-bottom: 20px;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
         button:hover {
             background-color: #0056b3;
         }
-        .data-box {
-            margin: 15px 0;
+        .data-display {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
             padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            text-align: left;
+            box-sizing: border-box;
         }
-        .data-box p {
-            margin: 5px 0;
-            font-size: 1.1em;
+        .data-card {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+            max-width: 200px;
+        }
+        .dark-mode .data-card {
+            background-color: rgba(50, 50, 50, 0.9);
+            color: #eee;
+        }
+        .data-card strong {
+            display: block;
+            font-size: 1.2em;
+            margin-top: 5px;
+        }
+        #status-message {
+            position: absolute;
+            top: 70px;
+            color: #dc3545;
             font-weight: bold;
+            z-index: 10;
         }
-        .fusion { border-color: #28a745; background-color: #e6ffed; }
-        .motion { border-color: #ffc107; background-color: #fff8e1; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
 </head>
 <body>
 
-    <div class="container">
-        <h2>🌐 Acceso a Sensores del Dispositivo</h2>
-        <p>Presiona el botón para iniciar y conceder permisos de acceso a los sensores de movimiento (solo funciona sobre **HTTPS**).</p>
+    <div id="controls">
+        <button id="start-sensors-button">Iniciar Sensores</button>
+    </div>
+    <p id="status-message"></p>
 
-        <button id="start-button">Iniciar Sensores</button>
-
-        <p id="status">Esperando permiso...</p>
-
-        <h3>🧭 Fusión de Sensores (`deviceorientation`)</h3>
-        <p>Angulos de Euler ($\alpha, \beta, \gamma$) combinados (Acelerómetro + Giroscopio + Magnetómetro).</p>
-        <div class="data-box fusion">
-            <p id="alpha-output">Alpha (Brújula): --</p>
-            <p id="beta-output">Beta (Inclinación X): --</p>
-            <p id="gamma-output">Gamma (Inclinación Y): --</p>
+    <div id="canvas-container">
         </div>
 
-        <h3>⚙️ Datos Crudos (`devicemotion`)</h3>
-        <p>Velocidades angulares del Giroscopio y aceleración lineal del Acelerómetro.</p>
-        <div class="data-box motion">
-            <h4>Giroscopio (Velocidad Angular en °/s)</h4>
-            <p id="gyro-x-output">Rotación X: --</p>
-            <p id="gyro-y-output">Rotación Y: --</p>
-            <p id="gyro-z-output">Rotación Z: --</p>
-            <h4>Acelerómetro (Aceleración Lineal en m/s²)</h4>
-            <p id="acc-x-output">Aceleración X: --</p>
-            <p id="acc-y-output">Aceleración Y: --</p>
-            <p id="acc-z-output">Aceleración Z: --</p>
+    <div class="data-display">
+        <div class="data-card">
+            Orientación (Alpha)<br><strong><span id="alpha-output">--</span>°</strong>
+        </div>
+        <div class="data-card">
+            Inclinación (Beta)<br><strong><span id="beta-output">--</span>°</strong>
+        </div>
+        <div class="data-card">
+            Rotación Lateral (Gamma)<br><strong><span id="gamma-output">--</span>°</strong>
+        </div>
+        <div class="data-card">
+            Vel. Rot. (Avg)<br><strong><span id="avg-gyro-output">--</span>°/s</strong>
+        </div>
+        <div class="data-card">
+            Aceleración (Avg)<br><strong><span id="avg-acc-output">--</span>m/s²</strong>
+        </div>
+        <div class="data-card">
+            Altitud Relativa<br><strong><span id="altitude-output">--</span>m</strong>
+        </div>
+        <div class="data-card">
+            Luz Ambiental<br><strong><span id="light-output">--</span>lux</strong>
         </div>
     </div>
 
     <script>
-        const statusEl = document.getElementById('status');
+        // --- VARIABLES GLOBALES ---
+        let permissionGranted = false;
+        const statusMessage = document.getElementById('status-message');
+        const startButton = document.getElementById('start-sensors-button');
 
-        function startOrientationListener() {
-            window.addEventListener('deviceorientation', handleOrientation);
-            statusEl.textContent = '✅ Sensores iniciados y listos.';
+        // Three.js variables
+        let scene, camera, renderer, sphere;
+        const sphereBaseColor = new THREE.Color(0x87ceeb); // Sky blue
+        const sphereBounceColor = new THREE.Color(0xff6347); // Tomato red for bounce
+        let bounceTimeout;
+
+        // Barometer variables
+        let initialPressure = null;
+        const P0 = 1013.25; // Presión atmosférica estándar a nivel del mar en hPa
+        let barometer;
+
+        // Ambient Light Sensor variables
+        let ambientLightSensor;
+
+        // --- INICIALIZACIÓN DE THREE.JS ---
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000); // Aspect ratio 1 para la esfera
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha: true para fondo transparente
+            
+            const container = document.getElementById('canvas-container');
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            // Objeto 3D: Una esfera
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const material = new THREE.MeshPhongMaterial({ color: sphereBaseColor, flatShading: true });
+            sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+
+            // Luz
+            const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+
+            camera.position.z = 2;
+
+            // Ajustar tamaño del renderer si el contenedor cambia de tamaño
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                renderer.setSize(newWidth, newHeight);
+                camera.aspect = newWidth / newHeight;
+                camera.updateProjectionMatrix();
+            });
+
+            // Loop de renderizado
+            animate();
         }
 
-        function startMotionListener() {
-            if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', handleMotion);
-            }
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
         }
 
-        // --- MANEJADORES DE EVENTOS ---
+        // --- MANEJADORES DE SENSORES ---
 
-        /**
-         * Maneja los datos de Orientación (Fusión de Sensores)
-         */
         function handleOrientation(event) {
-            // Ángulos de Euler de la Fusión de Sensores
-            const alpha = event.alpha ? event.alpha.toFixed(2) : "N/A";
-            const beta = event.beta ? event.beta.toFixed(2) : "N/A";
-            const gamma = event.gamma ? event.gamma.toFixed(2) : "N/A";
+            if (!permissionGranted) return;
 
-            document.getElementById('alpha-output').textContent = `Alpha (Z/Brújula): ${alpha}°`;
-            document.getElementById('beta-output').textContent = `Beta (X/Inclinación): ${beta}°`;
-            document.getElementById('gamma-output').textContent = `Gamma (Y/Lateral): ${gamma}°`;
+            const alpha = event.alpha; // Z-axis (compass direction)
+            const beta = event.beta;   // X-axis (front-back tilt)
+            const gamma = event.gamma; // Y-axis (left-right tilt)
+
+            document.getElementById('alpha-output').textContent = alpha !== null ? alpha.toFixed(0) : '--';
+            document.getElementById('beta-output').textContent = beta !== null ? beta.toFixed(0) : '--';
+            document.getElementById('gamma-output').textContent = gamma !== null ? gamma.toFixed(0) : '--';
+
+            // Actualizar la rotación de la esfera 3D usando Quaternion
+            // Convertir ángulos de Euler a radianes y aplicar a la esfera
+            // Los eventos de dispositivo devuelven ángulos de Euler en un orden y sistema de coordenadas específicos.
+            // Para Three.js, a menudo se necesita una conversión cuidadosa.
+            // Un enfoque común es usar THREE.Quaternion.setFromEuler
+            const euler = new THREE.Euler(
+                THREE.MathUtils.degToRad(beta),    // Rotación alrededor de X (pitch)
+                THREE.MathUtils.degToRad(gamma),   // Rotación alrededor de Y (roll)
+                THREE.MathUtils.degToRad(alpha),   // Rotación alrededor de Z (yaw/compass)
+                'YXZ' // El orden de rotación puede variar, YXZ suele funcionar bien para este tipo de datos
+            );
+            sphere.quaternion.setFromEuler(euler);
         }
 
-        /**
-         * Maneja los datos crudos de Movimiento (Giroscopio y Acelerómetro)
-         */
+        let lastAcceleration = { x: 0, y: 0, z: 0 };
         function handleMotion(event) {
+            if (!permissionGranted) return;
+
             // Datos del Giroscopio (Velocidad Angular)
             const rot = event.rotationRate;
-            if (rot) {
-                const rotX = rot.alpha ? rot.alpha.toFixed(2) : "N/A";
-                const rotY = rot.beta ? rot.beta.toFixed(2) : "N/A";
-                const rotZ = rot.gamma ? rot.gamma.toFixed(2) : "N/A";
-
-                document.getElementById('gyro-x-output').textContent = `Rotación X: ${rotX}°/s`;
-                document.getElementById('gyro-y-output').textContent = `Rotación Y: ${rotY}°/s`;
-                document.getElementById('gyro-z-output').textContent = `Rotación Z: ${rotZ}°/s`;
+            let avgGyro = 0;
+            if (rot && rot.alpha !== null && rot.beta !== null && rot.gamma !== null) {
+                avgGyro = Math.sqrt(
+                    Math.pow(rot.alpha, 2) +
+                    Math.pow(rot.beta, 2) +
+                    Math.pow(rot.gamma, 2)
+                );
+                document.getElementById('avg-gyro-output').textContent = avgGyro.toFixed(1);
             }
 
             // Datos del Acelerómetro (Aceleración Lineal, sin gravedad)
             const acc = event.acceleration;
-            if (acc) {
-                const accX = acc.x ? acc.x.toFixed(2) : "N/A";
-                const accY = acc.y ? acc.y.toFixed(2) : "N/A";
-                const accZ = acc.z ? acc.z.toFixed(2) : "N/A";
+            let avgAcc = 0;
+            if (acc && acc.x !== null && acc.y !== null && acc.z !== null) {
+                avgAcc = Math.sqrt(
+                    Math.pow(acc.x, 2) +
+                    Math.pow(acc.y, 2) +
+                    Math.pow(acc.z, 2)
+                );
+                document.getElementById('avg-acc-output').textContent = avgAcc.toFixed(1);
 
-                document.getElementById('acc-x-output').textContent = `Aceleración X: ${accX} m/s²`;
-                document.getElementById('acc-y-output').textContent = `Aceleración Y: ${accY} m/s²`;
-                document.getElementById('acc-z-output').textContent = `Aceleración Z: ${accZ} m/s²`;
+                // Detección de sacudidas para efecto interactivo
+                const threshold = 15; // Ajusta este valor
+                if (avgAcc > threshold) {
+                    applyShakeEffect();
+                }
             }
         }
 
-        // --- LÓGICA DE INICIO Y PERMISOS ---
+        function handleBarometer(event) {
+            if (!permissionGranted) return;
 
-        document.getElementById('start-button').addEventListener('click', () => {
-            // 1. Verificar si el navegador requiere permiso explícito (iOS 13+ / Safari)
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            startOrientationListener();
-                            startMotionListener();
-                            document.getElementById('start-button').style.display = 'none';
-                        } else {
-                            statusEl.textContent = '❌ Permiso denegado. Intenta de nuevo.';
-                        }
-                    })
-                    .catch(error => {
-                        statusEl.textContent = `❌ Error al solicitar permiso: ${error.message}`;
-                    });
-            } else {
-                // 2. Si no requiere permiso explícito (generalmente Android/Chrome)
-                startOrientationListener();
-                startMotionListener();
-                document.getElementById('start-button').style.display = 'none';
+            const pressure = event.reading.pressure; // hPa
+            if (initialPressure === null) {
+                initialPressure = pressure;
             }
+
+            // Fórmula barométrica para altitud relativa
+            // h = (T0 / L) * ((P0/P)^(R*L/g) - 1)  (Más compleja y precisa si tenemos temperatura)
+            // Simplificada: h = 44330 * (1 - (P/P0)^(1/5.255))
+            // Para cambios relativos:
+            // h_diff = (44330 * (1 - (pressure / P0)^(1/5.255))) - (44330 * (1 - (initialPressure / P0)^(1/5.255)))
+            // Más simple para cambios de altitud:
+            // Delta h (metros) ≈ (initialPressure - pressure) * 8.5
+            // Una aproximación para pequeños cambios de altitud: 1 hPa = ~8.5 metros
+            const altitudeChange = (initialPressure - pressure) * 8.5;
+
+            document.getElementById('altitude-output').textContent = altitudeChange.toFixed(1);
+        }
+
+        function handleAmbientLight(event) {
+            if (!permissionGranted) return;
+
+            const illuminance = event.reading.illuminance; // lux
+            document.getElementById('light-output').textContent = illuminance !== null ? illuminance.toFixed(0) : '--';
+
+            // Adaptar modo oscuro/claro
+            const darkThreshold = 50; // lux
+            if (illuminance < darkThreshold) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        // --- EFECTOS INTERACTIVOS ---
+
+        function applyShakeEffect() {
+            if (sphere.material.color.getHex() !== sphereBounceColor.getHex()) {
+                sphere.material.color.set(sphereBounceColor);
+                clearTimeout(bounceTimeout);
+                bounceTimeout = setTimeout(() => {
+                    sphere.material.color.set(sphereBaseColor);
+                }, 200); // Dura 200ms
+            }
+        }
+
+        // --- LÓGICA DE PERMISOS E INICIO ---
+
+        async function requestSensorPermissions() {
+            // Verificar soporte de APIs
+            if (!window.DeviceOrientationEvent && !window.DeviceMotionEvent) {
+                statusMessage.textContent = '❌ Tu navegador no soporta las APIs básicas de sensores.';
+                return false;
+            }
+
+            // Comprobar soporte de sensores específicos
+            const hasBarometer = 'AmbientLightSensor' in window; // Usamos AmbientLightSensor para chequear si los genéricos están ahí.
+            const hasAmbientLight = 'AmbientLightSensor' in window;
+
+            // Solicitar permisos de DeviceOrientation y DeviceMotion
+            let orientationPermission = 'granted';
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    orientationPermission = await DeviceOrientationEvent.requestPermission();
+                } catch (error) {
+                    statusMessage.textContent = `❌ Error al solicitar permiso de orientación: ${error.message}`;
+                    return false;
+                }
+            }
+
+            let motionPermission = 'granted';
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    motionPermission = await DeviceMotionEvent.requestPermission();
+                } catch (error) {
+                    statusMessage.textContent = `❌ Error al solicitar permiso de movimiento: ${error.message}`;
+                    return false;
+                }
+            }
+
+            if (orientationPermission === 'granted' && motionPermission === 'granted') {
+                permissionGranted = true;
+                statusMessage.textContent = '✅ Permisos concedidos. Sensores activos.';
+                startButton.style.display = 'none';
+
+                // Iniciar escuchadores
+                window.addEventListener('deviceorientation', handleOrientation);
+                window.addEventListener('devicemotion', handleMotion);
+
+                // Iniciar Barómetro (Generic Sensor API)
+                if ('PressureSensor' in window) {
+                    try {
+                        barometer = new PressureSensor({ frequency: 1 }); // 1Hz
+                        barometer.onreading = handleBarometer;
+                        barometer.onerror = (event) => {
+                            statusMessage.textContent += ` ❌ Error Barómetro: ${event.error.message}`;
+                        };
+                        barometer.start();
+                    } catch (error) {
+                        statusMessage.textContent += ` ❌ No se pudo iniciar Barómetro: ${error.message}`;
+                    }
+                } else {
+                    document.getElementById('altitude-output').textContent = 'N/S';
+                }
+
+                // Iniciar Sensor de Luz Ambiental (Generic Sensor API)
+                if ('AmbientLightSensor' in window) {
+                    try {
+                        ambientLightSensor = new AmbientLightSensor({ frequency: 1 }); // 1Hz
+                        ambientLightSensor.onreading = handleAmbientLight;
+                        ambientLightSensor.onerror = (event) => {
+                            statusMessage.textContent += ` ❌ Error Luz: ${event.error.message}`;
+                        };
+                        ambientLightSensor.start();
+                    } catch (error) {
+                        statusMessage.textContent += ` ❌ No se pudo iniciar Luz Ambiental: ${error.message}`;
+                    }
+                } else {
+                    document.getElementById('light-output').textContent = 'N/S';
+                }
+
+                return true;
+            } else {
+                statusMessage.textContent = '❌ Permisos de sensores denegados.';
+                return false;
+            }
+        }
+
+        // --- INICIALIZACIÓN GENERAL ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+            statusMessage.textContent = 'Haz clic en "Iniciar Sensores" para comenzar.';
+            startButton.addEventListener('click', requestSensorPermissions);
         });
 
-        // Verificar la compatibilidad inicial
-        if (!window.DeviceOrientationEvent && !window.DeviceMotionEvent) {
-            statusEl.textContent = '❌ Tu navegador no soporta las APIs de sensores.';
-            document.getElementById('start-button').style.display = 'none';
-        }
     </script>
-
 </body>
 </html>
