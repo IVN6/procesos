@@ -345,7 +345,9 @@ const PROCESSES = {
 const VOICE_COMMANDS_MAP = {
     iniciar: ['inicia', 'comienza', 'empezar', 'arranca','de una'],
     pausa: ['pausa', 'pausar', 'detener', 'alto', 'reanuda', 'espera'],
-    finalizar: ['termina', 'finaliza', 'acabar', 'listo', 'siguiente']
+    finalizar: ['termina', 'finaliza', 'acabar', 'listo', 'siguiente'],
+    silenciar: ['callate', 'silencio', 'shh', 'stop', 'mute', 'cerrar', 'calla','cálla',],
+    estado: ['estado', 'que tal', 'habla', 'presentate'], // <--- ¡AÑADIR !
 };
 
 // ** CONSTANTES DE REACCIONES DE VOZ **
@@ -774,71 +776,86 @@ const App = {
     ,
 
     procesarComandoVoz: function(comando) {
-        if (!comando.includes('mía')) {
-            this.DOM.mensaje.innerHTML = `<p style="color:#FFC107;">🎙️ Comando: "${comando}" | Esperando palabra clave "mía".</p>`;
-            return;
-        }
+    // 1. 🤫 VERIFICACIÓN DEL COMANDO DE SILENCIO (PRIORIDAD MÁXIMA)
+    // Se usa 'comando' (la entrada completa) para detener la voz incluso si no dice 'mía'
+    const comandosSilenciar = VOICE_COMMANDS_MAP.silenciar;
+    const matchSilencio = comandosSilenciar.find(sinonimo => comando.includes(sinonimo));
 
-        const comandoLimpio = comando.replace('mía', '').trim();
-        let accion = null;
-        let procesoIDSeleccionado = null;
-        
-        // 1. Intentar seleccionar un proceso (SÓLO SI NO HAY UNO ACTIVO)
-        if (!STATE.procesoSeleccionado) {
-            // Iterar sobre los nombres de los procesos (ej: 'Organizar Habitación 52')
-            for (const id in PROCESSES) {
-                // Normalizamos el nombre del proceso para la comparación de voz
-                const nombreNormalizado = PROCESSES[id].nombre.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-                
-                // Buscar si el comando de voz incluye el nombre del proceso
-                if (comandoLimpio.includes(nombreNormalizado.substring(0, 15))) { // Se compara una parte para tolerancia
-                    procesoIDSeleccionado = id;
-                    break;
-                }
-            }
+    if (matchSilencio) {
+        if (globalThis.speechSynthesis) {
+            globalThis.speechSynthesis.cancel(); // Detiene cualquier voz en curso
+            this.DOM.estado.textContent = '🤫 Silencio activado.';
+            this.updateMensaje(`🤫 Comando de Silencio (**${matchSilencio}**) detectado. Voz detenida.`);
+            return; // Detiene la ejecución aquí
         }
+    }
+    
+    // 2. 🔑 VERIFICACIÓN DE LA PALABRA CLAVE ('mía')
+    if (!comando.includes('mía')) {
+        this.DOM.mensaje.innerHTML = `<p style="color:#FFC107;">🎙️ Comando: "${comando}" | Esperando palabra clave "mía".</p>`;
+        return;
+    }
 
-        if (procesoIDSeleccionado) {
-            this.seleccionarProceso(procesoIDSeleccionado);
-            return; // Detener aquí si se seleccionó un proceso.
-        }
-
-        // 2. Si hay proceso activo, buscar comandos de acción (iniciar, pausa, finalizar)
-        for (const actionKey in VOICE_COMMANDS_MAP) {
-            const synonyms = VOICE_COMMANDS_MAP[actionKey];
-            const match = synonyms.find(synonym => comandoLimpio.includes(synonym));
+    // 3. 🧼 LIMPIEZA Y PROCESAMIENTO
+    const comandoLimpio = comando.replace('mía', '').trim();
+    let accion = null;
+    let procesoIDSeleccionado = null;
+    
+    // 4. Intentar seleccionar un proceso (SÓLO SI NO HAY UNO ACTIVO)
+    if (!STATE.procesoSeleccionado) {
+        // ... (Tu lógica existente para seleccionar proceso con 'comandoLimpio')
+        for (const id in PROCESSES) {
+            // Normalizamos el nombre del proceso para la comparación de voz
+            const nombreNormalizado = PROCESSES[id].nombre.toLowerCase().replace(/[^a-z0-9\s]/g, '');
             
-            if (match) {
-                accion = actionKey;
+            // Buscar si el comando de voz incluye el nombre del proceso
+            if (comandoLimpio.includes(nombreNormalizado.substring(0, 15))) { // Se compara una parte para tolerancia
+                procesoIDSeleccionado = id;
                 break;
             }
         }
+    }
+
+    if (procesoIDSeleccionado) {
+        this.seleccionarProceso(procesoIDSeleccionado);
+        return; // Detener aquí si se seleccionó un proceso.
+    }
+
+    // 5. Si hay proceso activo, buscar comandos de acción (iniciar, pausa, finalizar)
+    for (const actionKey in VOICE_COMMANDS_MAP) {
+        const synonyms = VOICE_COMMANDS_MAP[actionKey];
+        const match = synonyms.find(synonym => comandoLimpio.includes(synonym));
         
-        // ... (el resto del código de switch es el mismo)
-        
-        if (accion) {
-            this.DOM.mensaje.innerHTML = `<p>🎙️ ¡Comando de voz **"${accion.toUpperCase()}"** detectado! (Palabra: ${comandoLimpio})</p>`;
-            hablar(VOICE_REACTIONS.COMANDO_DETECTADO.map(f => f(accion))); // Usamos la reacción aleatoria
-            
-            switch (accion) {
-                case 'iniciar':
-                    if (STATE.procesoSeleccionado && !STATE.tiempoInicioGlobal) {
-                         this.iniciarProceso();
-                    }
-                    break;
-                case 'pausa':
-                    if (STATE.tiempoInicioGlobal) {
-                         this.togglePausa();
-                    }
-                    break;
-                case 'finalizar':
-                    if (STATE.tareaActual) {
-                         this.finalizarTarea(true);
-                    }
-                    break;
-            }
+        if (match) {
+            accion = actionKey;
+            break;
         }
     }
+
+    // 6. EJECUTAR ACCIÓN (Lógica de tu aplicación)
+    if (accion) {
+        this.updateMensaje(`Comando "**${accion}**" detectado.`);
+        // Añade aquí la lógica de ejecución (ej: this.iniciarProceso(), this.togglePausa(), this.finalizarTarea())
+        switch (accion) {
+            case 'iniciar':
+                this.iniciarProceso();
+                break;
+            case 'pausa':
+                this.togglePausa();
+                break;
+            case 'finalizar':
+                this.finalizarTarea(true); // Finalización forzada
+                break;
+            // No se necesita el caso 'silenciar' aquí porque se maneja en el paso 1.
+            case 'estado':
+                // Llamamos a la función que ya genera una respuesta de voz//  NUEVO CASO: 'estado' (Comando para hablar de nuevo)
+                this.mostrarEstado(); 
+                break;
+        }
+    } else {
+        this.DOM.mensaje.innerHTML = `<p style="color:#FFC107;">🎙️ Comando: "${comandoLimpio}" | Acción no reconocida.</p>`;
+    }
+}
     ,
 
     updateProgresoTarea: function() {
