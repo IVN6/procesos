@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Vehículo por Sensores</title>
+    <title>Simulador de Conducción Infinita por Sensores</title>
     <style>
         body {
             margin: 0;
@@ -28,7 +28,7 @@
         button {
             padding: 10px 20px;
             font-size: 16px;
-            background-color: #ff6f00;
+            background-color: #008cba; /* Un color más de coche */
             color: white;
             border: none;
             border-radius: 5px;
@@ -44,9 +44,16 @@
             padding: 5px 10px;
             border-radius: 5px;
         }
-        /* Ocultamos los displays de datos crudos para simplificar la interfaz */
-        .data-display {
-            display: none; 
+        #speed-display {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 1.2em;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
@@ -54,16 +61,12 @@
 <body>
 
     <div id="controls">
-        <button id="start-sensors-button">Iniciar Conducción 🚗</button>
+        <button id="start-sensors-button">Iniciar Conducción 🚀</button>
     </div>
-    <p id="status-message">Haz clic para iniciar sobre HTTPS...</p>
+    <p id="status-message">Esperando la activación de sensores...</p>
+    <div id="speed-display">Velocidad: <span id="current-speed">0.0</span> km/h</div>
 
     <div id="scene-container"></div>
-    <div class="data-display">
-        <span id="alpha-output"></span><span id="beta-output"></span><span id="gamma-output"></span>
-        <span id="avg-gyro-output"></span><span id="avg-acc-output"></span><span id="altitude-output"></span>
-        <span id="light-output"></span>
-    </div>
 
     <script>
         // --- VARIABLES GLOBALES Y DE SIMULACIÓN ---
@@ -71,17 +74,22 @@
         const statusMessage = document.getElementById('status-message');
         const startButton = document.getElementById('start-sensors-button');
 
-        // Three.js
-        let scene, camera, renderer, vehicleGroup, floor, leftWheel, rightWheel;
+        // Three.js Variables
+        let scene, camera, renderer, vehicleGroup, floor;
+        const FLOOR_SIZE = 500; // Un plano grande
+        const TILE_SIZE = 10; // Para el patrón del suelo
 
-        // Propiedades de la simulación del carro
-        const CAR_SPEED_FACTOR = 0.05; // Base de aceleración
-        const CAR_STEERING_FACTOR = 0.8; // Base de giro
-        const JUMP_ACCELERATION_THRESHOLD = 50; // Umbral de aceleración para saltar (m/s²)
+        // Propiedades de la simulación
+        const ACCELERATION_FACTOR = 0.005; 
+        const STEERING_FACTOR = 0.008; 
+        const MAX_SPEED = 0.5;
+        const JUMP_ACCELERATION_THRESHOLD = 50; 
         const GRAVITY_SIM = -0.01;
-        let velocity = 0;
-        let rotationAngle = 0; // Ángulo del carro en el plano XZ
-        let verticalVelocity = 0; // Para el salto
+
+        let velocity = 0; // Velocidad del coche
+        let rotationAngle = 0; // Ángulo de orientación del coche
+        let verticalVelocity = 0; 
+        let currentCarPitch = 0; // Inclinación del coche (para realismo)
 
         // --- INICIALIZACIÓN DE THREE.JS ---
 
@@ -94,53 +102,70 @@
             scene.background = new THREE.Color(0x87ceeb); // Cielo azul
 
             camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            camera.position.set(0, 5, 10);
-            camera.lookAt(0, 0, 0);
-
+            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(width, height);
             container.appendChild(renderer.domElement);
 
-            // 1. ESCENARIO (MAPA)
-            const floorGeometry = new THREE.PlaneGeometry(100, 100);
-            const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x55aa55, side: THREE.DoubleSide });
+            // 1. ESCENARIO (SUELO INFINITO)
+            const textureLoader = new THREE.TextureLoader();
+            const texture = textureLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg');
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(FLOOR_SIZE / TILE_SIZE, FLOOR_SIZE / TILE_SIZE); // Repetir textura
+
+            const floorGeometry = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE);
+            const floorMaterial = new THREE.MeshLambertMaterial({ map: texture, side: THREE.DoubleSide });
             floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = Math.PI / 2; // Gira el plano para que sea el suelo
+            floor.rotation.x = Math.PI / 2;
             scene.add(floor);
 
-            // 2. CARRO (CAPARAZÓN SIMPLE)
+            // 2. CARRO MEJORADO (Grupo de Vehículo)
             vehicleGroup = new THREE.Group();
             
-            // Cuerpo del carro (simulado por una caja)
+            // Cuerpo Principal (Caja más detallada)
             const bodyGeometry = new THREE.BoxGeometry(2, 1, 4);
-            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xcc0000 });
+            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x00ccff });
             const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.position.y = 0.5; // Lo levanta a nivel del suelo
+            body.position.y = 1.0; 
             vehicleGroup.add(body);
 
-            // 3. LLANTAS DELANTERAS (2 esferas)
-            const wheelGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
-            
-            leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-            leftWheel.position.set(-1.2, 0.5, 1.5); // Posición lateral izquierda y frontal
-            vehicleGroup.add(leftWheel);
+            // Cabina (Caja más pequeña y arriba)
+            const cabinGeometry = new THREE.BoxGeometry(1.5, 0.75, 1.5);
+            const cabinMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+            cabin.position.set(0, 1.75, 0.5);
+            vehicleGroup.add(cabin);
 
-            rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-            rightWheel.position.set(1.2, 0.5, 1.5); // Posición lateral derecha y frontal
-            vehicleGroup.add(rightWheel);
+            // Ruedas (Cilindros para un mejor realismo)
+            const wheelGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16);
+            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+
+            const wheelPositions = [
+                { x: -1.2, z: 1.5 }, { x: 1.2, z: 1.5 }, // Delanteras
+                { x: -1.2, z: -1.5 }, { x: 1.2, z: -1.5 }  // Traseras
+            ];
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.position.set(pos.x, 0.5, pos.z);
+                wheel.rotation.z = Math.PI / 2; // Gira el cilindro para que quede como rueda
+                vehicleGroup.add(wheel);
+            });
             
+            // Posicionamos el vehículo en (0, 0, 0)
+            vehicleGroup.position.y = 0;
             scene.add(vehicleGroup);
 
             // Luces
-            const ambientLight = new THREE.AmbientLight(0x404040);
+            const ambientLight = new THREE.AmbientLight(0x606060);
             scene.add(ambientLight);
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
             directionalLight.position.set(50, 50, 50).normalize();
             scene.add(directionalLight);
 
             window.addEventListener('resize', onWindowResize, false);
-            animate();
+            camera.position.set(0, 3, 5);
+            camera.lookAt(0, 1, 0); // La cámara mira el carro
         }
 
         function onWindowResize() {
@@ -155,36 +180,44 @@
             requestAnimationFrame(animate);
 
             if (permissionGranted) {
-                // 1. Aplicar Salto (Simulación de gravedad)
+                // 1. **Manejo de Velocidad y Fricción**
+                velocity *= 0.98; // Fricción constante para desacelerar
+                
+                // 2. **Movimiento del Escenario (Ilusión Infinita)**
+                // El carro NO se mueve en X/Z; el mundo se mueve bajo el carro.
+                // Movimiento inverso del suelo:
+                const deltaX = Math.sin(rotationAngle) * velocity;
+                const deltaZ = Math.cos(rotationAngle) * velocity;
+                
+                floor.position.x -= deltaX;
+                floor.position.z -= deltaZ;
+
+                // 3. **Reposicionamiento del Suelo (Tiling / Loop)**
+                // Si el suelo se mueve más allá de sus límites, lo reseteamos para simular el infinito.
+                if (floor.position.x > FLOOR_SIZE / 2) floor.position.x -= FLOOR_SIZE;
+                if (floor.position.x < -FLOOR_SIZE / 2) floor.position.x += FLOOR_SIZE;
+                if (floor.position.z > FLOOR_SIZE / 2) floor.position.z -= FLOOR_SIZE;
+                if (floor.position.z < -FLOOR_SIZE / 2) floor.position.z += FLOOR_SIZE;
+
+
+                // 4. **Salto (Gravedad y Posición Vertical)**
                 vehicleGroup.position.y += verticalVelocity;
                 verticalVelocity += GRAVITY_SIM;
                 
-                // Colisión con el suelo
-                if (vehicleGroup.position.y < 0) {
+                if (vehicleGroup.position.y <= 0) {
                     vehicleGroup.position.y = 0;
                     verticalVelocity = 0;
                 }
-
-                // 2. Aplicar Movimiento (Traslación)
-                const deltaX = Math.sin(rotationAngle) * velocity;
-                const deltaZ = Math.cos(rotationAngle) * velocity;
-
-                vehicleGroup.position.x += deltaX;
-                vehicleGroup.position.z += deltaZ;
                 
-                // 3. Actualizar Cámaras y Ruedas
-                // Orientar el grupo del vehículo
+                // 5. **Actualización de Rotación y Cámara**
                 vehicleGroup.rotation.y = rotationAngle;
-
-                // Rotar las llantas para simular el avance
-                leftWheel.rotation.x -= velocity * 0.5; 
-                rightWheel.rotation.x -= velocity * 0.5;
-
-                // Posicionar la cámara detrás del carro (efecto "coche de seguimiento")
-                camera.position.x = vehicleGroup.position.x - deltaX * 10;
-                camera.position.z = vehicleGroup.position.z - deltaZ * 10;
-                camera.position.y = vehicleGroup.position.y + 5;
-                camera.lookAt(vehicleGroup.position.x, vehicleGroup.position.y + 1, vehicleGroup.position.z);
+                
+                // Efecto de inclinación del carro basado en la rotación lateral (para inmersión)
+                // Usamos una pequeña porción del giro para inclinar ligeramente el carro
+                vehicleGroup.rotation.z = -currentCarPitch * 0.5; 
+                
+                // Actualizar Display de Velocidad (convertimos a algo más parecido a km/h)
+                document.getElementById('current-speed').textContent = (Math.abs(velocity) * 100).toFixed(1);
             }
 
             renderer.render(scene, camera);
@@ -195,64 +228,62 @@
         function handleOrientation(event) {
             if (!permissionGranted) return;
 
-            const beta = event.beta;   // Inclinación Frontal (Control de Velocidad)
-            const gamma = event.gamma; // Inclinación Lateral (Control de Dirección)
+            const beta = event.beta;   // Inclinación Frontal (Velocidad)
+            const gamma = event.gamma; // Inclinación Lateral (Dirección)
             
-            // 1. Aceleración/Freno (Controlado por Beta - Inclinación adelante/atrás)
-            // Normalizar Beta (ej. de -45 a 45 grados) a un rango de velocidad (ej. -1 a 1)
+            // 1. Aceleración/Freno (Controlado por Beta)
             const normalizedBeta = Math.max(-45, Math.min(45, beta));
-            const accelerationControl = normalizedBeta / 45; // -1.0 a 1.0
+            const accelerationControl = normalizedBeta / 45; 
 
-            // Actualizar la velocidad
-            velocity += accelerationControl * CAR_SPEED_FACTOR;
-            // Limitar la velocidad máxima
-            velocity = Math.max(-0.5, Math.min(1.0, velocity)); // -0.5 (reversa) a 1.0 (adelante)
-            
-            // Aplicar fricción para detenerse si no hay aceleración
-            if (Math.abs(accelerationControl) < 0.05) {
-                velocity *= 0.95; // Disminución de velocidad (fricción)
+            // Si inclinamos hacia adelante, aceleramos, si no, aplicamos más fricción.
+            if (accelerationControl > 0.1) {
+                velocity += accelerationControl * ACCELERATION_FACTOR;
+                velocity = Math.min(MAX_SPEED, velocity);
+            } else if (accelerationControl < -0.1) {
+                // Freno o Reversa
+                velocity += accelerationControl * ACCELERATION_FACTOR * 0.5;
+                velocity = Math.max(-MAX_SPEED * 0.2, velocity);
             }
-
-            // 2. Dirección (Controlado por Gamma - Inclinación lateral)
-            // Normalizar Gamma (ej. de -45 a 45 grados) a un rango de giro (ej. -1 a 1)
+            
+            // 2. Dirección (Controlado por Gamma)
             const normalizedGamma = Math.max(-45, Math.min(45, gamma));
-            const steeringControl = normalizedGamma / 45; // -1.0 (derecha) a 1.0 (izquierda)
+            const steeringControl = normalizedGamma / 45; 
 
-            // Cambiar el ángulo de rotación (Dirección)
-            // El giro depende de la velocidad actual (no puedes girar si estás parado)
-            rotationAngle -= steeringControl * velocity * CAR_STEERING_FACTOR * 0.1;
+            // El giro depende de la velocidad (evitar giros bruscos en reversa)
+            if (Math.abs(velocity) > 0.01) {
+                const turnFactor = velocity > 0 ? 1 : 0.5; // Gira menos en reversa
+                rotationAngle -= steeringControl * turnFactor * STEERING_FACTOR;
+            }
+            
+            // Guardar el pitch actual para la inclinación visual del carro
+            currentCarPitch = steeringControl;
         }
 
         function handleMotion(event) {
             if (!permissionGranted) return;
 
-            // Datos del Acelerómetro (Aceleración Lineal)
-            const acc = event.acceleration;
-
             // 3. Salto (Controlado por aceleración en Z)
+            const acc = event.accelerationIncludingGravity; // Usamos este para ser más sensibles
+            
             if (acc && vehicleGroup.position.y === 0) {
                 const accZ = acc.z !== null ? acc.z : 0;
-                // Si hay una aceleración positiva fuerte en Z (movimiento rápido hacia arriba)
+                // Una sacudida positiva en Z
                 if (accZ > JUMP_ACCELERATION_THRESHOLD) {
-                    verticalVelocity = 0.5; // Inicia la velocidad vertical (salto)
+                    verticalVelocity = 0.5; 
                     statusMessage.textContent = '¡Salto activado!';
                     setTimeout(() => statusMessage.textContent = 'Sensores activos.', 1000);
                 }
             }
         }
 
-        // --- LÓGICA DE INICIO Y PERMISOS ---
-
+        // --- LÓGICA DE PERMISOS E INICIO (Mismo Bloque) ---
         async function requestSensorPermissions() {
-            // ... (El código de solicitud de permisos es el mismo que en el ejemplo anterior)
-            // ... (Se ha omitido aquí por brevedad, pero debe estar presente)
-            // (Revisa el código HTML anterior para asegurarte de incluir el manejo de permisos)
-
-            // **IMPORTANTE:** Por simplicidad en este ejemplo, simulamos la concesión de permisos
-            // En una aplicación real, debes usar el bloque `if (typeof DeviceOrientationEvent.requestPermission === 'function')`
-
+            // Se asume que el código de solicitud de permisos (DeviceOrientationEvent.requestPermission) 
+            // del ejemplo anterior está aquí para compatibilidad con iOS/Safari.
+            
+            // --- SIMULACIÓN DE CONCESIÓN DE PERMISOS ---
             permissionGranted = true;
-            statusMessage.textContent = '✅ Sensores de movimiento activos. ¡Conduce inclinando!';
+            statusMessage.textContent = '✅ Sensores de movimiento activos. ¡A Conducir!';
             startButton.style.display = 'none';
 
             window.addEventListener('deviceorientation', handleOrientation);
