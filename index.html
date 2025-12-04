@@ -1,966 +1,179 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organizate ya - Project: procesos </title>
-    <link rel="icon" sizes="192x192" href="">
-
-    <link rel="stylesheet" href="style.css"> 
+    <title>Sensores del Móvil (Giroscopio y Fusión) en Web</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            text-align: center;
+            background-color: #f4f7f9;
+        }
+        h2, h3 {
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .data-box {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .data-box p {
+            margin: 5px 0;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .fusion { border-color: #28a745; background-color: #e6ffed; }
+        .motion { border-color: #ffc107; background-color: #fff8e1; }
+    </style>
 </head>
-<style>
-    
-    /* Generales y Tipografía */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #0f0e0e;
-    color: #e9ecef;
-    margin: 0;
-    padding: 20px;
-}
-
-h1 {
-    text-align: center;
-    color: #fff;
-    margin-bottom: 30px;
-}
-
-/* Contenedores Principales */
-.tareas-container, .tareas {
-    margin: 20px auto;
-    max-width: 600px;
-    background: #143758; /* Color de fondo del proceso */
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-    padding: 20px;
-    text-align: center;
-}
-
-.tareas {
-    background: #0d2136; /* Un poco más oscuro para la tarea actual */
-}
-
-/* Barra de Tiempo Transcurrido (Sticky) */
-#tiempoTranscurridoContainer {
-    background-color: #5cb315;
-    color: white;
-    padding: 10px 0;
-    text-align: center;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    border-radius: 20px;
-    font-weight: bold;
-    margin-bottom: 20px;
-}
-
-/* Mensajes y Estado */
-#mensajeContainer { color: #2196F3; font-weight: bold; margin-top: 15px; }
-#estado { color: #4CAF50; margin-top: 15px; font-weight: bold; }
-
-/* Barra de Progreso */
-#progresoDisplay {
-    height: 30px;
-    background-color: #3e4858;
-    border-radius: 5px;
-    overflow: hidden;
-    margin: 15px 0;
-    border: 1px solid #143758;
-}
-
-.progreso-bar {
-    height: 100%;
-    width: 0%;
-    background-color: #5cb315; /* Verde inicial */
-    transition: width 0.5s ease-out, background-color 0.5s ease-out;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-}
-
-.progreso-bar.advertencia {
-    background-color: #FF5722; /* Naranja/Rojo si excede el tiempo */
-}
-
-/* Estilos de Botones (Centralizados) */
-.tareas-container button, .action-controls button, .music-btn {
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    padding: 10px 20px;
-    border: 2px solid transparent;
-    border-radius: 50px;
-    background-color: transparent;
-    color: #fff;
-    cursor: pointer;
-    overflow: hidden;
-    outline: none;
-    transition: all 0.3s ease-in-out;
-    margin: 5px;
-}
-
-/* Colores Específicos de Botones */
-[data-proceso], #botonIniciar { border-color: #2196F3; color: #2196F3; }
-#botonFinalizar { border-color: #FF5722; color: #FF5722; }
-#botonPausar { border-color: #FFC107; color: #FFC107; }
-#botonEstado { border-color: #4CAF50; color: #4CAF50; }
-
-/* Efecto Hover */
-.tareas-container button:hover, .action-controls button:hover, .music-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Hover específicos para llenar color */
-[data-proceso]:hover, #botonIniciar:hover { background-color: #2196F3; color: #fff; }
-#botonFinalizar:hover { background-color: #FF5722; color: #fff; }
-#botonPausar:hover { background-color: #FFC107; color: #000; }
-#botonEstado:hover { background-color: #4CAF50; color: #fff; }
-
-/* Estilo para botón de pausa cuando está activo */
-#botonPausar.pausado {
-    background-color: #FFC107;
-    color: #000;
-    font-weight: bold;
-}
-
-</style>
 <body>
 
-    <h1>hazlo ya <span id="tituloProceso"></span></h1>
+    <div class="container">
+        <h2>🌐 Acceso a Sensores del Dispositivo</h2>
+        <p>Presiona el botón para iniciar y conceder permisos de acceso a los sensores de movimiento (solo funciona sobre **HTTPS**).</p>
 
-    <div class="header-controls">
-        <button class="music-btn" id="musicButton">🎵</button>
-        <div id="tiempoTranscurridoContainer">Tiempo Total: 0 min</div>
+        <button id="start-button">Iniciar Sensores</button>
+
+        <p id="status">Esperando permiso...</p>
+
+        <h3>🧭 Fusión de Sensores (`deviceorientation`)</h3>
+        <p>Angulos de Euler ($\alpha, \beta, \gamma$) combinados (Acelerómetro + Giroscopio + Magnetómetro).</p>
+        <div class="data-box fusion">
+            <p id="alpha-output">Alpha (Brújula): --</p>
+            <p id="beta-output">Beta (Inclinación X): --</p>
+            <p id="gamma-output">Gamma (Inclinación Y): --</p>
+        </div>
+
+        <h3>⚙️ Datos Crudos (`devicemotion`)</h3>
+        <p>Velocidades angulares del Giroscopio y aceleración lineal del Acelerómetro.</p>
+        <div class="data-box motion">
+            <h4>Giroscopio (Velocidad Angular en °/s)</h4>
+            <p id="gyro-x-output">Rotación X: --</p>
+            <p id="gyro-y-output">Rotación Y: --</p>
+            <p id="gyro-z-output">Rotación Z: --</p>
+            <h4>Acelerómetro (Aceleración Lineal en m/s²)</h4>
+            <p id="acc-x-output">Aceleración X: --</p>
+            <p id="acc-y-output">Aceleración Y: --</p>
+            <p id="acc-z-output">Aceleración Z: --</p>
+        </div>
     </div>
 
-    <!-- <div id="procesosMenu" class="tareas-container">
-        <h2>Selecciona tu proceso</h2>
-        <button data-proceso="habitacion">🧹🪣 Organizar Habitación</button>
-        <button data-proceso="desactivacion">🌙 Desactivación 😴(Dormir)🛌</button>
-        <button data-proceso="activacion">🌞💪 Activación 70 ⚒️⏰ (Mañana)</button>
-        <button data-proceso="free">🚀🆓✨ Activación Free</button>
-        <button data-proceso="cv">📄👷🏿‍♂️ Enviar CV 💸</button>
-        <button data-proceso="idiomas">🌐🌍 Sesión de Idiomas</button>
-    </div> -->
-    <div id="procesosMenu" class="tareas-container">
-    <h2>Selecciona tu proceso</h2>
-    </div>
+    <script>
+        const statusEl = document.getElementById('status');
 
-    <div id="tareasContainer" class="tareas">
-        <div id="tareaActualDisplay"></div>
-        <div id="progresoDisplay"></div> </div>
-    
-    <div id="mensajeContainer"></div>
-    <div id="estado"></div>
-
-    <div class="action-controls">
-        <button id="botonIniciar" style="display: none;">Iniciar Proceso</button>
-        <button id="botonPausar" style="display: none;">⏸️ Pausar Tarea</button>
-        <button id="botonFinalizar" style="display: none;">✅ Finalizar Tarea</button>
-        <button id="botonEstado" style="display: none;">📢 Estado Actual</button>
-    </div>
-
-    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe6iokKE2prZIlQtM1rl4BjfGZ3VLAFaPYPe6BkmuMdv6utqw/viewform?embedded=true" width="95%" height="549" frameborder="0" marginheight="0" marginwidth="0">Cargando…</iframe>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-    <script>/**
- * ===============================================/**
- * ===============================================
- * PARTE 1: Configuración y Datos
- * ===============================================
- */
-
-// ** CONSTANTES DE MENSAJES **
-// (Puedes pegar todas tus listas de mensajes aquí)
-const MSG = {
-    ANIMO: [
-        "¡Continúa, aunque no sé cómo lo haces, pero lo estás haciendo! ¡Eres imparable!",
-        "¡Buen trabajo, aunque no era difícil para alguien tan perfecto como yo!",
-        "¡Casi lo logras, pero no olvides que eres afortunado de estar en mi presencia!",
-        "¡Excelente progreso, sigue adelante... aunque no sé por qué te preocupas tanto, ya está casi hecho!",
-        "¡Ya casi terminas, gran esfuerzo... aunque para mí esto sería pan comido!"
-    ],
-    ADVERTENCIA: [
-        "Ten cuidado, no estás alcanzando el nivel de eficiencia que espero.",
-        "Parece que esta tarea se está extendiendo un poco... ¿no crees que deberías acelerar?",
-        "¡Jhon, eso está lento, apúrate o no serás digno de mi presencia!",
-        "Deja de ser tan lento y ¡mete la ficha! Solo los verdaderos poderosos lo logran rápido.",
-    ],
-    FELICITACION: [
-        "¡Increíble! Has terminado antes de lo esperado... aunque te di la oportunidad de hacerlo.",
-        "¡Fantástico! Tu eficiencia es admirable... por ahora.",
-        "¡Genial! Has hecho un gran trabajo y a tiempo... supongo que no fue tan difícil para ti.",
-    ],
-    FRASE_INICIO: [
-        "¿Es todo lo que tienes? Este día será tan fácil como destruir un planeta...",
-        "Mi poder es absoluto, hoy haré todo a mi manera.",
-        "No necesito esforzarme, el universo me da lo que quiero, porque soy Freezer.",
-    ]
-};
-
-const PROCESSES = {
-    // ----------------------------------------------------
-    // 1. Organizar Habitación 52
-    // ----------------------------------------------------
-    habitacion: {
-        nombre: "Organizar Habitación 52",
-        tareas: [
-            { nombre: "Hacer la cama", tiempoMin: 4 },
-            { nombre: "Despejar superficies", tiempoMin: 10 },
-            { nombre: "Organizar esos objetos", tiempoMin: 10 },
-            { nombre: "Limpiar polvo", tiempoMin: 5 },
-            { nombre: "Recoger ropa sucia", tiempoMin: 10 },
-            { nombre: "barrida", tiempoMin: 10 },
-            { nombre: "botar una cosa innecesaria", tiempoMin: 3 },
-        ]
-    },
-
-    // ----------------------------------------------------
-    // 2. Rutina Desactivación
-    // ----------------------------------------------------
-    desactivacion: {
-        nombre: "Rutina Desactivación",
-        tareas: [
-            { nombre: "Desconectar pensamientos y tareas", tiempoMin: 5 },
-            { nombre: "Organizar pijama", tiempoMin: 5 },
-            { nombre: "Preparar ropa para mañana", tiempoMin: 3 },
-            { nombre: "Rutina de skin care y cepillo", tiempoMin: 5 },
-            { nombre: "Programar alarmas", tiempoMin: 2 },
-            { nombre: "Preparar mochila", tiempoMin: 5 },
-            { nombre: "vaso de agua", tiempoMin: 4 },
-            { nombre: "Anotar 3 tareas prioritarias para mañana", tiempoMin: 4 },
-            { nombre: "Escribir reflexiónes concluciones del día", tiempoMin: 5 },
-            { nombre: "tiempo en cel y cual app", tiempoMin: 4 },
-            { nombre: "algo aburrido o lectura", tiempoMin: 15 },
-            { nombre: "Apagar luces", tiempoMin: 3 },
-        ]
-    },
-
-    // ----------------------------------------------------
-    // 3. Rutina de Activación 76 (Original)
-    // ----------------------------------------------------
-    activacion76: {
-        nombre: "Rutina de Activación 76",
-        tareas: [
-            { nombre: "${randomLista(frases)} es hora de Beber agua", tiempoMin: 3 },
-            { nombre: "Ponerte los zapatos", tiempoMin: 4 },
-            { nombre: "Aseo dental", tiempoMin: 5 },
-            { nombre: "Tender la cama", tiempoMin: 7 },
-            { nombre: "Movimiento físico ligero. ligero", tiempoMin: 14 },
-            { nombre: "descanso y doblar pijama", tiempoMin: 12 },
-            { nombre: "entra al baño y cancioncita", tiempoMin: 3 },
-            { nombre: "Ducha", tiempoMin: 15 },
-            { nombre: "pantalón y ordenar toalla", tiempoMin: 10 },
-            { nombre: "Vestirse como el mejor", tiempoMin: 7 },
-            { nombre: "Previsión de tu día orden", tiempoMin: 5 },
-            { nombre: "Gratitud de 1 cosa", tiempoMin: 3 },
-            { nombre: "Revisión rápida de 3 objetivos", tiempoMin: 5 },
-            { nombre: "Arrancar con la primera tarea importante", tiempoMin: 10 },
-        ]
-    },
-
-    // ----------------------------------------------------
-    // 4. Rutina de Activación (Final/Enfocada)
-    // ----------------------------------------------------
-    activacionF: {
-        nombre: "Rutina de Activación",
-        tareas: [
-            { nombre: "Hidrátate, porque el poder fluye a través de ti. ${randomLista(frases)} es hora de Beber agua", tiempoMin: 3 },
-            { nombre: "Póntelos como un príncipe, los zapatos son parte de tu grandeza. (Ponte los zapatos)", tiempoMin: 4 },
-            { nombre: "Haz el aseo dental, porque tu perfección empieza con una sonrisa imparable. (Aseo dental)", tiempoMin: 5 },
-            { nombre: "El movimiento es solo un recordatorio de tu dominio sobre el cuerpo. (Movimiento físico ligero)", tiempoMin: 7 },
-            { nombre: "Deja que tu mente sea tan fría y calculadora como tu poder. (Mindfulness o respiración)", tiempoMin: 5 },
-            { nombre: "Tender la cama... aunque no lo necesites, el orden refleja tu perfección. (Tender la cama)", tiempoMin: 7 },
-            { nombre: "Báñate con la frialdad del universo, refrescando tu poder. (Ducha fría o templada)", tiempoMin: 10 },
-            { nombre: "Haz tu aseo personal, como quien cuida una obra maestra. (Aseo personal)", tiempoMin: 10 },
-            { nombre: "Vístete como el ser supremo que eres, el mundo necesita verlo. (Vestirse como el mejor)", tiempoMin: 7 },
-            { nombre: "Agradece, aunque el universo ya te da todo lo que mereces. (Gratitud)", tiempoMin: 3 },
-            { nombre: "Revisa y controla tu destino, porque nadie más lo hará por ti. (Revisión rápida de objetivos)", tiempoMin: 5 },
-            { nombre: "¡Despierta, es hora de conquistar este día, sin excusas! (Arrancar con la primera tarea importante)", tiempoMin: 10 },
-        ]
-    },
-
-    // ----------------------------------------------------
-    // 5. Envío de Hojas de Vida
-    // ----------------------------------------------------
-    envioCV: {
-        nombre: "Envío de Hojas de Vida",
-        tareas: [
-            { nombre: "Quitar distracciones y Sacar libreta para apuntes", tiempoMin: 5 },
-            { nombre: "Abrir la computadora y acceder a tu currículo", tiempoMin: 5 },
-            { nombre: "busca y Escoje hasta 3 ofertas de trabajo", tiempoMin: 20 },
-            { nombre: "Elegir una de las tres ¡ahora!", tiempoMin: 5 },
-            { nombre: "Leer cuidadosamente los requisitos de la oferta elegida", tiempoMin: 6 },
-            { nombre: "Personalizar tu currículum para la oferta seleccionada", tiempoMin: 20 },
-            { nombre: "Escribir carta de presentación o correo para la empresa", tiempoMin: 10 },
-            { nombre: "revisa ortografia", tiempoMin: 8 },
-            { nombre: "Enviala hazlo ¡ahora!", tiempoMin: 2 },
-            { nombre: "Registrar la oferta en una hoja de seguimiento", tiempoMin: 5 },
-            { nombre: "haz una alarma para llamar en 2 dias habiles", tiempoMin: 5 },
-            { nombre: "Hacer una pausa para relajarte y recargar energías", tiempoMin: 5 },
-        ]
-    },
-
-    // ----------------------------------------------------
-    // 6. Aprendizaje Eficaz de Idiomas
-    // ----------------------------------------------------
-    idioma: {
-        nombre: "Aprendizaje Eficaz de Idiomas",
-        tareas: [
-            { nombre: "Preparar el espacio de estudio sin distracciones", tiempoMin: 4 },
-            { nombre: "Escuchar un audio corto o canción en el idioma", tiempoMin: 5 },
-            { nombre: "Leer la letra o transcripción del audio", tiempoMin: 5 },
-            { nombre: "Anotar y aprender nuevas palabras", tiempoMin: 8 },
-            { nombre: "Practicar pronunciación repitiendo frases clave", tiempoMin: 5 },
-            { nombre: "Escribir tres oraciones usando el nuevo vocabulario", tiempoMin: 10 },
-            { nombre: "Leer en voz alta las oraciones escritas", tiempoMin: 5 },
-            { nombre: "Realizar un ejercicio interactivo en una aplicación o sitio web", tiempoMin: 10 },
-            { nombre: "Repasar lo aprendido en la sesión", tiempoMin: 5 },
-            { nombre: "Finalizar la sesión con un pensamiento positivo", tiempoMin: 2 },
-        ]
-    },
-
-        claseInglesOptimizada: {
-        nombre: "CLASE INGLÉ (120 Minutos)",
-        tareas: [
-            { nombre: "SETUP y Asistencia Automática (Protocolo único de encendido y conexión a la plataforma principal)", tiempoMin: 5 },
-            { nombre: "Revisión Asíncrona (Evidencia 1): Quiz de 3 preguntas sobre tarea pasada en plataforma digital", tiempoMin: 10 },
-            { nombre: "Input Gramatical Focalizado: Explicación y modelado del tema central con énfasis en uso funcional", tiempoMin: 15 },
-            { nombre: "PARALELO 1: Práctica Controlada (A2/B2 en sala; C1 con tarea de análisis en plataforma)", tiempoMin: 20 },
-            { nombre: "Pausa Activa Larga (10 min): El profesor organiza los grupos y revisa resultados del Quiz inicial", tiempoMin: 10 },
-            { nombre: "PARALELO 2: Práctica de Fluidez (Evidencia 2): Juego de rol por nivel, profesor graba clips de habla", tiempoMin: 25 },
-            { nombre: "Feedback y Corrección Colectiva (Micro-Lección): Corrección de los 3 errores más comunes escuchados", tiempoMin: 10 },
-            { nombre: "Output Escrito Asíncrona (Evidencia 3): Tarea de escritura en Moodle. Recolección post-clase", tiempoMin: 10 },
-            { nombre: "Cierre y Anuncio de Tarea (Protocolo simple: Proyección de tarea con un único enlace consolidado)", tiempoMin: 10 },
-            { nombre: "Encuesta de Satisfacción Final (UX): Respuesta individual a 3 preguntas en Google Forms", tiempoMin: 5 },
-        ]
-    },
-};// ** CONSTANTES DE COMANDOS DE VOZ **
-const VOICE_COMMANDS_MAP = {
-    iniciar: ['inicia', 'comienza', 'empezar', 'arranca','de una'],
-    pausa: ['pausa', 'pausar', 'detener', 'alto', 'reanuda', 'espera'],
-    finalizar: ['termina', 'finaliza', 'acabar', 'listo', 'siguiente']
-};
-
-// ** CONSTANTES DE REACCIONES DE VOZ **
-const VOICE_REACTIONS = {
-    PROCESO_SELECCIONADO: [
-        (nombre) => `Proceso ${nombre} seleccionado. Muéstrame tu valía.`,
-        (nombre) => `Has elegido ${nombre}. Que empiece el espectáculo.`,
-        (nombre) => `Tarea principal ${nombre} lista. No me decepciones.`,
-    ],
-    COMANDO_DETECTADO: [
-        (accion) => ` ${accion}  Obedezco.`,
-        (accion) => `${accion}detectado.`,
-        (accion) => `Afirmativo, ${accion}.`,
-        (accion) => `de una mijo, ${accion}.`,
-    ],
-    INICIO_TAREA: [
-        (nombre, tiempo) => `Iniciando ${nombre}. Tienes ${tiempo} minutos. El tiempo es oro.`,
-        (nombre, tiempo) => `Ahora ${nombre}. ${tiempo} minutos. ¡No te demores!`,
-    ],
-    TAREA_FINALIZADA: [
-        (nombre) => `Tarea ${nombre} finalizada. Bien.`,
-        (nombre) => `Fin de ${nombre}. Vamos a la siguiente.`,
-    ],
-    PROCESO_COMPLETO: [
-        "¡Proceso completado! Una victoria aplastante, aunque esperada.",
-        "¡Hemos terminado! Por ahora, has cumplido mis expectativas.",
-        "Proceso finalizado. Puedes respirar... por un momento.",
-    ],
-};
-
-// ** ESTADO GLOBAL DE LA APLICACIÓN  **
-const STATE = {
-    procesoSeleccionado: null, // ID del proceso (e.g., 'habitacion')
-    tareasRestantes: [],       // Array de tareas del proceso
-    tareaActual: null,         // { nombre: 'X', tiempoMin: 10, tiempoTotalMs: 600000, inicioMs: null }
-    intervaloTarea: null,      // ID del setInterval de la tarea
-    intervaloGlobal: null,     // ID del setInterval del tiempo total
-    tiempoInicioGlobal: null,  // Timestamp del inicio del proceso
-    isPausado: false,          // Nuevo: Controla si la aplicación está en pausa
-    mensajePrevioPct: 0,       // Control de mensajes de 25%
-    musicPlayer: null,         // Referencia al objeto Howl
-    musicPlaying: false,
-
-    recognition: null
-};
-
-
-/**
- * ===============================================
- * PARTE 2: Funciones de Utilidad
- * ===============================================
- */
-
-// Función para síntesis de voz
-function hablar(textoOArray) {
-    if (globalThis.speechSynthesis) {
-        const synth = globalThis.speechSynthesis;
-        synth.cancel(); // Detiene la voz anterior
-        
-        let texto;
-        if (Array.isArray(textoOArray)) {
-            // Si es un array, selecciona una frase al azar
-            texto = getRandomMsg(textoOArray);
-        } else {
-            // Si es una cadena, la usa directamente
-            texto = textoOArray;
+        function startOrientationListener() {
+            window.addEventListener('deviceorientation', handleOrientation);
+            statusEl.textContent = '✅ Sensores iniciados y listos.';
         }
 
-        const utterance = new SpeechSynthesisUtterance(texto);
-        synth.speak(utterance);
-    }
-}
-
-// (La función getRandomMsg ya existe, pero aseguramos que se use)
-function getRandomMsg(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-// Función para obtener un mensaje aleatorio
-function getRandomMsg(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-// Inicialización del reproductor de música (Howler.js)
-function initMusic() {
-    STATE.musicPlayer = new Howl({
-        src: ['https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'],
-        loop: true
-    });
-}
-
-function toggleMusic() {
-    const btn = document.getElementById('musicButton');
-    if (STATE.musicPlaying) {
-        STATE.musicPlayer.pause();
-        btn.textContent = '🎵';
-    } else {
-        STATE.musicPlayer.play();
-        btn.textContent = '🎶';
-    }
-    STATE.musicPlaying = !STATE.musicPlaying;
-}
-
-// Función para guardar el estado en el almacenamiento local
-function saveState() {
-    // Guardamos solo los datos relevantes para la persistencia
-    const persistState = {
-        procesoSeleccionado: STATE.procesoSeleccionado,
-        tareasRestantes: STATE.tareasRestantes,
-        tareaActual: STATE.tareaActual ? {
-            ...STATE.tareaActual,
-            // Guardamos el tiempo transcurrido en lugar del timestamp de inicio
-            tiempoTranscurridoEnTarea: Date.now() - STATE.tareaActual.inicioMs 
-        } : null,
-        tiempoInicioGlobal: STATE.tiempoInicioGlobal, // Timestamp del inicio global
-        isPausado: STATE.isPausado
-    };
-    localStorage.setItem('appState', JSON.stringify(persistState));
-}
-
-// Función para cargar el estado
-function loadState() {
-    const savedState = localStorage.getItem('appState');
-    if (savedState) {
-        const parsedState = JSON.parse(savedState);
-        
-        // Cargar los campos guardados
-        STATE.procesoSeleccionado = parsedState.procesoSeleccionado;
-        STATE.tareasRestantes = parsedState.tareasRestantes;
-        STATE.tiempoInicioGlobal = parsedState.tiempoInicioGlobal;
-        STATE.isPausado = parsedState.isPausado;
-
-        // Reconstruir la tarea actual
-        if (parsedState.tareaActual) {
-            STATE.tareaActual = parsedState.tareaActual;
-            // Recalcular el timestamp de inicio a partir del tiempo transcurrido guardado
-            STATE.tareaActual.inicioMs = Date.now() - parsedState.tareaActual.tiempoTranscurridoEnTarea;
+        function startMotionListener() {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', handleMotion);
+            }
         }
 
-        return true; // Estado cargado
-    }
-    return false; // No hay estado
-}
+        // --- MANEJADORES DE EVENTOS ---
 
-// Función para formatear la hora (HH:MM)
-function formatTime(date) {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
+        /**
+         * Maneja los datos de Orientación (Fusión de Sensores)
+         */
+        function handleOrientation(event) {
+            // Ángulos de Euler de la Fusión de Sensores
+            const alpha = event.alpha ? event.alpha.toFixed(2) : "N/A";
+            const beta = event.beta ? event.beta.toFixed(2) : "N/A";
+            const gamma = event.gamma ? event.gamma.toFixed(2) : "N/A";
 
-
-/**
- * ===============================================
- * PARTE 3: Lógica de la Aplicación y Control de Estado
- * ===============================================
- */
-
-const App = {
-    // Referencias del DOM centralizadas
-    DOM: {
-        tituloProceso: document.getElementById('tituloProceso'),
-        menu: document.getElementById('procesosMenu'),
-        progreso: document.getElementById('progresoDisplay'),
-        tareaActual: document.getElementById('tareaActualDisplay'),
-        tiempoTotal: document.getElementById('tiempoTranscurridoContainer'),
-        mensaje: document.getElementById('mensajeContainer'),
-        estado: document.getElementById('estado'),
-        btnIniciar: document.getElementById('botonIniciar'),
-        btnPausar: document.getElementById('botonPausar'),
-        btnFinalizar: document.getElementById('botonFinalizar'),
-        btnEstado: document.getElementById('botonEstado'),
-        btnMusic: document.getElementById('musicButton'),
-    },
-
-   init: function() {
-        initMusic();
-        this.addEventListeners();
-        this.renderizarMenuProcesos();
-        
-        // AÑADIR ESTA LÍNEA AL FINAL DE INIT
-        this.initVoiceRecognition(); 
-        
-        if (loadState() && STATE.procesoSeleccionado) {
-            this.reanudarProcesoPersistente();
-        } else {
-            this.DOM.tiempoTotal.innerHTML = `Hora Actual: ${formatTime(new Date())}`;
-        }
-    },
-    reanudarProcesoPersistente: function() {
-        const proceso = PROCESSES[STATE.procesoSeleccionado];
-        this.DOM.tituloProceso.textContent = `| ${proceso.nombre}`;
-        this.DOM.menu.style.display = 'none';
-        
-        this.DOM.btnPausar.style.display = 'inline-block';
-        this.DOM.btnFinalizar.style.display = 'inline-block';
-        this.DOM.btnEstado.style.display = 'inline-block';
-        
-        if (STATE.isPausado) {
-             this.DOM.btnPausar.textContent = '▶️ Reanudar Tarea';
-             this.DOM.btnPausar.classList.add('pausado');
+            document.getElementById('alpha-output').textContent = `Alpha (Z/Brújula): ${alpha}°`;
+            document.getElementById('beta-output').textContent = `Beta (X/Inclinación): ${beta}°`;
+            document.getElementById('gamma-output').textContent = `Gamma (Y/Lateral): ${gamma}°`;
         }
 
-        // Reanudar contadores y UI
-        STATE.intervaloGlobal = setInterval(() => this.updateTiempoTotal(), 1000);
-        STATE.intervaloTarea = setInterval(() => this.updateProgresoTarea(), 1000);
-        
-        this.updateMensaje(`✅ Proceso **${proceso.nombre}** reanudado. Estaba en **${STATE.tareaActual.nombre}**.`);
-        this.updateProgresoTarea(); // Forzar una actualización de UI
-    },
+        /**
+         * Maneja los datos crudos de Movimiento (Giroscopio y Acelerómetro)
+         */
+        function handleMotion(event) {
+            // Datos del Giroscopio (Velocidad Angular)
+            const rot = event.rotationRate;
+            if (rot) {
+                const rotX = rot.alpha ? rot.alpha.toFixed(2) : "N/A";
+                const rotY = rot.beta ? rot.beta.toFixed(2) : "N/A";
+                const rotZ = rot.gamma ? rot.gamma.toFixed(2) : "N/A";
 
-    addEventListeners: function() {
-        // Eventos de selección de proceso
-        this.DOM.menu.addEventListener('click', (e) => {
-            if (e.target.dataset.proceso) {
-                this.seleccionarProceso(e.target.dataset.proceso);
+                document.getElementById('gyro-x-output').textContent = `Rotación X: ${rotX}°/s`;
+                document.getElementById('gyro-y-output').textContent = `Rotación Y: ${rotY}°/s`;
+                document.getElementById('gyro-z-output').textContent = `Rotación Z: ${rotZ}°/s`;
+            }
+
+            // Datos del Acelerómetro (Aceleración Lineal, sin gravedad)
+            const acc = event.acceleration;
+            if (acc) {
+                const accX = acc.x ? acc.x.toFixed(2) : "N/A";
+                const accY = acc.y ? acc.y.toFixed(2) : "N/A";
+                const accZ = acc.z ? acc.z.toFixed(2) : "N/A";
+
+                document.getElementById('acc-x-output').textContent = `Aceleración X: ${accX} m/s²`;
+                document.getElementById('acc-y-output').textContent = `Aceleración Y: ${accY} m/s²`;
+                document.getElementById('acc-z-output').textContent = `Aceleración Z: ${accZ} m/s²`;
+            }
+        }
+
+        // --- LÓGICA DE INICIO Y PERMISOS ---
+
+        document.getElementById('start-button').addEventListener('click', () => {
+            // 1. Verificar si el navegador requiere permiso explícito (iOS 13+ / Safari)
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            startOrientationListener();
+                            startMotionListener();
+                            document.getElementById('start-button').style.display = 'none';
+                        } else {
+                            statusEl.textContent = '❌ Permiso denegado. Intenta de nuevo.';
+                        }
+                    })
+                    .catch(error => {
+                        statusEl.textContent = `❌ Error al solicitar permiso: ${error.message}`;
+                    });
+            } else {
+                // 2. Si no requiere permiso explícito (generalmente Android/Chrome)
+                startOrientationListener();
+                startMotionListener();
+                document.getElementById('start-button').style.display = 'none';
             }
         });
 
-        // Eventos de control
-        this.DOM.btnIniciar.addEventListener('click', () => this.iniciarProceso());
-        this.DOM.btnPausar.addEventListener('click', () => this.togglePausa());
-        this.DOM.btnFinalizar.addEventListener('click', () => this.finalizarTarea(true)); // Forzado
-        this.DOM.btnEstado.addEventListener('click', () => this.mostrarEstado());
-        this.DOM.btnMusic.addEventListener('click', () => toggleMusic());
-    },
-    // --- 3.0. Renderizado y Utilidad ---
-    renderizarMenuProcesos: function() {
-        this.DOM.menu.innerHTML = '<h2>Selecciona tu proceso</h2>';
-        
-        for (const id in PROCESSES) {
-            const proceso = PROCESSES[id];
-            const totalMinutos = proceso.tareas.reduce((sum, tarea) => sum + tarea.tiempoMin, 0);
-            
-            const button = document.createElement('button');
-            button.setAttribute('data-proceso', id);
-            button.setAttribute('title', `Tiempo total estimado: ${totalMinutos} minutos`);
-            button.innerHTML = `${proceso.nombre} <br> <small>(~${totalMinutos} min)</small>`;
-            this.DOM.menu.appendChild(button);
+        // Verificar la compatibilidad inicial
+        if (!window.DeviceOrientationEvent && !window.DeviceMotionEvent) {
+            statusEl.textContent = '❌ Tu navegador no soporta las APIs de sensores.';
+            document.getElementById('start-button').style.display = 'none';
         }
-    },
-    
-    // --- 3.1. Gestión de Proceso ---
-    seleccionarProceso: function(procesoID) {
-        if (STATE.intervaloGlobal) {
-            this.updateMensaje("¡Alto! Hay un proceso en curso. Finalízalo primero.");
-            return;
-        }
-
-        const proceso = PROCESSES[procesoID];
-        if (!proceso) return;
-
-        STATE.procesoSeleccionado = procesoID;
-        STATE.tareasRestantes = [...proceso.tareas]; // Copia profunda para no modificar el original
-
-        // Actualizar UI
-        this.DOM.tituloProceso.textContent = `| ${proceso.nombre}`;
-        this.DOM.menu.style.display = 'none';
-        this.DOM.btnIniciar.style.display = 'inline-block';
-        this.updateMensaje(`Proceso "${proceso.nombre}" listo. ¡${getRandomMsg(MSG.FRASE_INICIO)}`);
-        hablar(VOICE_REACTIONS.PROCESO_SELECCIONADO.map(f => f(proceso.nombre)));
-    },
-
-    iniciarProceso: function() {
-        if (!STATE.procesoSeleccionado) return;
-        
-        // Configuración inicial del estado y UI
-        STATE.tiempoInicioGlobal = Date.now();
-        this.DOM.btnIniciar.style.display = 'none';
-        this.DOM.btnPausar.style.display = 'inline-block';
-        this.DOM.btnFinalizar.style.display = 'inline-block';
-        this.DOM.btnEstado.style.display = 'inline-block';
-        
-        // Iniciar contadores globales
-        STATE.intervaloGlobal = setInterval(() => this.updateTiempoTotal(), 1000);
-        
-        this.siguienteTarea();
-    },
-    
-    finalizarProceso: function() {
-        clearInterval(STATE.intervaloGlobal);
-        this.DOM.btnPausar.style.display = 'none';
-        this.DOM.btnFinalizar.style.display = 'none';
-        this.DOM.btnEstado.style.display = 'none';
-        this.DOM.menu.style.display = 'block';
-        this.DOM.tituloProceso.textContent = '';
-
-        this.updateMensaje(`¡PROCESO COMPLETO! Total: ${this.DOM.tiempoTotal.textContent}. ¡Victoria aplastante!`);
-        hablar("¡Proceso completado! Gran trabajo, inferior.");
-
-       // Reiniciar el estado
-    STATE.procesoSeleccionado = null;
-    STATE.tiempoInicioGlobal = null;
-    STATE.intervaloGlobal = null;
-    STATE.tareasRestantes = [];
-    localStorage.removeItem('appState'); // AÑADIR PARA LIMPIAR PERSISTENCIA
-    },
-
-    // --- 3.2. Gestión de Tareas ---
-    siguienteTarea: function() {
-        if (STATE.tareaActual) {
-            // Limpiar la tarea anterior (solo si no es la primera)
-            clearInterval(STATE.intervaloTarea);
-            STATE.tareaActual = null;
-        }
-        
-        if (STATE.tareasRestantes.length === 0) {
-            this.finalizarProceso();
-            return;
-        }
-
-        const tareaData = STATE.tareasRestantes.shift(); // Obtiene la primera tarea (FIFO)
-        
-        STATE.tareaActual = {
-            ...tareaData,
-            tiempoTotalMs: tareaData.tiempoMin * 60 * 1000,
-            inicioMs: Date.now(),
-            mensajePrevioPct: 0
-        };
-
-        this.updateMensaje(`¡Ahora! **${STATE.tareaActual.nombre}** tienes ${STATE.tareaActual.tiempoMin} minutos.`);
-        hablar(`Iniciando tarea: ${STATE.tareaActual.nombre}. ${STATE.tareaActual.tiempoMin} minutos.`);
-
-        // Iniciar el intervalo de la tarea
-        STATE.intervaloTarea = setInterval(() => this.updateProgresoTarea(), 1000);
-        saveState();
-    },
-
-    finalizarTarea: function(forzada = false) {
-        if (!STATE.tareaActual) return;
-
-        clearInterval(STATE.intervaloTarea);
-
-        const tiempoTranscurrido = Date.now() - STATE.tareaActual.inicioMs;
-        const tiempoUsadoMin = tiempoTranscurrido / 1000 / 60;
-        
-        let mensaje;
-        if (tiempoUsadoMin <= STATE.tareaActual.tiempoMin) {
-            mensaje = `${getRandomMsg(MSG.FELICITACION)} ¡A tiempo! (${Math.round(tiempoUsadoMin)} min)`;
-        } else {
-            mensaje = forzada 
-                ? `Tarea forzada. Te tardaste ${Math.round(tiempoUsadoMin)} min. ¡Más rápido, Jhon!`
-                : `Tiempo excedido. Te tardaste ${Math.round(tiempoUsadoMin)} min. ¡Más eficiente, gusano!`;
-        }
-
-        this.updateMensaje(`✅ Tarea **${STATE.tareaActual.nombre}** finalizada. ${mensaje}`);
-        hablar(`Tarea ${STATE.tareaActual.nombre} finalizada.`);
-
-        this.siguienteTarea();
-    },
-
-    // --- 3.3. Funciones de Actualización de UI ---
-    updateTiempoTotal: function() {
-        if (STATE.isPausado) return;
-        
-        const elapsedMs = Date.now() - STATE.tiempoInicioGlobal;
-        const totalMin = Math.round(elapsedMs / 1000 / 60);
-        
-        const horaActual = formatTime(new Date()); // Usar la nueva función
-        const horaEstimadaFinal = this.calcularTiempoFinalizacion();
-
-        let displayTxt = `Total: ${totalMin} min | Ahora: ${horaActual}`;
-        
-        if (horaEstimadaFinal) {
-            displayTxt += ` | Fin Est.: ${horaEstimadaFinal}`;
-        }
-        
-        this.DOM.tiempoTotal.innerHTML = displayTxt; // Usar innerHTML
-    },
-    // --- 3.4. Gestión de Reconocimiento de Voz ---
-    initVoiceRecognition: function() {
-        // Verifica si la API está disponible
-        const SpeechRecognition = globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
-
-        if (!SpeechRecognition) {
-            this.updateMensaje("❌ **ERROR:** El reconocimiento de voz no está soportado en tu navegador o requiere HTTPS.");
-            this.DOM.btnEstado.style.borderColor = '#FF5722'; // Mostrar error en un botón
-            return;
-        }
-
-        STATE.recognition = new SpeechRecognition();
-        STATE.recognition.lang = 'es-ES'; // Configura el idioma a español
-        STATE.recognition.interimResults = false; // Solo resultados finales
-        STATE.recognition.continuous = true; // Sigue escuchando
-        STATE.recognition.maxAlternatives = 1;
-
-        // Evento de resultado: procesa lo que el usuario dijo
-        STATE.recognition.onresult = (event) => {
-            const comando = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-            this.procesarComandoVoz(comando);
-        };
-
-        // Evento de fin: se reinicia la escucha si estaba en modo continuo, o lo notifica.
-        STATE.recognition.onend = () => {
-            if (STATE.recognition) {
-                // Intenta reiniciarse automáticamente
-                this.iniciarEscucha(); 
-                this.DOM.estado.textContent = '📢 Escuchando...';
-            }
-        };
-
-        STATE.recognition.onerror = (event) => {
-            console.error('Error de reconocimiento de voz:', event.error);
-            this.DOM.estado.textContent = '❌ Error de voz. Recargando...';
-        };
-
-        this.iniciarEscucha();
-    },
-
-    iniciarEscucha: function() {
-        try {
-            if (STATE.recognition) {
-                STATE.recognition.start();
-                // OBTENER LAS PALABRAS CLAVE DEL MAPA PARA MOSTRARLAS
-                const comandosDisponibles = Object.keys(VOICE_COMMANDS_MAP).join(', ');
-                this.DOM.estado.textContent = `📢 Escuchando... (Comandos: mía ${comandosDisponibles})`;
-            }
-     
-    } catch (e) {
-            // Previene el error si ya está escuchando
-            if (e.name !== 'InvalidStateError') {
-                 console.error("Error al iniciar la escucha:", e);
-            }
-        }
-    }
-    ,
-
-    procesarComandoVoz: function(comando) {
-        if (!comando.includes('mía')) {
-            this.DOM.mensaje.innerHTML = `<p style="color:#FFC107;">🎙️ Comando: "${comando}" | Esperando palabra clave "mía".</p>`;
-            return;
-        }
-
-        const comandoLimpio = comando.replace('mía', '').trim();
-        let accion = null;
-        let procesoIDSeleccionado = null;
-        
-        // 1. Intentar seleccionar un proceso (SÓLO SI NO HAY UNO ACTIVO)
-        if (!STATE.procesoSeleccionado) {
-            // Iterar sobre los nombres de los procesos (ej: 'Organizar Habitación 52')
-            for (const id in PROCESSES) {
-                // Normalizamos el nombre del proceso para la comparación de voz
-                const nombreNormalizado = PROCESSES[id].nombre.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-                
-                // Buscar si el comando de voz incluye el nombre del proceso
-                if (comandoLimpio.includes(nombreNormalizado.substring(0, 15))) { // Se compara una parte para tolerancia
-                    procesoIDSeleccionado = id;
-                    break;
-                }
-            }
-        }
-
-        if (procesoIDSeleccionado) {
-            this.seleccionarProceso(procesoIDSeleccionado);
-            return; // Detener aquí si se seleccionó un proceso.
-        }
-
-        // 2. Si hay proceso activo, buscar comandos de acción (iniciar, pausa, finalizar)
-        for (const actionKey in VOICE_COMMANDS_MAP) {
-            const synonyms = VOICE_COMMANDS_MAP[actionKey];
-            const match = synonyms.find(synonym => comandoLimpio.includes(synonym));
-            
-            if (match) {
-                accion = actionKey;
-                break;
-            }
-        }
-        
-        // ... (el resto del código de switch es el mismo)
-        
-        if (accion) {
-            this.DOM.mensaje.innerHTML = `<p>🎙️ ¡Comando de voz **"${accion.toUpperCase()}"** detectado! (Palabra: ${comandoLimpio})</p>`;
-            hablar(VOICE_REACTIONS.COMANDO_DETECTADO.map(f => f(accion))); // Usamos la reacción aleatoria
-            
-            switch (accion) {
-                case 'iniciar':
-                    if (STATE.procesoSeleccionado && !STATE.tiempoInicioGlobal) {
-                         this.iniciarProceso();
-                    }
-                    break;
-                case 'pausa':
-                    if (STATE.tiempoInicioGlobal) {
-                         this.togglePausa();
-                    }
-                    break;
-                case 'finalizar':
-                    if (STATE.tareaActual) {
-                         this.finalizarTarea(true);
-                    }
-                    break;
-            }
-        }
-    }
-    ,
-
-    updateProgresoTarea: function() {
-    
-    // 1. Verificar Pausa y Tarea
-    if (STATE.isPausado || !STATE.tareaActual) return; // Sale inmediatamente si está pausado o sin tarea
-
-    const tarea = STATE.tareaActual;
-    const tiempoTranscurrido = Date.now() - tarea.inicioMs; // Cálculo de tiempo
-    const porcentaje = (tiempoTranscurrido / tarea.tiempoTotalMs) * 100;
-    const tiempoUsado = tiempoTranscurrido / 1000;
-    
-    const min = Math.floor(tiempoUsado / 60);
-    const sec = Math.floor(tiempoUsado % 60);
-    
-    // 1. Actualizar el Display de la Tarea y la Barra
-    this.DOM.tareaActual.innerHTML = `<strong>Tarea:</strong> ${tarea.nombre} | Usado: ${min} min ${sec} seg`;
-    
-    const progressBar = this.DOM.progreso.querySelector('.progreso-bar') || document.createElement('div');
-    progressBar.className = 'progreso-bar';
-    this.DOM.progreso.appendChild(progressBar);
-    
-    let displayPct = Math.min(porcentaje, 100);
-    progressBar.style.width = `${displayPct}%`;
-    progressBar.textContent = `${Math.round(porcentaje)}%`;
-    
-    // 2. Control de color de advertencia
-    if (porcentaje >= 100) {
-        progressBar.classList.add('advertencia');
-    } else {
-        progressBar.classList.remove('advertencia');
-    }
-    
-    // 3. Control de mensajes de motivación/advertencia
-    const currentPctLevel = Math.floor(porcentaje / 25) * 25;
-    
-    if (currentPctLevel > tarea.mensajePrevioPct) {
-        tarea.mensajePrevioPct = currentPctLevel;
-        
-        let msg;
-        if (porcentaje <= 100) {
-            // Mensajes de ánimo
-            const index = Math.min(currentPctLevel / 25 - 1, MSG.ANIMO.length - 1);
-            msg = `${MSG.ANIMO[index]} (${currentPctLevel}%)`;
-        } else {
-            // Mensajes de advertencia (al exceder el tiempo)
-            msg = `${getRandomMsg(MSG.ADVERTENCIA)} (¡Tiempo límite excedido! ${Math.round(porcentaje)}%)`;
-        }
-
-        this.updateMensaje(msg);
-        hablar(msg);
-    }
-    
-    // 4. Persistencia: Guarda el estado solo si está ACTIVO
-    saveState(); // ¡AÑADE AQUÍ LA FUNCIÓN SAVE STATE!
-    },
-    updateMensaje: function(texto) {
-        this.DOM.mensaje.innerHTML = `<p>${texto}</p>`;
-    },
-
-    mostrarEstado: function() {
-        if (!STATE.tareaActual) {
-            this.DOM.estado.textContent = "No hay tareas en progreso.";
-            hablar("No hay tareas en progreso.");
-            return;
-        }
-
-        const tarea = STATE.tareaActual;
-        const tiempoTranscurrido = Date.now() - tarea.inicioMs;
-        const porcentaje = (tiempoTranscurrido / tarea.tiempoTotalMs) * 100;
-
-        const estadoTxt = `Estado de "${tarea.nombre}": ${Math.round(porcentaje)}% completado.`;
-        this.DOM.estado.textContent = estadoTxt;
-        hablar(estadoTxt);
-    },
-
-    togglePausa: function() {
-        if (!STATE.tareaActual && !STATE.intervaloGlobal) return;
-
-        STATE.isPausado = !STATE.isPausado;
-        
-        const btn = this.DOM.btnPausar;
-        if (STATE.isPausado) {
-            btn.textContent = '▶️ Reanudar Tarea';
-            btn.classList.add('pausado');
-            hablar("Proceso pausado. No me hagas esperar mucho.");
-        } else {
-            btn.textContent = '⏸️ Pausar Tarea';
-            btn.classList.remove('pausado');
-            hablar("Proceso reanudado. Muévete.");
-            // Recalcular el punto de inicio de la tarea/proceso global para compensar la pausa
-            const tiempoPausado = Date.now() - STATE.tareaActual.inicioMs;
-            STATE.tareaActual.inicioMs = Date.now() - tiempoPausado;
-            // No necesitamos recalcular el tiempo global, el contador simplemente continuará.
-        }
-        saveState();
-    }
-    ,
-    calcularTiempoFinalizacion: function() {
-        if (!STATE.procesoSeleccionado || !STATE.tareaActual) return null;
-
-        let tiempoRestanteMs = 0;
-        
-        // 1. Tiempo restante de la tarea actual
-        const tiempoTranscurridoTarea = Date.now() - STATE.tareaActual.inicioMs;
-        tiempoRestanteMs += Math.max(0, STATE.tareaActual.tiempoTotalMs - tiempoTranscurridoTarea);
-
-        // 2. Tiempo restante de las tareas futuras
-        tiempoRestanteMs += STATE.tareasRestantes.reduce((sum, tarea) => sum + tarea.tiempoMin * 60 * 1000, 0);
-
-        const tiempoEstimadoFinalizacion = new Date(Date.now() + tiempoRestanteMs);
-        return formatTime(tiempoEstimadoFinalizacion);
-    },
-};
-
-// Inicializar la aplicación cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    App.init();
-});
-    
-    </script> 
+    </script>
 
 </body>
-
 </html>
