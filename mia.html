@@ -165,6 +165,10 @@ h1 {
         <button id="botonFinalizar" style="display: none;">✅ Finalizar Tarea</button>
         <button id="botonEstado" style="display: none;">📢 Estado Actual</button>
     </div>
+     <div id="resultadosContainer" class="tareas-container" style="display: none;">
+    <h2>📊 Resultados del Proceso</h2>
+    <div id="graficoBarras">
+        </div>
 
     <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSe6iokKE2prZIlQtM1rl4BjfGZ3VLAFaPYPe6BkmuMdv6utqw/viewform?embedded=true" width="95%" height="549" frameborder="0" marginheight="0" marginwidth="0">Cargando…</iframe>
     
@@ -198,24 +202,24 @@ const MSG = {
         "¡Genial! Has hecho un gran trabajo y a tiempo... supongo que no fue tan difícil para ti.",
     ],
     FRASE_INICIO: [
-        "¿Es todo lo que tienes? Este día será tan fácil como destruir un planeta...",
-        "Mi poder es absoluto, hoy haré todo a mi manera.",
-        "No necesito esforzarme, el universo me da lo que quiero, porque soy Freezer.",
+        "¿Es todo? será tan fácil",
+        "haré todo a mi manera.",
+        "No necesito esforzarme, el universo me pertenece.",
     ]
 };
 
 const PROCESSES = {
     // ----------------------------------------------------
-    // 1. Organizar Habitación 52
+    // 1. Organizar Habitación
     // ----------------------------------------------------
     habitacion: {
-        nombre: "Organizar Habitación 52",
+        nombre: "Organizar Habitación",
         tareas: [
             { nombre: "Hacer la cama", tiempoMin: 4 },
             { nombre: "Despejar superficies", tiempoMin: 10 },
             { nombre: "Organizar esos objetos", tiempoMin: 10 },
             { nombre: "Limpiar polvo", tiempoMin: 5 },
-            { nombre: "Recoger ropa sucia", tiempoMin: 10 },
+            { nombre: "Recoger ropa sucia en", tiempoMin: 10 },
             { nombre: "barrida", tiempoMin: 10 },
             { nombre: "botar una cosa innecesaria", tiempoMin: 3 },
         ]
@@ -243,25 +247,27 @@ const PROCESSES = {
     },
 
     // ----------------------------------------------------
-    // 3. Rutina de Activación 76 (Original)
+    // 3. Rutina de Activación  (Original)
     // ----------------------------------------------------
     activacion76: {
-        nombre: "Rutina de Activación 76",
+        nombre: "Rutina de Activación base",
         tareas: [
-            { nombre: ‘${randomLista(frases)} es hora de Beber agua‘, tiempoMin: 3 },
+            { nombre: `${getRandomMsg(MSG.FRASE_INICIO)} es hora de Beber agua`, tiempoMin: 3 },
             { nombre: "Ponerte los zapatos", tiempoMin: 4 },
-            { nombre: "Aseo dental 🪥", tiempoMin: 5 },
-            { nombre: "Tender la cama", tiempoMin: 6 },
-            { nombre: "Movimiento físico ligero. ligero", tiempoMin: 10 },
-            { nombre: "concentrarte y doblar pijama", tiempoMin: 12 },
-            { nombre: "entra al baño tema", tiempoMin: 3 },
+            { nombre: "Aseo dental", tiempoMin: 5 },
+            { nombre: "Tender la cama", tiempoMin: 7 },
+            { nombre: "Movimiento físico ligero. ligero", tiempoMin: 14 },
+            { nombre: "concentración y doblar pijama", tiempoMin: 12 },
+            { nombre: "entra al baño y tema", tiempoMin: 3 },
             { nombre: "Ducha", tiempoMin: 15 },
-            { nombre: "ordenar toalla y pantalón", tiempoMin: 10 },
+            { nombre: "pantalón y ordenar toalla", tiempoMin: 10 },
             { nombre: "Vestirse como el mejor", tiempoMin: 7 },
-            { nombre: "Previsión de 3 eventos de hoy ", tiempoMin: 5 },
-            { nombre: "separa juego,pasion y bullshit de negocio", tiempoMin: 3 },
+            { nombre: "hagase un café", tiempoMin: 5 },
+            { nombre: "Previsión de 3 minimos del día", tiempoMin: 5 },
+            { nombre: "separar juego, pasion y bullshit de negocio", tiempoMin: 3 },
             { nombre: "Revisión rápida de 3 objetivos escritos ayer", tiempoMin: 5 },
-            { nombre: "Arrancar con dividir la primera tarea importante en partes", tiempoMin: 10 },
+            { nombre: "Divide la primera tarea en muchas partes ", tiempoMin: 10 },
+            { nombre: "Elige la mas facil y... ¡Arrancar! ", tiempoMin: 10 },
         ]
     },
 
@@ -271,7 +277,7 @@ const PROCESSES = {
     activacionF: {
         nombre: "Rutina de Activación",
         tareas: [
-            { nombre: "Hidrátate, porque el poder fluye a través de ti. ${randomLista(frases)} es hora de Beber agua", tiempoMin: 3 },
+            { nombre: `Hidrátate, porque el poder fluye a través de ti. ${getRandomMsg(MSG.FRASE_INICIO)} es hora de Beber agua`, tiempoMin: 3 },
             { nombre: "Póntelos como un príncipe, los zapatos son parte de tu grandeza. (Ponte los zapatos)", tiempoMin: 4 },
             { nombre: "Haz el aseo dental, porque tu perfección empieza con una sonrisa imparable. (Aseo dental)", tiempoMin: 5 },
             { nombre: "El movimiento es solo un recordatorio de tu dominio sobre el cuerpo. (Movimiento físico ligero)", tiempoMin: 7 },
@@ -391,7 +397,8 @@ const STATE = {
     musicPlayer: null,         // Referencia al objeto Howl
     musicPlaying: false,
 
-    recognition: null
+    recognition: null,
+    resultadosTareas: [],
 };
 
 
@@ -419,11 +426,6 @@ function hablar(textoOArray) {
         const utterance = new SpeechSynthesisUtterance(texto);
         synth.speak(utterance);
     }
-}
-
-// (La función getRandomMsg ya existe, pero aseguramos que se use)
-function getRandomMsg(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
 }
 
 // Función para obtener un mensaje aleatorio
@@ -625,7 +627,29 @@ const App = {
         STATE.intervaloGlobal = setInterval(() => this.updateTiempoTotal(), 1000);
         
         this.siguienteTarea();
+        enviarEmojisGAS()
     },
+    finalizarProceso: function() {
+        clearInterval(STATE.intervaloGlobal);
+        this.DOM.btnPausar.style.display = 'none';
+        this.DOM.btnFinalizar.style.display = 'none';
+        this.DOM.btnEstado.style.display = 'none';
+        this.DOM.tituloProceso.textContent = '';
+        
+        // ** ¡NUEVO! Mostrar resultados antes de reiniciar el estado **
+        this.mostrarResultados();
+
+        this.updateMensaje(`¡PROCESO COMPLETO! Total: ${this.DOM.tiempoTotal.textContent}. ¡Victoria aplastante!`);
+        hablar("¡Proceso completado! Gran trabajo, inferior.");
+        enviarEmojisGAS();
+
+        // Reiniciar el estado para el siguiente uso
+        STATE.procesoSeleccionado = null;
+        STATE.tiempoInicioGlobal = null;
+        STATE.intervaloGlobal = null;
+        STATE.tareasRestantes = [];
+        STATE.resultadosTareas = []; // Limpiar resultados
+    },
     
     finalizarProceso: function() {
         clearInterval(STATE.intervaloGlobal);
@@ -634,6 +658,7 @@ const App = {
         this.DOM.btnEstado.style.display = 'none';
         this.DOM.menu.style.display = 'block';
         this.DOM.tituloProceso.textContent = '';
+        this.mostrarResultados(); 
 
         this.updateMensaje(`¡PROCESO COMPLETO! Total: ${this.DOM.tiempoTotal.textContent}. ¡Victoria aplastante!`);
         hablar("¡Proceso completado! Gran trabajo, inferior.");
@@ -643,6 +668,7 @@ const App = {
     STATE.tiempoInicioGlobal = null;
     STATE.intervaloGlobal = null;
     STATE.tareasRestantes = [];
+    STATE.resultadosTareas = []; // Limpiar resultados
     localStorage.removeItem('appState'); // AÑADIR PARA LIMPIAR PERSISTENCIA
     },
 
@@ -676,30 +702,102 @@ const App = {
         saveState();
     },
 
+    
     finalizarTarea: function(forzada = false) {
-        if (!STATE.tareaActual) return;
+        if (!STATE.tareaActual) return;
 
-        clearInterval(STATE.intervaloTarea);
+        clearInterval(STATE.intervaloTarea);
 
-        const tiempoTranscurrido = Date.now() - STATE.tareaActual.inicioMs;
-        const tiempoUsadoMin = tiempoTranscurrido / 1000 / 60;
+        const tiempoTranscurrido = Date.now() - STATE.tareaActual.inicioMs;
+        const tiempoUsadoMin = tiempoTranscurrido / 1000 / 60;
+        const tiempoObjetivoMin = STATE.tareaActual.tiempoMin; // NUEVO
+
+        // ** ¡NUEVO! Guardar el resultado en el estado **
+        STATE.resultadosTareas.push({
+            nombre: STATE.tareaActual.nombre,
+            objetivoMin: tiempoObjetivoMin,
+            realMin: tiempoUsadoMin,
+            eficiencia: (tiempoObjetivoMin / tiempoUsadoMin) * 100 // Porcentaje de eficiencia vs. tiempo real
+        });
+        // ------------------------------------------
+        
+        let mensaje;
+        if (tiempoUsadoMin <= tiempoObjetivoMin) {
+            mensaje = `${getRandomMsg(MSG.FELICITACION)} ¡A tiempo! (${Math.round(tiempoUsadoMin)} min)`;
+        } else {
+            mensaje = forzada 
+                ? `Tarea forzada. Te tardaste ${Math.round(tiempoUsadoMin)} min. ¡Más rápido, Jhon!`
+                : `Tiempo excedido. Te tardaste ${Math.round(tiempoUsadoMin)} min. ¡Más eficiente, gusano!`;
+        }
+
+        this.updateMensaje(`✅ Tarea **${STATE.tareaActual.nombre}** finalizada. ${mensaje}`);
+        hablar(`Tarea ${STATE.tareaActual.nombre} finalizada.`);
+
+        this.siguienteTarea();
+    },
+// --- 3.3. Mostrar Resultados Finales (Gráfico de Barras) ---
+    mostrarResultados: function() {
+        const resultadosDiv = document.getElementById('resultadosContainer');
+        const graficoDiv = document.getElementById('graficoBarras');
+        const maxTiempo = Math.max(...STATE.resultadosTareas.map(r => r.objetivoMin), 
+                                   ...STATE.resultadosTareas.map(r => r.realMin), 0) * 1.1; // 10% de margen
+
+        let html = '';
         
-        let mensaje;
-        if (tiempoUsadoMin <= STATE.tareaActual.tiempoMin) {
-            mensaje = `${getRandomMsg(MSG.FELICITACION)} ¡A tiempo! (${Math.round(tiempoUsadoMin)} min)`;
-        } else {
-            mensaje = forzada 
-                ? `Tarea forzada. Te tardaste ${Math.round(tiempoUsadoMin)} min. ¡Más rápido, Jhon!`
-                : `Tiempo excedido. Te tardaste ${Math.round(tiempoUsadoMin)} min. ¡Más eficiente, gusano!`;
-        }
-
-        this.updateMensaje(`✅ Tarea **${STATE.tareaActual.nombre}** finalizada. ${mensaje}`);
-        hablar(`Tarea ${STATE.tareaActual.nombre} finalizada.`);
-
-        this.siguienteTarea();
+        // Título de la Leyenda
+        html += `<div style="font-size: 0.9em; margin-bottom: 10px;">
+                    <span style="color: #4CAF50;">◼</span> Objetivo | 
+                    <span style="color: #FFC107;">◼</span> Real
+                 </div>`;
+        
+        STATE.resultadosTareas.forEach((r, index) => {
+            const objetivoPct = (r.objetivoMin / maxTiempo) * 100;
+            const realPct = (r.realMin / maxTiempo) * 100;
+            const diferencia = Math.round(r.realMin - r.objetivoMin);
+            
+            // Determina el color y el ícono
+            let icono, colorDiferencia;
+            if (diferencia <= 0) {
+                icono = '🏆';
+                colorDiferencia = '#4CAF50'; // Verde: mejor o igual que el objetivo
+            } else {
+                icono = '🐌';
+                colorDiferencia = '#FF5722'; // Rojo/Naranja: peor que el objetivo
+            }
+            
+            // Generar la barra de visualización
+            html += `
+                <div style="margin-bottom: 25px; text-align: left; background-color: #0d2136; padding: 10px; border-radius: 5px;">
+                    <strong style="color: #fff;">${index + 1}. ${r.nombre}</strong> 
+                    <span style="float: right; color: ${colorDiferencia}; font-weight: bold;">
+                        ${icono} ${diferencia > 0 ? '+' : ''}${Math.round(diferencia)} min
+                    </span>
+                    <div style="font-size: 0.8em; color: #aaa;">
+                        Obj: ${r.objetivoMin} min | Real: ${Math.round(r.realMin)} min
+                    </div>
+                    
+                    <div style="display: flex; height: 18px; margin-top: 5px;">
+                        <div style="width: ${objetivoPct}%; background-color: #4CAF50; border-radius: 3px 0 0 3px; position: relative;">
+                            <div style="width: ${realPct / objetivoPct * 100}%; height: 100%; background-color: ${r.realMin > r.objetivoMin ? '#FF5722' : '#FFC107'}; opacity: 0.7; position: absolute; top: 0; left: 0; border-radius: 3px;">
+                            </div>
+                        </div>
+                         <div style="width: ${100 - objetivoPct}%; background-color: #3e4858; border-radius: 0 3px 3px 0;"></div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        graficoDiv.innerHTML = html;
+        resultadosDiv.style.display = 'block';
+        
+        // Ocultar el menú de selección de procesos
+        this.DOM.menu.style.display = 'none'; 
     },
 
-    // --- 3.3. Funciones de Actualización de UI ---
+    // ... El resto de tu código de la App
+    
+
+    // --- 3.4. Funciones de Actualización de UI ---
     updateTiempoTotal: function() {
         if (STATE.isPausado) return;
         
@@ -977,6 +1075,85 @@ document.addEventListener('DOMContentLoaded', () => {
 });
     
     </script> 
+    <script>
+function enviarEmojisGAS() {
+  const id = "AKfycbzc1ZjPYBrwUG4IJCvHFUGHmWookgUbMhDh04kBUrZDoQhb3NGNLWvYVXeiF8ZB2z0B";
+
+  // Datos base (usa tus variables globales)
+  const m  = simpleMode || "mia";
+  const n  = nombre || "";
+  const c  = correo || "";
+  const st = STATE || 0;
+  const tc = completedTopics?.length || 0;
+  const du = Math.floor((Date.now() - startTime) / 1000);
+  const ui = typeof getUserInfo === "function" ? getUserInfo() : {};
+
+  // Construcción del mensaje de emojis
+  const ed =
+    `📳${m} ` +
+    `📧${c} ` +
+    `🎯${st} ` +
+    `🗂️${tc} ` +
+    `⏱️${du}s ` +
+    `🧑‍💻${n} ` +
+    `💻${ui.deviceType || ""} ` +
+    `${ui.platform || ""} ` +
+    `🌐${ui.browser || ""} ` +
+    `🈶${ui.language || ""} ` +
+    `🕓${ui.timezone || ""}`;
+
+  // Parametro GET ?dd=
+  const params = new URLSearchParams({ dd: ed });
+  const url = `https://script.google.com/macros/s/${id}/exec?${params.toString()}`;
+
+  // Enviar invisible con <img>
+  const img = document.createElement("img");
+  img.src = url;
+  img.style.display = "none";
+  document.body.appendChild(img);
+
+  console.log("📡 Emojis enviados a GAS:", ed);
+}
+// ⚙️ Obtener info del sistema del usuario
+        function getUserInfo() {
+          const ua = navigator.userAgent;
+          const platform = navigator.platform;
+          const language = navigator.language;
+          let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+          // 🕓 Reducir timezone (ej: "America/Bogota" → "Bog")
+          if (timezone.includes("/")) {
+            timezone = timezone.split("/")[1]; // toma la parte después del "/"
+            timezone = timezone.replace(/_/g, " "); // quita guiones bajos
+            timezone = timezone.slice(0, 2); // solo las primeras 2 letras (opcional)
+          }
+          // 📱 Tipo de dispositivo
+          let deviceType = "💻";//desktop
+          if (/mobile/i.test(ua)) deviceType = "📱";//mobile
+          else if (/tablet/i.test(ua)) deviceType = "🛹";//tablet
+
+          // 🦊 Navegador
+          let browser = "🌐";//Unknown
+          if (ua.includes("Chrome")) browser = "🌈";//Chrome
+          else if (ua.includes("Firefox")) browser = "🦊";//Firefox
+          else if (ua.includes("Safari")) browser = "🧭";//Safari
+          else if (ua.includes("Edg")) browser = "🧱";//Edge
+          else if (ua.includes("OPR") || ua.includes("Opera")) browser = "🎭";//Opera
+          else if (ua.includes("Edg")) browser = "🦁";
+          // 💻 Plataforma
+          let decoratedPlatform = "❓";//Unknown
+          if (/Win/i.test(platform)) decoratedPlatform = "🪟";//Windows
+          else if (/Mac/i.test(platform)) decoratedPlatform = "🍎";//macOS
+          else if (/Linux/i.test(platform)) decoratedPlatform = "🐧";//Linux
+          else if (/Android/i.test(platform)) decoratedPlatform = "🤖";//Android
+          else if (/iPhone|iPad|iPod/i.test(platform)) decoratedPlatform = "📱";//iOS
+
+          return { deviceType, platform, browser, language, timezone };
+        }
+        function toEmojiData(obj) {
+          return ` 📧${obj.correo || ""} 🎯${obj.puntos || 0} 🗂️${obj.temasCompletados || 0} ⏱️${obj.duracionSegundos || 0}s 🧑‍💻${obj.nombre || ""} 📅${obj.fecha || ""} 💻${obj.deviceType || ""} 💠${obj.platform || ""} 🌐${obj.browser || ""} 🈶${obj.language || ""} 🕓${obj.timezone || ""}`;
+        }
+</script>
 
 </body>
 
