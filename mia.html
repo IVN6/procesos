@@ -184,7 +184,7 @@ h1 {
 // (Puedes pegar todas tus listas de mensajes aquí)
 const MSG = {
     ANIMO: [
-        "¡Continúa, aunque no sé cómo lo haces, pero lo estás haciendo! ¡Eres imparable!",
+        "¡Continúa, aunque no sé cómo lo haces, pero lo estás haciendo! ¡continúa!",
         "¡Buen trabajo, aunque no era difícil para alguien tan perfecto como yo!",
         "¡Casi lo logras, pero no olvides que eres afortunado de estar en mi presencia!",
         "¡Excelente progreso, sigue adelante... aunque no sé por qué te preocupas tanto, ya está casi hecho!",
@@ -455,43 +455,36 @@ function toggleMusic() {
 
 // Función para guardar el estado en el almacenamiento local
 function saveState() {
-    // Guardamos solo los datos relevantes para la persistencia
     const persistState = {
         procesoSeleccionado: STATE.procesoSeleccionado,
         tareasRestantes: STATE.tareasRestantes,
+        // GUARDAMOS EL HISTORIAL DE TAREAS YA TERMINADAS
+        resultadosTareas: STATE.resultadosTareas || [], 
         tareaActual: STATE.tareaActual ? {
             ...STATE.tareaActual,
-            // Guardamos el tiempo transcurrido en lugar del timestamp de inicio
             tiempoTranscurridoEnTarea: Date.now() - STATE.tareaActual.inicioMs 
         } : null,
-        tiempoInicioGlobal: STATE.tiempoInicioGlobal, // Timestamp del inicio global
+        tiempoInicioGlobal: STATE.tiempoInicioGlobal,
         isPausado: STATE.isPausado
     };
     localStorage.setItem('appState', JSON.stringify(persistState));
 }
 
 // Función para cargar el estado
-function loadState() {
-    const savedState = localStorage.getItem('appState');
-    if (savedState) {
-        const parsedState = JSON.parse(savedState);
-        
-        // Cargar los campos guardados
-        STATE.procesoSeleccionado = parsedState.procesoSeleccionado;
-        STATE.tareasRestantes = parsedState.tareasRestantes;
-        STATE.tiempoInicioGlobal = parsedState.tiempoInicioGlobal;
-        STATE.isPausado = parsedState.isPausado;
-
-        // Reconstruir la tarea actual
-        if (parsedState.tareaActual) {
-            STATE.tareaActual = parsedState.tareaActual;
-            // Recalcular el timestamp de inicio a partir del tiempo transcurrido guardado
-            STATE.tareaActual.inicioMs = Date.now() - parsedState.tareaActual.tiempoTranscurridoEnTarea;
-        }
-
-        return true; // Estado cargado
-    }
-    return false; // No hay estado
+function saveState() {
+    const persistState = {
+        procesoSeleccionado: STATE.procesoSeleccionado,
+        tareasRestantes: STATE.tareasRestantes,
+        // GUARDAMOS EL HISTORIAL DE TAREAS YA TERMINADAS
+        resultadosTareas: STATE.resultadosTareas || [], 
+        tareaActual: STATE.tareaActual ? {
+            ...STATE.tareaActual,
+            tiempoTranscurridoEnTarea: Date.now() - STATE.tareaActual.inicioMs 
+        } : null,
+        tiempoInicioGlobal: STATE.tiempoInicioGlobal,
+        isPausado: STATE.isPausado
+    };
+    localStorage.setItem('appState', JSON.stringify(persistState));
 }
 
 // Función para formatear la hora (HH:MM)
@@ -711,7 +704,7 @@ const App = {
         const tiempoTranscurrido = Date.now() - STATE.tareaActual.inicioMs;
         const tiempoUsadoMin = tiempoTranscurrido / 1000 / 60;
         const tiempoObjetivoMin = STATE.tareaActual.tiempoMin; // NUEVO
-
+        saveState();
         // ** ¡NUEVO! Guardar el resultado en el estado **
         STATE.resultadosTareas.push({
             nombre: STATE.tareaActual.nombre,
