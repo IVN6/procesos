@@ -469,24 +469,27 @@ function saveState() {
     };
     localStorage.setItem('appState', JSON.stringify(persistState));
 }
+function loadState() {
+    const savedState = localStorage.getItem('appState');
+    if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        
+        STATE.procesoSeleccionado = parsedState.procesoSeleccionado;
+        STATE.tareasRestantes = parsedState.tareasRestantes;
+        STATE.tiempoInicioGlobal = parsedState.tiempoInicioGlobal;
+        STATE.isPausado = parsedState.isPausado;
+        // RECUPERAMOS EL HISTORIAL
+        STATE.resultadosTareas = parsedState.resultadosTareas || []; 
 
-// Función para cargar el estado
-function saveState() {
-    const persistState = {
-        procesoSeleccionado: STATE.procesoSeleccionado,
-        tareasRestantes: STATE.tareasRestantes,
-        // GUARDAMOS EL HISTORIAL DE TAREAS YA TERMINADAS
-        resultadosTareas: STATE.resultadosTareas || [], 
-        tareaActual: STATE.tareaActual ? {
-            ...STATE.tareaActual,
-            tiempoTranscurridoEnTarea: Date.now() - STATE.tareaActual.inicioMs 
-        } : null,
-        tiempoInicioGlobal: STATE.tiempoInicioGlobal,
-        isPausado: STATE.isPausado
-    };
-    localStorage.setItem('appState', JSON.stringify(persistState));
+        if (parsedState.tareaActual) {
+            STATE.tareaActual = parsedState.tareaActual;
+            STATE.tareaActual.inicioMs = Date.now() - parsedState.tareaActual.tiempoTranscurridoEnTarea;
+        }
+
+        return true;
+    }
+    return false;
 }
-
 // Función para formatear la hora (HH:MM)
 function formatTime(date) {
     const hours = String(date.getHours()).padStart(2, '0');
