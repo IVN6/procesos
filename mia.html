@@ -885,14 +885,34 @@ const App = {
         }
     }
     
-    // 2. 🔑 VERIFICACIÓN DE LA PALABRA CLAVE ('mía')
-    if (!comando.includes('mía'|| 'mia'|| 'lala' || 'lála'|| 'lalá' || 'lálá')) {
-        this.DOM.mensaje.innerHTML = `<p style="color:#FFC107;">🎙️ Comando: "${comando}" | Esperando palabra clave "mía".</p>`;
-        return;
-    }
+    // 2. 🔑 VERIFICACIÓN DE LA PALABRA CLAVE ('mía') tolerante a acentos:
+ const normalizar = txt =>
+    txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+const comandoNormalizado = normalizar(comando);
+
+const PALABRAS_CLAVE = ['mia', 'lala'];
+
+const tienePalabraClave = PALABRAS_CLAVE.some(p =>
+    comandoNormalizado.includes(p)
+);
+
+
+    if (!tienePalabraClave) {
+    this.DOM.mensaje.innerHTML =
+        `<p style="color:#FFC107;">🎙️ Comando: "${comando}" | Esperando palabra clave.</p>`;
+    return;
+}
 
     // 3. 🧼 LIMPIEZA Y PROCESAMIENTO
-    const comandoLimpio = comando.replace('mía'|| 'mia'|| 'lala' || 'lála'|| 'lalá' || 'lálá', '').trim();
+   let comandoLimpio = comando;
+
+PALABRAS_CLAVE.forEach(palabra => {
+    comandoLimpio = comandoLimpio.replace(palabra, '');
+});
+
+comandoLimpio = comandoLimpio.trim();
+
     let accion = null;
     let procesoIDSeleccionado = null;
     
