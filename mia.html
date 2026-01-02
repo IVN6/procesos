@@ -886,13 +886,13 @@ const App = {
     }
     
     // 2. 🔑 VERIFICACIÓN DE LA PALABRA CLAVE ('mía')
-    if (!comando.includes('mía')) {
+    if (!comando.includes('mía'|| 'mia'|| 'lala' || 'lála'|| 'lalá' || 'lálá')) {
         this.DOM.mensaje.innerHTML = `<p style="color:#FFC107;">🎙️ Comando: "${comando}" | Esperando palabra clave "mía".</p>`;
         return;
     }
 
     // 3. 🧼 LIMPIEZA Y PROCESAMIENTO
-    const comandoLimpio = comando.replace('mía', '').trim();
+    const comandoLimpio = comando.replace('mía'|| 'mia'|| 'lala' || 'lála'|| 'lalá' || 'lálá', '').trim();
     let accion = null;
     let procesoIDSeleccionado = null;
     
