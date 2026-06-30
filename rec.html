@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Life Logger</title>
+    <style>
+        :root { --bg-main: #0f0e0e; --primary: #2196F3; --success: #5cb315; --warning: #FFC107; --danger: #FF5722; --text: #e9ecef; }
+        body { font-family: sans-serif; background-color: var(--bg-main); color: var(--text); margin: 0; padding-bottom: 80px; }
+        .view-section { display: none; padding: 20px; }
+        .view-section.active { display: block; }
+        
+        /* Nav Inferior */
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; background: #1a1a1a; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
+        .nav-bottom button { background: none; border: none; color: white; cursor: pointer; }
+
+        /* Estilos de Botones y Tarjetas */
+        .card { background: #143758; padding: 20px; border-radius: 12px; margin: 10px; }
+        .btn-action { width: 100%; padding: 20px; font-size: 1.2em; border-radius: 10px; border: none; cursor: pointer; margin-top: 10px; }
+        .btn-start { background: var(--success); color: white; }
+        .btn-stop { background: var(--danger); color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="view-menu" class="view-section active">
+        <h1>Procesos</h1>
+        <div id="procesosMenu"></div>
+    </div>
+
+    <div id="view-bitacora" class="view-section">
+        <h1>Bitácora Real</h1>
+        <div id="statusContainer" class="card">
+            <h2 id="timerDisplay">00:00:00</h2>
+            <button id="btnLog" class="btn-action btn-start" onclick="Logger.toggle()">Iniciar Registro</button>
+        </div>
+        <div id="logList"></div>
+    </div>
+
+    <nav class="nav-bottom">
+        <button onclick="App.switchView('view-menu')">📋 Procesos</button>
+        <button onclick="App.switchView('view-bitacora')">🕒 Bitácora</button>
+    </nav>
+
+    <script>
+        const Logger = {
+            active: false,
+            startTime: null,
+            interval: null,
+            
+            toggle: function() {
+                if (!this.active) {
+                    this.startTime = Date.now();
+                    this.active = true;
+                    document.getElementById('btnLog').textContent = "Finalizar Hito";
+                    document.getElementById('btnLog').className = "btn-action btn-stop";
+                    this.interval = setInterval(this.updateTimer, 1000);
+                } else {
+                    this.finish();
+                }
+            },
+
+            finish: function() {
+                clearInterval(this.interval);
+                this.active = false;
+                document.getElementById('btnLog').textContent = "Iniciar Registro";
+                document.getElementById('btnLog').className = "btn-action btn-start";
+                
+                // Pedir contexto rápido
+                const label = prompt("¿Qué hiciste? (ej: 'Revisé correos' o 'Me distraje')");
+                const type = confirm("¿Fue productivo?") ? "Productivo" : "Distracción/Otro";
+                
+                const entry = { label, type, duration: (Date.now() - this.startTime) / 1000 };
+                this.saveEntry(entry);
+            },
+
+            saveEntry: function(entry) {
+                let history = JSON.parse(localStorage.getItem('bitacora_real') || '[]');
+                history.push({...entry, time: new Date().toLocaleTimeString()});
+                localStorage.setItem('bitacora_real', JSON.stringify(history));
+                this.render();
+            },
+
+            render: function() {
+                const list = document.getElementById('logList');
+                list.innerHTML = '<h3>Hoy</h3>';
+                JSON.parse(localStorage.getItem('bitacora_real') || '[]').forEach(e => {
+                    list.innerHTML += `<div class="card">${e.time} - ${e.label} (${e.type})</div>`;
+                });
+            },
+
+            updateTimer: function() {
+                const diff = Date.now() - Logger.startTime;
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                document.getElementById('timerDisplay').textContent = 
+                    `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }
+        };
+
+        const App = {
+            switchView: function(id) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+            }
+        };
+
+        Logger.render();
+    </script>
+</body>
+</html>
+
