@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backlog Mind — Servidores de Memoria</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        darkbg: '#0b0f17',
+                        darkcard: '#111827',
+                        darkborder: '#1f2937'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar for clean UI */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f17; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 h-full flex flex-col font-sans antialiased selection:bg-sky-500 selection:text-white">
+
+    <!-- TOP HEADER -->
+    <header class="border-b border-darkborder bg-darkcard/80 backdrop-blur-md sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-sky-500/10 rounded-lg text-sky-400 border border-sky-500/20">
+                <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base tracking-wide text-slate-100 flex items-center gap-2">
+                    BACKLOG MIND <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30">IndexedDB</span>
+                </h1>
+                <p class="text-xs text-slate-400 hidden sm:block">Servidores de Memoria & Liberación de RAM Mental</p>
+            </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center space-x-2">
+            <button onclick="QuickCapture.open()" class="hidden sm:flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-lg shadow-sky-600/20 active:scale-95">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Captura Rápida <kbd class="bg-sky-800/60 px-1.5 py-0.5 rounded text-[10px] font-mono">⌘K</kbd>
+            </button>
+            <button onclick="DataPort.exportJSON()" title="Exportar Backup JSON" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition">
+                <i data-lucide="download" class="w-4 h-4"></i>
+            </button>
+            <label title="Importar Backup JSON" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 cursor-pointer transition">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <input type="file" id="import-file" accept=".json" class="hidden" onchange="DataPort.importJSON(event)">
+            </label>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="border-b border-darkborder bg-darkcard px-4 flex space-x-1 overflow-x-auto scrollbar-none">
+        <button onclick="TabManager.switch('inbox')" id="tab-btn-inbox" class="tab-link flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition">
+            <i data-lucide="inbox" class="w-4 h-4"></i> Inbox Rápido <span id="badge-inbox" class="ml-1 px-1.5 py-0.2 bg-slate-800 text-slate-300 rounded-full text-xs">0</span>
+        </button>
+        <button onclick="TabManager.switch('focus')" id="tab-btn-focus" class="tab-link flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition">
+            <i data-lucide="target" class="w-4 h-4"></i> Foco Activo <span id="badge-focus" class="ml-1 px-1.5 py-0.2 bg-amber-500/20 text-amber-400 rounded-full text-xs">0/2</span>
+        </button>
+        <button onclick="TabManager.switch('freezer')" id="tab-btn-freezer" class="tab-link flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition">
+            <i data-lucide="snowflake" class="w-4 h-4"></i> Congelador <span id="badge-freezer" class="ml-1 px-1.5 py-0.2 bg-slate-800 text-slate-300 rounded-full text-xs">0</span>
+        </button>
+        <button onclick="TabManager.switch('vectors')" id="tab-btn-vectors" class="tab-link flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition">
+            <i data-lucide="zap" class="w-4 h-4"></i> Vectores $EV$ <span id="badge-vectors" class="ml-1 px-1.5 py-0.2 bg-slate-800 text-slate-300 rounded-full text-xs">0</span>
+        </button>
+        <button onclick="TabManager.switch('retros')" id="tab-btn-retros" class="tab-link flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition">
+            <i data-lucide="wrench" class="w-4 h-4"></i> Aprendizajes <span id="badge-retros" class="ml-1 px-1.5 py-0.2 bg-slate-800 text-slate-300 rounded-full text-xs">0</span>
+        </button>
+    </nav>
+
+    <!-- MAIN CONTENT CONTAINERS -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 max-w-6xl w-full mx-auto">
+
+        <!-- 📥 INBOX RÁPIDO -->
+        <section id="view-inbox" class="tab-view hidden space-y-6">
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
+                <i data-lucide="clock" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                <div class="text-xs sm:text-sm text-slate-300">
+                    <span class="font-semibold text-amber-400">Regla del Inbox:</span> Escribe notas mentales sin procesar. Todos los días a las <strong>5:00 PM</strong> haz un barrido y clasifica cada item enviándolo a su servidor correspondiente.
+                </div>
+            </div>
+
+            <!-- Fast Input Box -->
+            <form onsubmit="InboxModule.add(event)" class="flex gap-2">
+                <input type="text" id="inbox-input" placeholder="Escribe cualquier pensamiento o tarea rápido aquí y presiona Enter..." class="flex-1 bg-darkcard border border-darkborder focus:border-sky-500 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500">
+                <button type="submit" class="bg-sky-600 hover:bg-sky-500 text-white font-medium px-5 py-3 rounded-xl text-sm transition shrink-0 flex items-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i> Guardar
+                </button>
+            </form>
+
+            <!-- List -->
+            <div id="inbox-list" class="space-y-3">
+                <!-- Dynamic Items -->
+            </div>
+        </section>
+
+        <!-- 🎯 FOCO ACTIVO -->
+        <section id="view-focus" class="tab-view hidden space-y-6">
+            <div class="flex items-center justify-between border-b border-darkborder pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">🎯 Foco Activo (Máximo 2 ítems esta semana)</h2>
+                    <p class="text-xs text-slate-400">Lo único que tiene permiso explícito de consumir tu memoria RAM hoy.</p>
+                </div>
+                <button onclick="FocusModule.showForm()" id="btn-add-focus" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Foco
+                </button>
+            </div>
+
+            <!-- Form Drawer/Modal inline -->
+            <form id="focus-form" onsubmit="FocusModule.save(event)" class="hidden bg-darkcard border border-amber-500/30 rounded-xl p-5 space-y-4">
+                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2"><i data-lucide="target" class="w-4 h-4"></i> Configurar Objetivo de Foco</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Objetivo Principal (SMART)</label>
+                        <input type="text" id="focus-goal" required placeholder="Ej. Lanzar landing page para cliente X" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Regla del 37% (Fecha / Hora Límite de Análisis)</label>
+                            <input type="datetime-local" id="focus-deadline" required class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500 text-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Versión 1.0 (Mínimo Viable Funcional)</label>
+                            <input type="text" id="focus-v1" required placeholder="Ej. Solo 1 formulario de contacto funcionando" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="FocusModule.hideForm()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg text-xs">Fijar Foco</button>
+                </div>
+            </form>
+
+            <div id="focus-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamic Items -->
+            </div>
+        </section>
+
+        <!-- 🧊 CONGELADOR DE IDEAS -->
+        <section id="view-freezer" class="tab-view hidden space-y-6">
+            <div class="flex items-center justify-between border-b border-darkborder pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">🧊 Congelador de Ideas</h2>
+                    <p class="text-xs text-slate-400">Gran potencial, pero NO se tocará este mes. Desactiva procesos en segundo plano.</p>
+                </div>
+                <button onclick="FreezerModule.showForm()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Congelar Idea
+                </button>
+            </div>
+
+            <form id="freezer-form" onsubmit="FreezerModule.save(event)" class="hidden bg-darkcard border border-sky-500/30 rounded-xl p-5 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Idea / Proyecto / Habilidad</label>
+                        <input type="text" id="freezer-title" required placeholder="Ej. Estudiar Rust o Crear SaaS de facturación" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Categoría</label>
+                        <select id="freezer-category" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-500 text-slate-300">
+                            <option value="Proyecto">Proyecto</option>
+                            <option value="Idea">Idea</option>
+                            <option value="Aprendizaje">Aprendizaje / Habilidad</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Descripción corta (1 frase)</label>
+                    <input type="text" id="freezer-desc" placeholder="Resumen conciso..." class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-500">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="FreezerModule.hideForm()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-xs">Guardar en Congelador</button>
+                </div>
+            </form>
+
+            <div id="freezer-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamic Items -->
+            </div>
+        </section>
+
+        <!-- ⚡ MATRIZ DE VECTORES -->
+        <section id="view-vectors" class="tab-view hidden space-y-6">
+            <div class="flex items-center justify-between border-b border-darkborder pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">⚡ Matriz de Vectores ($EV$ Asimétrico)</h2>
+                    <p class="text-xs text-slate-400">Acciones proyectadas al exterior: Riesgo casi cero, Beneficio Alto.</p>
+                </div>
+                <button onclick="VectorModule.showForm()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Crear Vector
+                </button>
+            </div>
+
+            <form id="vector-form" onsubmit="VectorModule.save(event)" class="hidden bg-darkcard border border-emerald-500/30 rounded-xl p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Acción Directa (Sin presuponer respuesta ni sobreanalizar)</label>
+                    <input type="text" id="vector-action" required placeholder="Ej. Escribirle a X persona por LinkedIn para proponer Y" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Riesgo (0 - 10)</label>
+                        <input type="number" id="vector-risk" min="0" max="10" value="1" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Beneficio / Upside (0 - 10)</label>
+                        <input type="number" id="vector-benefit" min="0" max="10" value="9" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="VectorModule.hideForm()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs">Lanzar Vector</button>
+                </div>
+            </form>
+
+            <div id="vector-list" class="space-y-3">
+                <!-- Dynamic Items -->
+            </div>
+        </section>
+
+        <!-- 🛠️ APRENDIZAJES Y CICLOS -->
+        <section id="view-retros" class="tab-view hidden space-y-6">
+            <div class="flex items-center justify-between border-b border-darkborder pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">🛠️ Aprendizajes & Cerrar Ciclos</h2>
+                    <p class="text-xs text-slate-400">Extraer el dato frío del pasado y eliminar la carga emocional.</p>
+                </div>
+                <button onclick="RetroModule.showForm()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Cerrar Ciclo
+                </button>
+            </div>
+
+            <form id="retro-form" onsubmit="RetroModule.save(event)" class="hidden bg-darkcard border border-purple-500/30 rounded-xl p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Situación del Pasado</label>
+                    <input type="text" id="retro-situation" required placeholder="Ej. Lanzamiento de campaña X que no vendió lo esperado" class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Lo que falló (Dato Frío Objetivo)</label>
+                    <textarea id="retro-colddata" required rows="2" placeholder="Ej. No se validó la oferta antes de invertir en anuncios." class="w-full bg-darkbg border border-darkborder rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Algoritmo de Corrección (Regla SI / ENTONCES para no repetir)</label>
+                    <textarea id="retro-algorithm" required rows="2" placeholder="Ej. SI voy a hacer un producto nuevo, ENTONCES debo pre-vender 5 unidades antes de escribir código." class="w-full bg-darkbg border border-purple-500/50 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 resize-none font-mono text-purple-300"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="RetroModule.hideForm()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg text-xs">Guardar Algoritmo</button>
+                </div>
+            </form>
+
+            <div id="retro-list" class="space-y-4">
+                <!-- Dynamic Items -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- QUICK CAPTURE MODAL (⌘K) -->
+    <div id="quick-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-darkcard border border-darkborder rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <i data-lucide="zap" class="w-4 h-4 text-sky-400"></i> Captura Rápida a Inbox
+                </h3>
+                <span class="text-xs text-slate-500">ESC para cerrar</span>
+            </div>
+            <textarea id="quick-modal-input" rows="3" placeholder="Escribe aquí lo que se cruzó por tu mente..." class="w-full bg-darkbg border border-darkborder rounded-xl p-3 text-sm outline-none focus:border-sky-500 text-slate-100 resize-none"></textarea>
+            <div class="flex justify-end space-x-2">
+                <button onclick="QuickCapture.close()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg text-slate-300">Cancelar</button>
+                <button onclick="QuickCapture.submit()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-xs font-semibold rounded-lg text-white">Guardar en Inbox</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROUTER MODAL (Enrutador de Inbox a otros módulos) -->
+    <div id="route-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-darkcard border border-darkborder rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-200">Convertir / Enrutar Nota</h3>
+                <button onclick="RouterModal.close()" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <p id="route-modal-text" class="text-xs bg-darkbg p-3 rounded-lg border border-darkborder text-slate-300 italic"></p>
+            
+            <div class="space-y-2">
+                <button onclick="RouterModal.routeTo('focus')" class="w-full text-left p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition flex items-center justify-between group">
+                    <span class="text-xs font-semibold text-amber-400">🎯 Mover a Foco Activo</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-amber-400 group-hover:translate-x-1 transition"></i>
+                </button>
+                <button onclick="RouterModal.routeTo('freezer')" class="w-full text-left p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 hover:bg-sky-500/20 transition flex items-center justify-between group">
+                    <span class="text-xs font-semibold text-sky-400">🧊 Mover a Congelador</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-sky-400 group-hover:translate-x-1 transition"></i>
+                </button>
+                <button onclick="RouterModal.routeTo('vector')" class="w-full text-left p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition flex items-center justify-between group">
+                    <span class="text-xs font-semibold text-emerald-400">⚡ Mover a Vector $EV$</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition"></i>
+                </button>
+                <button onclick="RouterModal.routeTo('retro')" class="w-full text-left p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition flex items-center justify-between group">
+                    <span class="text-xs font-semibold text-purple-400">🛠️ Mover a Aprendizaje / Ciclo</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC & INDEXEDDB ENGINE -->
+    <script>
+        /**
+         * 1. INDEXEDDB WRAPPER (Promises native clean layer)
+         */
+        const DB = {
+            dbName: 'BacklogMind_DB',
+            version: 1,
+            db: null,
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('inbox')) db.createObjectStore('inbox', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('focus')) db.createObjectStore('focus', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('freezer')) db.createObjectStore('freezer', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('vectors')) db.createObjectStore('vectors', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('retros')) db.createObjectStore('retros', { keyPath: 'id' });
+                    };
+                    request.onsuccess = (e) => {
+                        this.db = e.target.result;
+                        resolve(this.db);
+                    };
+                    request.onerror = (e) => reject('IndexedDB Error: ' + e.target.error);
+                });
+            },
+
+            async getAll(storeName) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(storeName, 'readonly');
+                    const store = tx.objectStore(storeName);
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result || []);
+                    req.onerror = () => reject(req.error);
+                });
+            },
+
+            async put(storeName, item) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    const req = store.put(item);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            },
+
+            async delete(storeName, id) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    const req = store.delete(id);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            },
+
+            async clearStore(storeName) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    const req = store.clear();
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            }
+        };
+
+        /**
+         * 2. STATE MANAGER (Reactive UI updater)
+         */
+        const AppState = {
+            inbox: [],
+            focus: [],
+            freezer: [],
+            vectors: [],
+            retros: [],
+
+            async loadAll() {
+                this.inbox = await DB.getAll('inbox');
+                this.focus = await DB.getAll('focus');
+                this.freezer = await DB.getAll('freezer');
+                this.vectors = await DB.getAll('vectors');
+                this.retros = await DB.getAll('retros');
+                this.renderAll();
+            },
+
+            renderAll() {
+                InboxModule.render();
+                FocusModule.render();
+                FreezerModule.render();
+                VectorModule.render();
+                RetroModule.render();
+                this.updateBadges();
+                lucide.createIcons();
+            },
+
+            updateBadges() {
+                document.getElementById('badge-inbox').textContent = this.inbox.length;
+                document.getElementById('badge-focus').textContent = `${this.focus.length}/2`;
+                document.getElementById('badge-freezer').textContent = this.freezer.length;
+                document.getElementById('badge-vectors').textContent = this.vectors.length;
+                document.getElementById('badge-retros').textContent = this.retros.length;
+            }
+        };
+
+        /**
+         * 3. TAB MANAGER
+         */
+        const TabManager = {
+            activeTab: 'inbox',
+            switch(tabId) {
+                this.activeTab = tabId;
+                document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.tab-link').forEach(el => {
+                    el.classList.remove('border-sky-500', 'text-sky-400');
+                    el.classList.add('border-transparent', 'text-slate-400');
+                });
+
+                document.getElementById(`view-${tabId}`).classList.remove('hidden');
+                const btn = document.getElementById(`tab-btn-${tabId}`);
+                btn.classList.remove('border-transparent', 'text-slate-400');
+                btn.classList.add('border-sky-500', 'text-sky-400');
+            }
+        };
+
+        /**
+         * 4. MODULES LOGIC
+         */
+
+        // --- INBOX MODULE ---
+        const InboxModule = {
+            async add(e) {
+                e.preventDefault();
+                const input = document.getElementById('inbox-input');
+                const text = input.value.trim();
+                if (!text) return;
+
+                const item = { id: 'inbox_' + Date.now(), text, createdAt: new Date().toISOString() };
+                await DB.put('inbox', item);
+                AppState.inbox.unshift(item);
+                input.value = '';
+                AppState.renderAll();
+            },
+
+            async delete(id) {
+                await DB.delete('inbox', id);
+                AppState.inbox = AppState.inbox.filter(i => i.id !== id);
+                AppState.renderAll();
+            },
+
+            render() {
+                const list = document.getElementById('inbox-list');
+                if (AppState.inbox.length === 0) {
+                    list.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs">Inbox limpio. No hay ruido mental acumulado.</div>`;
+                    return;
+                }
+
+                list.innerHTML = AppState.inbox.map(item => `
+                    <div class="bg-darkcard border border-darkborder hover:border-slate-700 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+                        <div class="space-y-1">
+                            <p class="text-sm text-slate-200 font-medium">${escapeHtml(item.text)}</p>
+                            <span class="text-[10px] text-slate-500 font-mono">${new Date(item.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div class="flex items-center gap-2 self-end sm:self-center">
+                            <button onclick="RouterModal.open('${item.id}', '${escapeHtml(item.text)}')" class="px-3 py-1.5 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 text-xs font-semibold rounded-lg transition border border-sky-500/20 flex items-center gap-1">
+                                <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i> Enrutar
+                            </button>
+                            <button onclick="InboxModule.delete('${item.id}')" class="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        // --- FOCO ACTIVO MODULE ---
+        const FocusModule = {
+            showForm() {
+                if (AppState.focus.length >= 2) {
+                    alert('Límite estricto de Foco Activo alcanzado (Máximo 2 ítems). Finaliza o elimina uno antes de agregar otro.');
+                    return;
+                }
+                document.getElementById('focus-form').classList.remove('hidden');
+            },
+            hideForm() { document.getElementById('focus-form').classList.add('hidden'); },
+
+            async save(e) {
+                e.preventDefault();
+                const goal = document.getElementById('focus-goal').value;
+                const deadline = document.getElementById('focus-deadline').value;
+                const v1 = document.getElementById('focus-v1').value;
+
+                const item = { id: 'focus_' + Date.now(), goal, deadline, v1, createdAt: new Date().toISOString() };
+                await DB.put('focus', item);
+                AppState.focus.push(item);
+                this.hideForm();
+                document.getElementById('focus-form').reset();
+                AppState.renderAll();
+            },
+
+            async delete(id) {
+                await DB.delete('focus', id);
+                AppState.focus = AppState.focus.filter(f => f.id !== id);
+                AppState.renderAll();
+            },
+
+            render() {
+                const list = document.getElementById('focus-list');
+                const btnAdd = document.getElementById('btn-add-focus');
+                btnAdd.disabled = AppState.focus.length >= 2;
+
+                if (AppState.focus.length === 0) {
+                    list.innerHTML = `<div class="col-span-2 text-center py-12 text-slate-500 text-xs">Sin foco activo esta semana. Elige máximo 1 o 2 objetivos.</div>`;
+                    return;
+                }
+
+                list.innerHTML = AppState.focus.map(item => {
+                    const deadlineDate = new Date(item.deadline);
+                    const isPast = new Date() > deadlineDate;
+
+                    return `
+                        <div class="bg-darkcard border border-amber-500/30 rounded-2xl p-5 space-y-4 relative flex flex-col justify-between">
+                            <div class="space-y-3">
+                                <div class="flex items-start justify-between gap-2">
+                                    <span class="px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold rounded-full uppercase tracking-wider">Foco Activo</span>
+                                    <button onclick="FocusModule.delete('${item.id}')" class="text-slate-500 hover:text-red-400 transition"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+                                </div>
+                                <h3 class="font-bold text-base text-slate-100">${escapeHtml(item.goal)}</h3>
+                                
+                                <div class="bg-darkbg p-3 rounded-xl border border-darkborder space-y-1">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Versión 1.0 (Lo mínimo funcional)</span>
+                                    <p class="text-xs text-slate-300">${escapeHtml(item.v1)}</p>
+                                </div>
+                            </div>
+
+                            <div class="pt-3 border-t border-darkborder flex items-center justify-between text-xs">
+                                <span class="text-slate-400 flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5"></i> Límite 37%:
+                                </span>
+                                <span class="font-mono ${isPast ? 'text-red-400 font-bold' : 'text-amber-400'}">
+                                    ${deadlineDate.toLocaleString()} ${isPast ? '(LOCKED)' : ''}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        };
+
+        // --- CONGELADOR MODULE ---
+        const FreezerModule = {
+            showForm() { document.getElementById('freezer-form').classList.remove('hidden'); },
+            hideForm() { document.getElementById('freezer-form').classList.add('hidden'); },
+
+            async save(e) {
+                e.preventDefault();
+                const title = document.getElementById('freezer-title').value;
+                const category = document.getElementById('freezer-category').value;
+                const desc = document.getElementById('freezer-desc').value;
+
+                const item = { id: 'freezer_' + Date.now(), title, category, desc, createdAt: new Date().toISOString() };
+                await DB.put('freezer', item);
+                AppState.freezer.unshift(item);
+                this.hideForm();
+                document.getElementById('freezer-form').reset();
+                AppState.renderAll();
+            },
+
+            async delete(id) {
+                await DB.delete('freezer', id);
+                AppState.freezer = AppState.freezer.filter(f => f.id !== id);
+                AppState.renderAll();
+            },
+
+            render() {
+                const list = document.getElementById('freezer-list');
+                if (AppState.freezer.length === 0) {
+                    list.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs">El congelador está vacío. Sin distracciones guardadas.</div>`;
+                    return;
+                }
+
+                list.innerHTML = AppState.freezer.map(item => {
+                    const daysFrozen = Math.floor((new Date() - new Date(item.createdAt)) / (1000 * 60 * 60 * 24));
+
+                    return `
+                        <div class="bg-darkcard border border-darkborder hover:border-sky-500/30 rounded-xl p-4 space-y-3 flex flex-col justify-between transition">
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-semibold rounded">${item.category}</span>
+                                    <span class="text-[10px] text-slate-500 font-mono">Congelado hace ${daysFrozen} días</span>
+                                </div>
+                                <h4 class="font-semibold text-sm text-slate-200">${escapeHtml(item.title)}</h4>
+                                ${item.desc ? `<p class="text-xs text-slate-400">${escapeHtml(item.desc)}</p>` : ''}
+                            </div>
+                            <div class="pt-2 border-t border-darkborder flex justify-end space-x-2">
+                                <button onclick="FreezerModule.delete('${item.id}')" class="p-1 text-slate-500 hover:text-red-400 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        };
+
+        // --- VECTORS MODULE ---
+        const VectorModule = {
+            showForm() { document.getElementById('vector-form').classList.remove('hidden'); },
+            hideForm() { document.getElementById('vector-form').classList.add('hidden'); },
+
+            async save(e) {
+                e.preventDefault();
+                const action = document.getElementById('vector-action').value;
+                const risk = Number(document.getElementById('vector-risk').value);
+                const benefit = Number(document.getElementById('vector-benefit').value);
+
+                const item = { id: 'vector_' + Date.now(), action, risk, benefit, done: false, createdAt: new Date().toISOString() };
+                await DB.put('vectors', item);
+                AppState.vectors.unshift(item);
+                this.hideForm();
+                document.getElementById('vector-form').reset();
+                AppState.renderAll();
+            },
+
+            async toggle(id) {
+                const item = AppState.vectors.find(v => v.id === id);
+                if (item) {
+                    item.done = !item.done;
+                    await DB.put('vectors', item);
+                    AppState.renderAll();
+                }
+            },
+
+            async delete(id) {
+                await DB.delete('vectors', id);
+                AppState.vectors = AppState.vectors.filter(v => v.id !== id);
+                AppState.renderAll();
+            },
+
+            render() {
+                const list = document.getElementById('vector-list');
+                if (AppState.vectors.length === 0) {
+                    list.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs">No hay vectores de prueba registrados.</div>`;
+                    return;
+                }
+
+                list.innerHTML = AppState.vectors.map(item => `
+                    <div class="bg-darkcard border border-darkborder rounded-xl p-4 flex items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="VectorModule.toggle('${item.id}')" class="w-4 h-4 rounded bg-darkbg border-darkborder text-emerald-500 focus:ring-0 cursor-pointer">
+                            <span class="text-sm text-slate-200 ${item.done ? 'line-through text-slate-500' : ''}">${escapeHtml(item.action)}</span>
+                        </div>
+                        <div class="flex items-center space-x-3 shrink-0">
+                            <span class="text-[10px] px-2 py-0.5 rounded font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                                Riesgo: <strong class="text-red-400">${item.risk}</strong> | Upside: <strong class="text-emerald-400">${item.benefit}</strong>
+                            </span>
+                            <button onclick="VectorModule.delete('${item.id}')" class="text-slate-500 hover:text-red-400 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        // --- RETROS MODULE ---
+        const RetroModule = {
+            showForm() { document.getElementById('retro-form').classList.remove('hidden'); },
+            hideForm() { document.getElementById('retro-form').classList.add('hidden'); },
+
+            async save(e) {
+                e.preventDefault();
+                const situation = document.getElementById('retro-situation').value;
+                const coldData = document.getElementById('retro-colddata').value;
+                const algorithm = document.getElementById('retro-algorithm').value;
+
+                const item = { id: 'retro_' + Date.now(), situation, coldData, algorithm, createdAt: new Date().toISOString() };
+                await DB.put('retros', item);
+                AppState.retros.unshift(item);
+                this.hideForm();
+                document.getElementById('retro-form').reset();
+                AppState.renderAll();
+            },
+
+            async delete(id) {
+                await DB.delete('retros', id);
+                AppState.retros = AppState.retros.filter(r => r.id !== id);
+                AppState.renderAll();
+            },
+
+            render() {
+                const list = document.getElementById('retro-list');
+                if (AppState.retros.length === 0) {
+                    list.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs">Sin aprendizajes o ciclos cerrados documentados.</div>`;
+                    return;
+                }
+
+                list.innerHTML = AppState.retros.map(item => `
+                    <div class="bg-darkcard border border-purple-500/20 rounded-xl p-5 space-y-3">
+                        <div class="flex items-center justify-between border-b border-darkborder pb-2">
+                            <h4 class="font-bold text-sm text-slate-200">${escapeHtml(item.situation)}</h4>
+                            <button onclick="RetroModule.delete('${item.id}')" class="text-slate-500 hover:text-red-400 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <div class="bg-darkbg p-3 rounded-lg border border-darkborder">
+                                <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider block mb-1">Dato Frío (Fallo Objetivo)</span>
+                                <p class="text-slate-300">${escapeHtml(item.coldData)}</p>
+                            </div>
+                            <div class="bg-purple-950/20 p-3 rounded-lg border border-purple-500/30">
+                                <span class="font-bold text-purple-400 uppercase text-[10px] tracking-wider block mb-1">Algoritmo de Corrección</span>
+                                <p class="font-mono text-purple-300">${escapeHtml(item.algorithm)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        /**
+         * 5. ROUTER & QUICK CAPTURE MODALS LOGIC
+         */
+        const QuickCapture = {
+            open() {
+                document.getElementById('quick-modal').classList.remove('hidden');
+                document.getElementById('quick-modal-input').focus();
+            },
+            close() {
+                document.getElementById('quick-modal').classList.add('hidden');
+                document.getElementById('quick-modal-input').value = '';
+            },
+            async submit() {
+                const text = document.getElementById('quick-modal-input').value.trim();
+                if (!text) return;
+                const item = { id: 'inbox_' + Date.now(), text, createdAt: new Date().toISOString() };
+                await DB.put('inbox', item);
+                AppState.inbox.unshift(item);
+                this.close();
+                AppState.renderAll();
+            }
+        };
+
+        const RouterModal = {
+            currentInboxId: null,
+            currentText: '',
+
+            open(id, text) {
+                this.currentInboxId = id;
+                this.currentText = text;
+                document.getElementById('route-modal-text').textContent = text;
+                document.getElementById('route-modal').classList.remove('hidden');
+            },
+            close() {
+                document.getElementById('route-modal').classList.add('hidden');
+            },
+            async routeTo(type) {
+                if (type === 'focus') {
+                    if (AppState.focus.length >= 2) {
+                        alert('Límite de Foco Activo alcanzado (Máximo 2). Finaliza uno antes.');
+                        return;
+                    }
+                    TabManager.switch('focus');
+                    FocusModule.showForm();
+                    document.getElementById('focus-goal').value = this.currentText;
+                } else if (type === 'freezer') {
+                    TabManager.switch('freezer');
+                    FreezerModule.showForm();
+                    document.getElementById('freezer-title').value = this.currentText;
+                } else if (type === 'vector') {
+                    TabManager.switch('vectors');
+                    VectorModule.showForm();
+                    document.getElementById('vector-action').value = this.currentText;
+                } else if (type === 'retro') {
+                    TabManager.switch('retros');
+                    RetroModule.showForm();
+                    document.getElementById('retro-situation').value = this.currentText;
+                }
+
+                await InboxModule.delete(this.currentInboxId);
+                this.close();
+            }
+        };
+
+        /**
+         * 6. DATA PORT (EXPORT / IMPORT JSON BACKUP)
+         */
+        const DataPort = {
+            async exportJSON() {
+                const data = {
+                    inbox: AppState.inbox,
+                    focus: AppState.focus,
+                    freezer: AppState.freezer,
+                    vectors: AppState.vectors,
+                    retros: AppState.retros,
+                    exportedAt: new Date().toISOString()
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `BacklogMind_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+            },
+
+            async importJSON(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (confirm('¿Deseas reemplazar todos los datos actuales con esta copia de seguridad?')) {
+                            await DB.clearStore('inbox');
+                            await DB.clearStore('focus');
+                            await DB.clearStore('freezer');
+                            await DB.clearStore('vectors');
+                            await DB.clearStore('retros');
+
+                            for (let item of (data.inbox || [])) await DB.put('inbox', item);
+                            for (let item of (data.focus || [])) await DB.put('focus', item);
+                            for (let item of (data.freezer || [])) await DB.put('freezer', item);
+                            for (let item of (data.vectors || [])) await DB.put('vectors', item);
+                            for (let item of (data.retros || [])) await DB.put('retros', item);
+
+                            await AppState.loadAll();
+                            alert('Datos importados con éxito.');
+                        }
+                    } catch (err) {
+                        alert('Error al importar el archivo JSON: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        /**
+         * 7. UTILS & SHORTCUTS
+         */
+        function escapeHtml(str) {
+            return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            // Cmd+K or Ctrl+K for Quick Capture
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                QuickCapture.open();
+            }
+            if (e.key === 'Escape') {
+                QuickCapture.close();
+                RouterModal.close();
+            }
+        });
+
+        /**
+         * INITIALIZATION
+         */
+        window.addEventListener('DOMContentLoaded', async () => {
+            await DB.init();
+            await AppState.loadAll();
+            TabManager.switch('inbox');
+        });
+    </script>
+</body>
+</html>
