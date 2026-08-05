@@ -1,21 +1,28 @@
-const CACHE_NAME = 'backlog-mind-v1';
+const CACHE_NAME = 'backlog-mind-v2';
+
+// Incluimos todas las variaciones de la URL para evitar fallos de ruta
 const ASSETS_TO_CACHE = [
+  './',
   './log.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
 
-// Instalación: Precargar archivos clave
+// 1. Instalación e intercambio de archivos a la caché local
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Fuerza al SW activo a instalarse de inmediato
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+      // Usamos Promise.allSettled para que si un CDN falla, no rompa la caché del HTML
+      return Promise.allSettled(
+        ASSETS_TO_CACHE.map(url => cache.add(new Request(url, { mode: 'no-cors' })).catch(() => {}))
+      );
+    })
   );
 });
 
-// Activación: Limpiar cachés antiguas
+// 2. Activación y toma de control inmediata
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -24,24 +31,21 @@ self.addEventListener('activate', (event) => {
           if (key !== CACHE_NAME) return caches.delete(key);
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()) // Toma control de la pestaña abierta inmediatamente
   );
 });
 
-// Estrategia de búsqueda: Red primero con caída a Caché para datos, Caché primero para estáticos
+// 3. Estrategia de respuesta para uso Offline
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
-        // Devuelve copia en caché y actualiza en segundo plano
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-          }
-        }).catch(() => {});
         return cachedResponse;
       }
-      return fetch(event.request);
+      return fetch(event.request).catch(() => {
+        // Si no hay red y no está en caché, intenta entregar el log.html guardado
+        return caches.match('./log.html');
+      });
     })
   );
 });
