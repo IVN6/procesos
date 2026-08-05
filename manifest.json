@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest.json",
+  "id": "backlog-mind-pwa",
+  "name": "Backlog Mind — Servidores de Memoria",
+  "short_name": "BacklogMind",
+  "description": "Sistema de liberación de RAM mental y gestión de foco sin fricción.",
+  "start_url": "./log.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3629/3629541.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3629/3629541.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3629/3629541.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Captura Rápida",
+      "short_name": "Capturar",
+      "description": "Abrir directamente la captura rápida",
+      "url": "./log.html?action=quick_capture",
+      "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/3629/3629541.png", "sizes": "192x192" }]
+    }
+  ]
+}
