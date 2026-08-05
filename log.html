@@ -3,6 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA Meta Tags & Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BacklogMind">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3629/3629541.png">
+
+<!-- Script de Registro del Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW registrado con éxito:', reg.scope))
+        .catch(err => console.error('Error al registrar SW:', err));
+    });
+  }
+
+  // Detectar si se abrió desde el acceso directo "Captura Rápida"
+  window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'quick_capture') {
+      setTimeout(() => { if (typeof QuickCapture !== 'undefined') QuickCapture.open(); }, 500);
+    }
+  });
+</script>
+    
     <title>Backlog Mind — Servidores de Memoria</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
