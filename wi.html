@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comandas P2P WebRTC (Sin Servidor)</title>
+  <!-- Generador y Escáner de QR desde CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: sans-serif; padding: 15px; background: #121212; color: #fff; max-width: 500px; margin: auto; }
+    button { background: #00e676; color: #000; border: none; padding: 12px; font-weight: bold; width: 100%; margin: 8px 0; border-radius: 6px; font-size: 16px; }
+    button.secondary { background: #29b6f6; }
+    .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    #qr-code { background: #fff; padding: 10px; width: fit-content; margin: 10px auto; border-radius: 6px; }
+    textarea { width: 100%; height: 60px; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; box-sizing: border-box; }
+    #chat { height: 150px; overflow-y: auto; background: #000; padding: 10px; border-radius: 6px; font-family: monospace; }
+    .msg { margin-bottom: 6px; }
+    .received { color: #00e676; }
+    .sent { color: #29b6f6; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <h2>📡 Comandas P2P por Wi-Fi</h2>
+
+  <div id="setup-panel" class="card">
+    <h3>Paso 1: Selecciona el rol</h3>
+    <button onclick="startHost()">1. Soy la Cocina (Crear Conexión)</button>
+    <button class="secondary" onclick="startClient()">2. Soy Mesero (Unirme a Cocina)</button>
+  </div>
+
+  <div id="qr-panel" class="card hidden">
+    <h3 id="qr-title">Cargando datos de red...</h3>
+    <p id="qr-instructions" style="font-size:14px; color:#aaa;"></p>
+    <div id="qr-code"></div>
+    
+    <details>
+      <summary style="font-size: 12px; color: #888;">¿La cámara falla? Usa texto manual</summary>
+      <textarea id="sdp-out" readonly></textarea>
+    </details>
+
+    <button id="scan-btn" onclick="openScanner()">Escanear QR de la otra pantalla</button>
+  </div>
+
+  <div id="scanner-modal" class="card hidden">
+    <h3>Apunta la cámara al QR</h3>
+    <div id="reader" style="width: 100%;"></div>
+    <br>
+    <textarea id="sdp-in" placeholder="O pega el código de texto aquí..."></textarea>
+    <button onclick="processInputText()">Procesar Texto Manual</button>
+  </div>
+
+  <div id="app-panel" class="card hidden">
+    <h3 style="color:#00e676;">🟢 ¡Conectado por Wi-Fi Directo!</h3>
+    <div id="chat"></div>
+    <br>
+    <textarea id="msg-input" placeholder="Ej: Mesa 4: 1x Hamburguesa, 2x Cervezas"></textarea>
+    <button onclick="sendOrder()">Enviar Comanda al Instante</button>
+  </div>
+
+<script>
+  let pc;
+  let dataChannel;
+  let html5QrcodeScanner;
+
+  // Configuración WebRTC sin servidores STUN/TURN externos (solo Wi-Fi local)
+  const rtcConfig = { iceServers: [] };
+
+  function log(msg, type = 'sent') {
+    const chat = document.getElementById('chat');
+    chat.innerHTML += `<div class="msg ${type}">> ${msg}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // --- ROL 1: COCINA (HOST) ---
+  async function startHost() {
+    showUI('qr-panel');
+    document.getElementById('qr-title').innerText = "Generando código de Cocina...";
+
+    pc = new RTCPeerConnection(rtcConfig);
+    dataChannel = pc.createDataChannel("comandas");
+    setupChannelEvents(dataChannel);
+
+    pc.onicegatheringstatechange = () => {
+      if (pc.iceGatheringState === 'complete') {
+        renderSDPQR("Escanea este QR con el celular del MESERO", pc.localDescription);
+      }
+    };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+  }
+
+  // --- ROL 2: MESERO (CLIENTE) ---
+  function startClient() {
+    showUI('scanner-modal');
+    openScanner();
+  }
+
+  // --- MANEJO DE SEÑALIZACIÓN QR / TEXTO ---
+  function renderSDPQR(instruction, sessionDescription) {
+    document.getElementById('qr-title').innerText = "Muestra este QR al otro dispositivo";
+    document.getElementById('qr-instructions').innerText = instruction;
+    
+    const payload = JSON.stringify(sessionDescription);
+    document.getElementById('sdp-out').value = payload;
+
+    document.getElementById('qr-code').innerHTML = "";
+    new QRCode(document.getElementById('qr-code'), {
+      text: payload,
+      width: 200,
+      height: 200,
+      correctLevel: QRCode.CorrectLevel.L
+    });
+  }
+
+  async function handleSignalingData(jsonText) {
+    try {
+      const data = JSON.parse(jsonText);
+      
+      // Si la cocina recibe la respuesta del mesero
+      if (data.type === 'answer' && pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(data));
+      } 
+      // Si el mesero recibe la oferta de la cocina
+      else if (data.type === 'offer') {
+        pc = new RTCPeerConnection(rtcConfig);
+        
+        pc.ondatachannel = (event) => {
+          dataChannel = event.channel;
+          setupChannelEvents(dataChannel);
+        };
+
+        pc.onicegatheringstatechange = () => {
+          if (pc.iceGatheringState === 'complete') {
+            showUI('qr-panel');
+            renderSDPQR("Ahora la COCINA debe escanear este QR de confirmación", pc.localDescription);
+          }
+        };
+
+        await pc.setRemoteDescription(new RTCSessionDescription(data));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+      }
+    } catch (e) {
+      alert("Código QR inválido o corrupto");
+    }
+  }
+
+  // --- EVENTOS DEL CANAL DE DATOS ---
+  function setupChannelEvents(channel) {
+    channel.onopen = () => {
+      if (html5QrcodeScanner) html5QrcodeScanner.clear();
+      showUI('app-panel');
+    };
+    channel.onmessage = (e) => log(e.data, 'received');
+  }
+
+  function sendOrder() {
+    const input = document.getElementById('msg-input');
+    if (!input.value.trim()) return;
+    dataChannel.send(input.value);
+    log(input.value, 'sent');
+    input.value = '';
+  }
+
+  // --- CÁMARA Y UI ---
+  function openScanner() {
+    showUI('scanner-modal');
+    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render((decodedText) => {
+      html5QrcodeScanner.clear();
+      handleSignalingData(decodedText);
+    });
+  }
+
+  function processInputText() {
+    const text = document.getElementById('sdp-in').value;
+    if (text) handleSignalingData(text);
+  }
+
+  function showUI(panelId) {
+    ['setup-panel', 'qr-panel', 'scanner-modal', 'app-panel'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+    document.getElementById(panelId).classList.remove('hidden');
+  }
+</script>
+</body>
+</html>
+
