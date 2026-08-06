@@ -3,46 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebRTC P2P Resiliente</title>
+  <title>WebRTC P2P Conexión Directa</title>
   <style>
-    body { font-family: system-ui, sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; }
-    .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    video { width: 100%; background: #222; border-radius: 8px; transform: scaleX(-1); }
-    #chat-box { height: 180px; border: 1px solid #333; border-radius: 8px; overflow-y: auto; padding: 10px; background: #1a1a1a; margin-bottom: 10px; }
-    .msg { margin-bottom: 5px; word-break: break-all; }
-    .status { font-size: 0.85em; color: #888; margin-bottom: 10px; }
-    input, button { padding: 10px; border-radius: 6px; border: none; font-size: 14px; }
-    input[type="text"] { background: #2a2a2a; color: #fff; width: calc(100% - 90px); }
+    body { font-family: sans-serif; background: #121212; color: #fff; padding: 15px; margin: 0; }
+    .box { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    #status { color: #00bcd4; font-weight: bold; margin-bottom: 10px; }
+    #chat-box { height: 150px; background: #000; border: 1px solid #333; padding: 10px; overflow-y: auto; margin-bottom: 10px; }
+    input, button { padding: 10px; font-size: 14px; border-radius: 5px; border: none; }
+    input[type="text"] { background: #2a2a2a; color: #fff; width: calc(100% - 100px); }
     button { background: #007acc; color: #fff; font-weight: bold; cursor: pointer; }
-    button:disabled { background: #444; }
+    button:disabled { background: #444; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-  <h2>WebRTC P2P Room</h2>
-  <div class="status" id="status">Estado: Desconectado</div>
-
-  <div class="video-grid">
-    <video id="localVideo" autoplay playsinline muted></video>
-    <video id="remoteVideo" autoplay playsinline></video>
+  <h2>Conexión WebRTC P2P</h2>
+  
+  <div class="box">
+    <div id="status">Estado: Selecciona un rol para empezar</div>
+    <div id="room-info" style="margin-bottom: 10px;"></div>
+    
+    <button id="btn-host" onclick="startAsHost()">1. Crear Sala (Host)</button>
+    <div style="margin-top: 10px;">
+      <input type="text" id="input-room" placeholder="Código de sala (ej: 4821)">
+      <button id="btn-guest" onclick="startAsGuest()">2. Unirse (Invitado)</button>
+    </div>
   </div>
 
-  <div id="chat-box"></div>
-
-  <div style="display: flex; gap: 5px;">
-    <input type="text" id="msgInput" placeholder="Escribe un mensaje..." disabled>
-    <button id="sendBtn" onclick="sendMsg()" disabled>Enviar</button>
+  <div class="box">
+    <div id="chat-box"></div>
+    <div style="display: flex; gap: 5px;">
+      <input type="text" id="msgInput" placeholder="Escribe un mensaje..." disabled>
+      <button id="sendBtn" onclick="sendMsg()" disabled>Enviar</button>
+    </div>
   </div>
-
-  <br>
-  <button onclick="toggleMedia('video')">Cam On/Off</button>
-  <button onclick="toggleMedia('audio')">Mic On/Off</button>
 
 <script>
-  // REEMPLAZA ESTA URL CON TU DESPLIEGUE DE GOOGLE APPS SCRIPT
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwF3WTRVnPXfqjYm7Q8aExdvGNyK3SBNhvq-oZl2wjirSKZ6UtdprgZM1Vvz52nBTgj/exec"; 
-  
-  // Configuración con servidores STUN gratuitos de Google
+  // REEMPLAZA ESTA URL CON TU URL DE GOOGLE APPS SCRIPT
+  const GAS_URL = "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI"; 
+
   const rtcConfig = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -52,102 +51,95 @@
 
   let pc = new RTCPeerConnection(rtcConfig);
   let dataChannel = null;
-  let localStream = null;
-  
-  // Persistencia de la sala
-  // --- CÓDIGO CORREGIDO ---
-const urlParams = new URLSearchParams(window.location.search);
-let roomId = urlParams.get('room'); // Permite entrar directo con un link tipo ?room=sala-8919
+  let roomId = null;
 
-const role = localStorage.getItem('wbtc_role') || (confirm("¿Crear la conexión como Anfitrión?") ? 'host' : 'guest');
-localStorage.setItem('wbtc_role', role);
-
-if (!roomId) {
-  if (role === 'host') {
-    // El host genera un ID aleatorio si no viene en la URL
-    roomId = localStorage.getItem('wbtc_room') || 'sala-' + Math.floor(Math.random() * 8999 + 1000);
-  } else {
-    // El invitado introduce la sala que le dio el Host
-    roomId = prompt("Ingresa el ID de la sala del Anfitrión (ej: sala-8919):");
+  function updateStatus(txt) {
+    document.getElementById('status').innerText = "Estado: " + txt;
   }
-}
 
-localStorage.setItem('wbtc_room', roomId);
- 
-  const statusEl = document.getElementById('status');
-  statusEl.innerText = `Estado: Sala [${roomId}] - Esperando pares...`;
-
-  async function init() {
-    setupDataChannelHandlers();
-    await setupMedia();
-
-    // Eventos de estado de red
-    pc.oniceconnectionstatechange = () => {
-      statusEl.innerText = `Red: ${pc.iceConnectionState}`;
-    };
-
-    // Recibir streaming de audio/video
-    pc.ontrack = (evt) => {
-      document.getElementById('remoteVideo').srcObject = evt.streams[0];
-    };
-
-    // Auto-coordinación por roles
-    const role = localStorage.getItem('wbtc_role') || (confirm("¿Crear la conexión como Anfitrión?") ? 'host' : 'guest');
-    localStorage.setItem('wbtc_role', role);
-
-    if (role === 'host') {
-      dataChannel = pc.createDataChannel("chat");
-      bindChannelEvents(dataChannel);
-      
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await sendSignal('offer', offer);
-      
-      // Esperar respuesta del Invitado
-      pollSignal('answer', async (answer) => {
-        if (pc.signalingState !== "stable") {
-          await pc.setRemoteDescription(new RTCSessionDescription(answer));
+  // FUNCIÓN CLAVE: Espera a que WebRTC encuentre todas las IPs (ICE Candidates)
+  function waitForIceGathering(peerConnection) {
+    return new Promise((resolve) => {
+      if (peerConnection.iceGatheringState === 'complete') {
+        resolve();
+      } else {
+        function checkState() {
+          if (peerConnection.iceGatheringState === 'complete') {
+            peerConnection.removeEventListener('icegatheringstatechange', checkState);
+            resolve();
+          }
         }
-      });
-    } else {
-      pc.ondatachannel = (evt) => {
-        dataChannel = evt.channel;
-        bindChannelEvents(dataChannel);
-      };
+        peerConnection.addEventListener('icegatheringstatechange', checkState);
+      }
+    });
+  }
+
+  // --- ROL: HOST (CREAR SALA) ---
+  async function startAsHost() {
+    disableControls();
+    roomId = Math.floor(1000 + Math.random() * 9000).toString();
+    document.getElementById('room-info').innerHTML = `<b>Código de tu sala: <span style="color:#00ff00; font-size: 1.2em;">${roomId}</span></b> (Comparte este número)`;
+    
+    updateStatus("Creando oferta y buscando IPs públicas...");
+
+    dataChannel = pc.createDataChannel("chat");
+    bindDataChannelEvents(dataChannel);
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // Esperar a tener la dirección IP pública completa en el SDP
+    await waitForIceGathering(pc);
+
+    updateStatus("Guardando oferta completa en Google Apps Script...");
+    await sendSignal('offer', pc.localDescription);
+
+    updateStatus("Esperando a que el invitado se una...");
+    pollSignal('answer', async (answer) => {
+      updateStatus("Respuesta recibida. Estableciendo túnel P2P...");
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    });
+  }
+
+  // --- ROL: INVITADO (UNIRSE A SALA) ---
+  async function startAsGuest() {
+    const input = document.getElementById('input-room').value.trim();
+    if (!input) return alert("Escribe el código de la sala");
+    
+    roomId = input;
+    disableControls();
+
+    pc.ondatachannel = (evt) => {
+      dataChannel = evt.channel;
+      bindDataChannelEvents(dataChannel);
+    };
+
+    updateStatus("Buscando la oferta del Host en Apps Script...");
+    
+    pollSignal('offer', async (offer) => {
+      updateStatus("Oferta encontrada. Generando respuesta e IPs...");
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
       
-      // Esperar oferta del Anfitrión
-      pollSignal('offer', async (offer) => {
-        if (pc.signalingState === "stable") return;
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await sendSignal('answer', answer);
-      });
-    }
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      // Esperar a recopilar las IPs antes de enviar
+      await waitForIceGathering(pc);
+
+      updateStatus("Enviando respuesta a Apps Script...");
+      await sendSignal('answer', pc.localDescription);
+      updateStatus("Conectando con el Host...");
+    });
   }
 
-  // Captura multimedia tolerante a fallos de permisos
-  async function setupMedia() {
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      document.getElementById('localVideo').srcObject = localStream;
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-    } catch (err) {
-      console.warn("Permisos de cámara/micrófono denegados o no disponibles. El chat seguirá funcionando.", err);
-    }
-  }
-
-  function setupDataChannelHandlers() {
-    // Escuchar cuando el canal de datos esté listo
-  }
-
-  function bindChannelEvents(channel) {
+  function bindDataChannelEvents(channel) {
     channel.onopen = () => {
-      statusEl.innerText = `¡Conectado directamente a la P2P!`;
+      updateStatus("¡CONECTADO DIRECTAMENTE (P2P)!");
       document.getElementById('msgInput').disabled = false;
       document.getElementById('sendBtn').disabled = false;
     };
     channel.onmessage = (e) => appendMsg("Remoto", e.data);
+    channel.onclose = () => updateStatus("Conexión cerrada");
   }
 
   function sendMsg() {
@@ -161,21 +153,22 @@ localStorage.setItem('wbtc_room', roomId);
 
   function appendMsg(sender, text) {
     const box = document.getElementById('chat-box');
-    box.innerHTML += `<div class="msg"><b>${sender}:</b> ${text}</div>`;
+    box.innerHTML += `<div><b>${sender}:</b> ${text}</div>`;
     box.scrollTop = box.scrollHeight;
   }
 
-  function toggleMedia(type) {
-    if (!localStream) return;
-    const tracks = type === 'video' ? localStream.getVideoTracks() : localStream.getAudioTracks();
-    tracks.forEach(t => t.enabled = !t.enabled);
+  function disableControls() {
+    document.getElementById('btn-host').disabled = true;
+    document.getElementById('btn-guest').disabled = true;
+    document.getElementById('input-room').disabled = true;
   }
 
-  // Comunicación con Google Apps Script
-  async function sendSignal(type, signal) {
+  // --- Peticiones HTTP a Apps Script ---
+  async function sendSignal(type, signalData) {
     await fetch(GAS_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'sendSignal', roomId: roomId, type: type, signal: signal })
+      mode: 'cors',
+      body: JSON.stringify({ action: 'sendSignal', roomId: roomId, type: type, signal: signalData })
     });
   }
 
@@ -184,6 +177,7 @@ localStorage.setItem('wbtc_room', roomId);
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
+          mode: 'cors',
           body: JSON.stringify({ action: 'getSignal', roomId: roomId, type: type })
         });
         const data = await res.json();
@@ -191,11 +185,11 @@ localStorage.setItem('wbtc_room', roomId);
           clearInterval(interval);
           callback(data.signal);
         }
-      } catch (e) { console.error("Error al consultar señalización", e); }
-    }, 2000);
+      } catch (e) {
+        console.error("Error consultando señal:", e);
+      }
+    }, 2500);
   }
-
-  window.onload = init;
 </script>
 </body>
 </html>
