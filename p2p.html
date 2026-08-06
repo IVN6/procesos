@@ -3,44 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebRTC P2P Conexión Directa</title>
+  <title>WebRTC Auto-Discover P2P</title>
   <style>
-    body { font-family: sans-serif; background: #121212; color: #fff; padding: 15px; margin: 0; }
-    .box { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-    #status { color: #00bcd4; font-weight: bold; margin-bottom: 10px; }
-    #chat-box { height: 150px; background: #000; border: 1px solid #333; padding: 10px; overflow-y: auto; margin-bottom: 10px; }
-    input, button { padding: 10px; font-size: 14px; border-radius: 5px; border: none; }
-    input[type="text"] { background: #2a2a2a; color: #fff; width: calc(100% - 100px); }
-    button { background: #007acc; color: #fff; font-weight: bold; cursor: pointer; }
-    button:disabled { background: #444; cursor: not-allowed; }
+    body { font-family: monospace; background: #0d1117; color: #c9d1d9; padding: 15px; margin: 0; }
+    h2 { color: #58a6ff; margin-top: 0; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+    .btn { background: #238636; color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 5px 2px; }
+    .btn:disabled { background: #343942; color: #8b949e; cursor: not-allowed; }
+    .btn-room { background: #1f6beb; }
+    #console { background: #000; color: #39ff14; font-family: 'Courier New', monospace; height: 180px; overflow-y: auto; padding: 10px; border-radius: 6px; border: 1px solid #30363d; font-size: 12px; }
+    #chat-box { height: 120px; background: #0d1117; border: 1px solid #30363d; overflow-y: auto; padding: 8px; margin-bottom: 10px; border-radius: 4px; }
+    input[type="text"] { background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 8px; border-radius: 4px; width: calc(100% - 90px); }
   </style>
 </head>
 <body>
 
-  <h2>Conexión WebRTC P2P</h2>
-  
-  <div class="box">
-    <div id="status">Estado: Selecciona un rol para empezar</div>
-    <div id="room-info" style="margin-bottom: 10px;"></div>
-    
-    <button id="btn-host" onclick="startAsHost()">1. Crear Sala (Host)</button>
-    <div style="margin-top: 10px;">
-      <input type="text" id="input-room" placeholder="Código de sala (ej: 4821)">
-      <button id="btn-guest" onclick="startAsGuest()">2. Unirse (Invitado)</button>
+  <h2>WebRTC Monitor & Terminal P2P</h2>
+
+  <div class="card">
+    <div id="rooms-section">
+      <b>Salas activas en red:</b>
+      <div id="rooms-list" style="margin: 10px 0;">Buscando salas en Google Apps Script...</div>
+      <button class="btn" id="btn-create" onclick="createRoom()">+ Crear Nueva Sala (Host)</button>
+      <button class="btn" style="background:#484f58" onclick="checkRooms()">Refrescar Salas</button>
     </div>
   </div>
 
-  <div class="box">
+  <div class="card">
+    <b>Registro de Eventos / Terminal (Logs):</b>
+    <div id="console"></div>
+  </div>
+
+  <div class="card">
+    <b>Chat P2P Directo:</b>
     <div id="chat-box"></div>
-    <div style="display: flex; gap: 5px;">
-      <input type="text" id="msgInput" placeholder="Escribe un mensaje..." disabled>
-      <button id="sendBtn" onclick="sendMsg()" disabled>Enviar</button>
+    <div style="display:flex; gap:5px;">
+      <input type="text" id="msgInput" placeholder="Mensaje..." disabled>
+      <button class="btn" id="sendBtn" onclick="sendMsg()" disabled>Enviar</button>
     </div>
   </div>
 
 <script>
-  // REEMPLAZA ESTA URL CON TU URL DE GOOGLE APPS SCRIPT
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwF3WTRVnPXfqjYm7Q8aExdvGNyK3SBNhvq-oZl2wjirSKZ6UtdprgZM1Vvz52nBTgj/exec"; 
+  // URL de tu Google Apps Script
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwF3WTRVnPXfqjYm7Q8aExdvGNyK3SBNhvq-oZl2wjirSKZ6UtdprgZM1Vvz52nBTgj/exec";
 
   const rtcConfig = {
     iceServers: [
@@ -51,95 +56,140 @@
 
   let pc = new RTCPeerConnection(rtcConfig);
   let dataChannel = null;
-  let roomId = null;
+  let currentRoomId = null;
 
-  function updateStatus(txt) {
-    document.getElementById('status').innerText = "Estado: " + txt;
+  function log(msg, detail = null) {
+    const consoleEl = document.getElementById('console');
+    const time = new Date().toLocaleTimeString();
+    let text = `[${time}] ${msg}`;
+    if (detail) {
+      text += `\n  ↳ ${typeof detail === 'object' ? JSON.stringify(detail).substring(0, 120) + '...' : detail}`;
+    }
+    consoleEl.innerHTML += text + '<br>';
+    consoleEl.scrollTop = consoleEl.scrollHeight;
   }
 
-  // FUNCIÓN CLAVE: Espera a que WebRTC encuentre todas las IPs (ICE Candidates)
-  function waitForIceGathering(peerConnection) {
+  // Petición HTTP optimizada para evitar bloqueo CORS de Google
+  async function callGAS(payload) {
+    log(`HTTP POST -> GAS (${payload.action})`);
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload) // Sin cabeceras de Content-Type personalizadas
+      });
+      const data = await res.json();
+      log(`HTTP <- GAS (${payload.action}) Respuesta:`, data);
+      return data;
+    } catch (err) {
+      log(`ERROR HTTP en ${payload.action}:`, err.toString());
+      return null;
+    }
+  }
+
+  // Recolectar direcciones IP (ICE Candidates)
+  function waitForICE() {
     return new Promise((resolve) => {
-      if (peerConnection.iceGatheringState === 'complete') {
+      if (pc.iceGatheringState === 'complete') return resolve();
+      
+      const timer = setTimeout(() => {
+        log("Timeout STUN (3s). Continuando con candidatos recopilados.");
         resolve();
-      } else {
-        function checkState() {
-          if (peerConnection.iceGatheringState === 'complete') {
-            peerConnection.removeEventListener('icegatheringstatechange', checkState);
-            resolve();
-          }
+      }, 3500);
+
+      pc.onicegatheringstatechange = () => {
+        log(`Estado recolección red STUN: ${pc.iceGatheringState}`);
+        if (pc.iceGatheringState === 'complete') {
+          clearTimeout(timer);
+          resolve();
         }
-        peerConnection.addEventListener('icegatheringstatechange', checkState);
-      }
+      };
     });
   }
 
-  // --- ROL: HOST (CREAR SALA) ---
-  async function startAsHost() {
-    disableControls();
-    roomId = Math.floor(1000 + Math.random() * 9000).toString();
-    document.getElementById('room-info').innerHTML = `<b>Código de tu sala: <span style="color:#00ff00; font-size: 1.2em;">${roomId}</span></b> (Comparte este número)`;
+  // Buscar salas al iniciar
+  async function checkRooms() {
+    log("Consultando salas disponibles...");
+    const res = await callGAS({ action: 'listRooms' });
+    const listEl = document.getElementById('rooms-list');
     
-    updateStatus("Creando oferta y buscando IPs públicas...");
+    if (res && res.rooms && res.rooms.length > 0) {
+      listEl.innerHTML = '';
+      res.rooms.forEach(id => {
+        listEl.innerHTML += `<button class="btn btn-room" onclick="joinRoom('${id}')">Unirse a Sala #${id}</button> `;
+      });
+    } else {
+      listEl.innerHTML = '<i>No hay salas activas. Sé el primero en crear una.</i>';
+    }
+  }
+
+  // ROL 1: Crear Sala (Host)
+  async function createRoom() {
+    document.getElementById('btn-create').disabled = true;
+    currentRoomId = Math.floor(1000 + Math.random() * 9000).toString();
+    log(`Iniciando creación de Sala #${currentRoomId} como HOST...`);
 
     dataChannel = pc.createDataChannel("chat");
-    bindDataChannelEvents(dataChannel);
+    bindChannelEvents(dataChannel);
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    // Esperar a tener la dirección IP pública completa en el SDP
-    await waitForIceGathering(pc);
+    log("Esperando servidores STUN de Google...");
+    await waitForICE();
 
-    updateStatus("Guardando oferta completa en Google Apps Script...");
-    await sendSignal('offer', pc.localDescription);
+    log("Enviando Oferta SDP completa a GAS...");
+    await callGAS({ action: 'createRoom', roomId: currentRoomId, offer: pc.localDescription });
 
-    updateStatus("Esperando a que el invitado se una...");
-    pollSignal('answer', async (answer) => {
-      updateStatus("Respuesta recibida. Estableciendo túnel P2P...");
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-    });
+    log("Oferta guardada. Esperando que un invitado se una...");
+    
+    // Polling esperando la Respuesta
+    const poll = setInterval(async () => {
+      const res = await callGAS({ action: 'getAnswer', roomId: currentRoomId });
+      if (res && res.answer) {
+        clearInterval(poll);
+        log("¡Respuesta SDP detectada! Estableciendo conexión final...");
+        await pc.setRemoteDescription(new RTCSessionDescription(res.answer));
+      }
+    }, 4000);
   }
 
-  // --- ROL: INVITADO (UNIRSE A SALA) ---
-  async function startAsGuest() {
-    const input = document.getElementById('input-room').value.trim();
-    if (!input) return alert("Escribe el código de la sala");
-    
-    roomId = input;
-    disableControls();
+  // ROL 2: Unirse a Sala (Invitado)
+  async function joinRoom(roomId) {
+    currentRoomId = roomId;
+    log(`Intentando unirse a la Sala #${currentRoomId} como INVITADO...`);
 
     pc.ondatachannel = (evt) => {
       dataChannel = evt.channel;
-      bindDataChannelEvents(dataChannel);
+      bindChannelEvents(dataChannel);
     };
 
-    updateStatus("Buscando la oferta del Host en Apps Script...");
-    
-    pollSignal('offer', async (offer) => {
-      updateStatus("Oferta encontrada. Generando respuesta e IPs...");
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
+    const res = await callGAS({ action: 'getOffer', roomId: currentRoomId });
+    if (!res || !res.offer) {
+      return log("Error: La oferta de esa sala no existe o expiró.");
+    }
 
-      // Esperar a recopilar las IPs antes de enviar
-      await waitForIceGathering(pc);
+    log("Oferta SDP del Host obtenida. Configurando remoto...", res.offer.type);
+    await pc.setRemoteDescription(new RTCSessionDescription(res.offer));
 
-      updateStatus("Enviando respuesta a Apps Script...");
-      await sendSignal('answer', pc.localDescription);
-      updateStatus("Conectando con el Host...");
-    });
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    log("Recolectando IPs para la Respuesta...");
+    await waitForICE();
+
+    log("Enviando Respuesta SDP a GAS...");
+    await callGAS({ action: 'sendAnswer', roomId: currentRoomId, answer: pc.localDescription });
+    log("Respuesta enviada. Esperando túnel P2P...");
   }
 
-  function bindDataChannelEvents(channel) {
+  function bindChannelEvents(channel) {
     channel.onopen = () => {
-      updateStatus("¡CONECTADO DIRECTAMENTE (P2P)!");
+      log("¡¡TÚNEL P2P ESTABLECIDO CON ÉXITO!!");
       document.getElementById('msgInput').disabled = false;
       document.getElementById('sendBtn').disabled = false;
     };
     channel.onmessage = (e) => appendMsg("Remoto", e.data);
-    channel.onclose = () => updateStatus("Conexión cerrada");
+    channel.onclose = () => log("Canal P2P Cerrado");
   }
 
   function sendMsg() {
@@ -157,39 +207,7 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  function disableControls() {
-    document.getElementById('btn-host').disabled = true;
-    document.getElementById('btn-guest').disabled = true;
-    document.getElementById('input-room').disabled = true;
-  }
-
-  // --- Peticiones HTTP a Apps Script ---
-  async function sendSignal(type, signalData) {
-    await fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'cors',
-      body: JSON.stringify({ action: 'sendSignal', roomId: roomId, type: type, signal: signalData })
-    });
-  }
-
-  function pollSignal(type, callback) {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          mode: 'cors',
-          body: JSON.stringify({ action: 'getSignal', roomId: roomId, type: type })
-        });
-        const data = await res.json();
-        if (data.signal) {
-          clearInterval(interval);
-          callback(data.signal);
-        }
-      } catch (e) {
-        console.error("Error consultando señal:", e);
-      }
-    }, 2500);
-  }
+  window.onload = checkRooms;
 </script>
 </body>
 </html>
