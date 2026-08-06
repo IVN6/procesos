@@ -55,9 +55,25 @@
   let localStream = null;
   
   // Persistencia de la sala
-  let roomId = localStorage.getItem('wbtc_room') || 'sala-' + Math.floor(Math.random() * 8999 + 1000);
-  localStorage.setItem('wbtc_room', roomId);
-  
+  // --- CÓDIGO CORREGIDO ---
+const urlParams = new URLSearchParams(window.location.search);
+let roomId = urlParams.get('room'); // Permite entrar directo con un link tipo ?room=sala-8919
+
+const role = localStorage.getItem('wbtc_role') || (confirm("¿Crear la conexión como Anfitrión?") ? 'host' : 'guest');
+localStorage.setItem('wbtc_role', role);
+
+if (!roomId) {
+  if (role === 'host') {
+    // El host genera un ID aleatorio si no viene en la URL
+    roomId = localStorage.getItem('wbtc_room') || 'sala-' + Math.floor(Math.random() * 8999 + 1000);
+  } else {
+    // El invitado introduce la sala que le dio el Host
+    roomId = prompt("Ingresa el ID de la sala del Anfitrión (ej: sala-8919):");
+  }
+}
+
+localStorage.setItem('wbtc_room', roomId);
+ 
   const statusEl = document.getElementById('status');
   statusEl.innerText = `Estado: Sala [${roomId}] - Esperando pares...`;
 
