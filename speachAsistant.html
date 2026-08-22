@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Flow Assistant: Tactical Reload</title>
+    <style>
+/* ---------------------------------------------------
+   🎮 ESTILO GENERAL - HUD FUTURISTA / MOBILE FIRST
+---------------------------------------------------- */
+
+:root {
+    --bg: #0f1116;
+    --surface: #171a21;
+    --hud-blue: #0af;
+    --hud-cyan: #4ef6ff;
+    --hud-green: #7bff8a;
+    --text: #dfe7f1;
+    --soft: rgba(255,255,255,0.08);
+}
+
+/* Fondo estilo videojuego */
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", sans-serif;
+}
+
+/* Contenedor principal estilo HUD */
+.hud-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 10px;
+    box-sizing: border-box;
+    gap: 10px;
+}
+
+/* ---------------------------------------------------
+   🔵 HUD SUPERIOR
+---------------------------------------------------- */
+
+.hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 35px;
+}
+
+/* Botones tipo iconos holográficos */
+.hud-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--soft);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--hud-cyan);
+    font-size: 1.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.hud-icon:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.accent-select {
+    position: absolute;
+    top: 60px;
+    left: 10px;
+    background: var(--surface);
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid var(--hud-blue);
+    color: var(--text);
+    font-size: 1.1em;
+    display: none;
+}
+
+
+.accent-select.show-accent {
+    display: block;
+}
+
+/* ---------------------------------------------------
+   🟩 ÁREA PRINCIPAL
+---------------------------------------------------- */
+
+/* Área de texto tipo chat */
+.speech-area {
+    flex: 1;
+    min-height: 140px;       /* 🔥 asegura que NUNCA desaparezca */
+    max-height: calc(100vh - 280px); /* protege contra pantallas pequeñas */
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 12px;
+    overflow-y: visible;
+    display: block;
+   
+    border: 1px solid rgba(255,255,255,0.1);
+}
+#output-area {
+    height: 100%;
+    overflow-y: auto;
+}
+
+
+
+.connector-output p {
+    margin: 6px 0;
+}
+
+/* Conectores estilo holograma */
+.connector-text {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(3px);
+    transition: 0.2s;
+}
+
+.connector-text:hover {
+    transform: scale(1.05);
+    backdrop-filter: blur(5px);
+}
+
+/* ---------------------------------------------------
+   🟦 GRID DE INTENCIONES
+---------------------------------------------------- */
+
+.intention-grid {
+    
+    display: grid;
+    grid-template-columns: repeat(3, 5fr);
+    gap: 3px;
+}
+
+/* Botones estilo panel táctil */
+.connector-btn {
+    padding: 12px 2px;
+    border-radius: 10px;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    transition: 0.15s;
+    font-size: 0.7em;
+}
+
+.connector-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.connector-btn:disabled {
+    opacity: 0.4;
+}
+
+ 
+/* ---------------------------------------------------
+   🔴 BOTÓN DE RECARGA FLOTANTE (Halo Style)
+---------------------------------------------------- */
+
+.reload-floating {
+    position: fixed;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: var(--hud-blue);
+    border: 3px solid var(--hud-cyan);
+    color: white;
+    font-size: 1.6em;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 18px var(--hud-blue);
+    cursor: pointer;
+    transition: 0.2s;
+    z-index: 99;
+}
+
+
+.reload-floating:hover {
+    
+    box-shadow: 0 0 22px var(--hud-cyan);
+}
+
+.reload-emoji {
+    font-size: 1.2em;
+}
+
+.ammo-count {
+    font-size: 0.8em;
+    color: #fff;
+}
+
+/* Vibración ligera cuando quedan menos de 5 */
+.reload-floating.low-ammo {
+    animation: ammoPulse 0.6s infinite;
+}
+
+@keyframes ammoPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+@keyframes vibrate {
+    0% { transform: translate(1px, 1px); }
+    25% { transform: translate(-1px, -2px); }
+    50% { transform: translate(-2px, 0px); }
+    75% { transform: translate(1px, -1px); }
+    100% { transform: translate(1px, 1px); }
+}
+
+.vibrate-once {
+    animation: vibrate 0.2s 3;
+}
+
+
+    </style>
+</head>
+<body>
+
+<div class="hud-container">
+
+    <!-- 🔵 HUD Superior -->
+    <header class="hud-header">
+        <button id="accent-btn" class="hud-icon" onclick="document.getElementById('accent-select').classList.toggle('show-accent')">
+            🌐
+        </button>
+
+       <select id="accent-select" class="accent-select">
+    <option value="en-US">🇺🇸 </option>
+    <option value="en-GB">🇬🇧 </option>
+    <option value="en-AU">🇦🇺 </option>
+</select>
+
+
+        <button id="mute-btn" class="hud-icon" onclick="toggleMute()">🔇</button>
+    </header>
+
+    <!-- 🟩 Area principal (como la vista del jefe maestro) -->
+    <main class="speech-area">
+        <div id="output-area" class="connector-output">
+            Tap an intention to start.
+        </div>
+    </main>
+
+    <!-- 🟦 GRID DE BOTONES (3 columnas en móvil) -->
+    <section class="intention-grid" id="buttons-grid"></section>
+
+    <!-- 🔴 BOTÓN DE RECARGA FLOTANTE -->
+    <button id="reload-btn" class="reload-floating" onclick="resetApp()">
+        <span class="reload-emoji">🔁</span>
+        <span></span>
+        <span id="count-remaining" class="ammo-count">0</span>
+    </button>
+
+</div>
+
+
+
+
+
+    <script>
+        // 🚀 Base de datos simplificada (RAW_CONNECTOR_DATA) - ¡Mínimo mantenimiento!
+        const RAW_CONNECTOR_DATA = {
+            start: ['Initially', 'To begin with', 'First and foremost', 'Let us consider'],
+            sequence: ['Next', 'Following this', 'Subsequently', 'At this stage', 'Moving forward'],
+            addition: ['Furthermore', 'Moreover', 'In addition', 'Additionally', 'Beyond this'],
+            contrast: ['However', 'Nevertheless', 'On the other hand', 'Conversely', 'Alternatively'],
+            cause: ['Because of this', 'Due to the evidence', 'Given that', 'As a result of the data', 'Seeing as'],
+            consequence: ['Therefore', 'Consequently', 'As a result', 'Hence', 'Thus'],
+            emphasis: ['Indeed', 'In fact', 'Crucially', 'Most importantly', 'Above all'],
+            example: ['For example', 'For instance', 'To illustrate', 'Such as', 'Specifically'],
+            conclude: ['Finally', 'Lastly', 'In conclusion', 'To summarize', 'Ultimately', 'To conclude'],
+            // NUEVAS INTENCIONES AQUÍ:
+            clarification: ['In other words', 'To clarify', 'What I mean is', 'Let me rephrase'], 
+            summary: ['In short', 'To quickly recap', 'Briefly', 'In essence'],
+        };
+        
+        // 🌈 PALETA DE COLORES CENTRALIZADA (La única lista de colores)
+        const COLOR_PALETTE = [
+            '#28a745', // 0: Verde
+            '#17a2b8', // 1: Cian
+            '#ffc107', // 2: Amarillo (Color CLARO)
+            '#6f42c1', // 3: Púrpura
+            '#fd7e14', // 4: Naranja
+            '#007bff', // 5: Azul
+            '#20c997', // 6: Turquesa
+            '#343a40', // 7: Gris Oscuro
+            '#dc3545', // 8: Rojo
+            '#e83e8c', // 9: Rosa
+            '#795548', // 10: Café
+            '#6c757d', // 11: Gris Medio
+        ];
+
+        function getRandomHexColor() {
+    // Genera un número aleatorio entre 0 y 16777215 (FFFFFF en HEX)
+    // Lo convierte a HEX, y rellena con ceros a la izquierda para asegurar 6 dígitos.
+    return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+}
+
+// 🗺️ Función para mapear los datos RAW a un formato utilizable (con color dinámico)
+function createIntentionMap(rawData) {
+    const map = {};
+    const keys = Object.keys(rawData);
+    
+    keys.forEach((key, index) => {
+        let assignedColor;
+        let colorIndex = index % COLOR_PALETTE.length;
+        
+        // ✨ LÓGICA DE EXTENSIÓN DINÁMICA DE LA PALETA
+        if (index >= COLOR_PALETTE.length) {
+            // El índice es mayor que el tamaño de la paleta, ¡necesitamos un nuevo color!
+            let newColor;
+            do {
+                newColor = getRandomHexColor();
+            } while (COLOR_PALETTE.includes(newColor)); // Aseguramos que no se repita (aunque es improbable)
+            
+            // 1. Lo añadimos a la paleta
+            COLOR_PALETTE.push(newColor);
+            
+            // 2. Usamos el nuevo color (ahora está al final)
+            assignedColor = newColor; 
+        } else {
+            // Usamos un color existente de la paleta
+            assignedColor = COLOR_PALETTE[index]; 
+        }
+        
+        map[key] = {
+            list: [...rawData[key]], 
+            color: assignedColor, // Color HEX directo
+            label: key.toUpperCase(),
+            class: `intention-${key}`
+        };
+    });
+    return map;
+}
+        let connectors = createIntentionMap(RAW_CONNECTOR_DATA);
+        let speechHistory = [];
+
+        // Elementos y Estado
+        let isMuted = false;
+        let currentAccent = 'en-US'; 
+        const outputArea = document.getElementById('output-area');
+        const countDisplay = document.getElementById('count-remaining');
+        const accentSelect = document.getElementById('accent-select');
+        const buttonsGrid = document.getElementById('buttons-grid');
+
+        // Función de Voz (sin cambios)
+        function speak(text) {
+            if (isMuted) return;
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            const accent = currentAccent;
+            utterance.lang = accent;
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            const voices = speechSynthesis.getVoices();
+            const langBase = accent.split('-')[0];
+            let match = voices.find(v => v.lang === accent);
+
+            if (!match) {
+                match = voices.find(v => v.lang.startsWith(langBase) && v.name.toLowerCase().includes('male'));
+                if (!match) match = voices.find(v => v.lang.startsWith(langBase));
+            }
+
+            if (match) utterance.voice = match;
+
+            setTimeout(() => speechSynthesis.speak(utterance), 50); 
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const muteBtn = document.getElementById('mute-btn');
+            muteBtn.textContent = isMuted ? '🙊' : '🙉';
+            muteBtn.classList.toggle('active', isMuted);
+            if (isMuted) {
+                speechSynthesis.cancel();
+            }
+        }
+
+        function updateTotalCount() {
+            let total = 0;
+            for (const key in connectors) {
+                total += connectors[key].list.length;
+            }
+            countDisplay.textContent = total;
+        }
+
+        function generateButtons() {
+            buttonsGrid.innerHTML = ''; 
+            for (const key in connectors) {
+                const data = connectors[key];
+                const button = document.createElement('button');
+                button.className = `connector-btn ${data.class}`;
+                button.id = `btn-${key}`;
+                button.textContent = data.label;
+                
+                // Asignación de color directo desde el mapa
+                button.style.backgroundColor = data.color;
+                
+                // Lógica mejorada del color del texto para accesibilidad
+                // El amarillo (#ffc107) y turquesa (#20c997) suelen necesitar texto oscuro
+                const requiresDarkText = data.color === '#ffc107' || data.color === '#20c997';
+
+                if (requiresDarkText) {
+                    button.style.color = 'var(--color-primary-text)';
+                } else {
+                    button.style.color = 'white';
+                }
+
+                button.onclick = () => generateConnector(key);
+                
+                if (connectors[key].list.length === 0) {
+                    button.disabled = true;
+                }
+                
+                buttonsGrid.appendChild(button);
+            }
+        }
+
+        function updateButtonState(intention, listCount) {
+            const btn = document.getElementById(`btn-${intention}`);
+            if (btn) {
+                if (listCount === 0) {
+                    btn.disabled = true;
+                    btn.classList.add('vibrate-once');
+                    setTimeout(() => {
+                        btn.classList.remove('vibrate-once');
+                    }, 600);
+                } else {
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        function generateConnector(intention) {
+            const listData = connectors[intention];
+            
+            if (listData && listData.list.length > 0) {
+                const randomIndex = Math.floor(Math.random() * listData.list.length);
+                const connector = listData.list.splice(randomIndex, 1)[0]; 
+
+                const formattedConnector = connector.endsWith('.') ? connector : connector + ',';
+
+                const newEntry = { 
+                    connector: formattedConnector, 
+                    intention: intention,
+                    color: listData.color
+                };
+                
+                speechHistory.push(newEntry);
+                
+                outputArea.innerHTML = speechHistory.map((item, index) => {
+                    const requiresDarkText = item.color === '#ffc107' || item.color === '#20c997';
+                    const textColor = requiresDarkText ? 'var(--color-primary-text)' : 'white';
+
+                    return `<p>
+                        <strong 
+                            class="connector-text ${item.intention}" 
+                            style="background-color: ${item.color}; color: ${textColor};"
+                            onclick="speak('${item.connector.replace("'", "\\'")}')"
+                        >
+                            ${item.connector}
+                        </strong>
+                    </p>`;
+                }).join('');
+                
+                outputArea.scrollTop = outputArea.scrollHeight;
+
+                speak(formattedConnector);
+                updateButtonState(intention, listData.list.length);
+                
+            } else {
+                updateButtonState(intention, 0);
+            }
+            
+            updateTotalCount();
+        }
+
+        function resetApp() {
+            // Recargar Cartuchos: Se regenera el mapa de intenciones a partir de los datos RAW
+            connectors = createIntentionMap(RAW_CONNECTOR_DATA); 
+            speechHistory = [];
+            
+            generateButtons();
+
+            outputArea.innerHTML = 'All systems reloaded! Ready to structure a new speech.';
+            outputArea.scrollTop = 0;
+            
+            speechSynthesis.cancel();
+            
+            updateTotalCount();
+        }
+
+        // 🏁 Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            currentAccent = accentSelect.value;
+            generateButtons();
+            updateTotalCount();
+            
+           accentSelect.addEventListener('change', (e) => {
+    currentAccent = e.target.value;
+    accentSelect.classList.remove('show-accent'); // 🔥 auto-ocultar menú
+
+    if (!isMuted) {
+        speak(`Accent set to ${accentSelect.options[accentSelect.selectedIndex].text}`);
+    }
+});
+
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Negociador de Tareas [V7.1 Persistente]</title>
+    <style>
+        /* --- CSS (Estilo Tecnológico Frío Consolidado) --- */
+        :root {
+            --color-bg: #111e3b; /* Azul Oscuro Profundo */
+            --color-text: #e0f7fa; /* Cian Claro */
+            --color-accent: #00bcd4; /* Cian Eléctrico (Principal) */
+            --color-accent-2: #ff4081; /* Fucsia (Score) */
+            --color-option-1: #4fc3f7; /* Azul Claro (Difícil) */
+            --color-option-2: #ffee58; /* Amarillo Suave (Fácil) */
+            --color-option-3: #ab47bc; /* Púrpura (Break) */
+            --color-none: #ef5350; /* Rojo Error/Inactividad */
+            --hud-bg: rgba(20, 35, 60, 0.98); /* Fondo casi opaco para HUD */
+            --card-bg: #2c3a5e;
+            --main-container-bg: #1e2a4a;
+        }
+
+        body {
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif, monospace;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px 10px;
+            padding-top: 100px;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--main-container-bg);
+            padding: 30px 15px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(0, 188, 212, 0.4);
+            max-width: 95%;
+            width: 100%;
+            text-align: center;
+            border: 1px solid var(--color-accent);
+            position: relative; /* /* --- NUEVO (Para el botón de reset) --- */
+        }
+        
+        /* --- NUEVO: Botón de Reseteo --- */
+        #reset-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--color-none);
+            color: var(--color-text);
+            border: 1px solid var(--color-none);
+            opacity: 0.6;
+            font-size: 0.7em;
+            padding: 3px 6px;
+            transition: opacity 0.3s;
+        }
+        #reset-btn:hover {
+            opacity: 1;
+            background-color: #ff1744;
+        }
+
+        /* --- HUD Fijo --- */
+        #fixed-hud {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background-color: var(--hud-bg);
+            border-bottom: 2px solid var(--color-accent);
+            padding: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+            z-index: 1000; display: flex; justify-content: space-around;
+            align-items: center; flex-wrap: wrap; font-size: 0.9em;
+        }
+
+        .hud-item { margin: 5px 10px; text-align: center; }
+        .hud-label { color: #bbb; font-size: 0.9em; display: block; }
+        #puntos-pp { color: var(--color-accent-2); font-size: 1.3em; text-shadow: 0 0 5px var(--color-accent-2); }
+        #current-time { color: var(--color-accent); }
+        #actividad-actual { font-weight: bold; }
+        
+        /* --- Input y Añadir Tarea --- */
+        .input-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        #nueva-tarea-dificil, #select-dificultad {
+            padding: 10px; border: 2px solid var(--color-accent); border-radius: 5px;
+            background-color: #3a3a3a; color: var(--color-text); outline: none;
+        }
+        #nueva-tarea-dificil { flex-grow: 1; min-width: 200px; }
+        
+        /* --- Botones Genéricos --- */
+        button {
+            padding: 10px 15px; font-size: 0.95em; border-radius: 5px; cursor: pointer;
+            background-color: var(--color-accent); color: #1e1e1e; font-weight: bold;
+            border: none; transition: background-color 0.3s;
+        }
+        button:hover { background-color: #00e5ff; }
+
+        /* --- Carrusel (Slider Horizontal) --- */
+        .carrusel-ofertas {
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px;
+            padding: 10px; margin: 20px 0; border-radius: 8px; background-color: #1a2741;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3); scrollbar-width: none;
+        }
+        .carrusel-ofertas::-webkit-scrollbar { display: none; }
+        .oferta-card {
+            min-width: 80%; max-width: 300px; flex-shrink: 0; scroll-snap-align: center;
+            padding: 20px; border-radius: 10px; background-color: var(--card-bg); border: 2px solid;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.4); margin-bottom: 10px;
+            position: relative; /* /* --- NUEVO (Para el botón de eliminar) --- */
+        }
+        
+        /* --- NUEVO: Botón Eliminar Tarea --- */
+        .delete-task-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: var(--color-none);
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 5px;
+            opacity: 0.7;
+        }
+        .delete-task-btn:hover {
+            opacity: 1;
+            color: #ff1744;
+        }
+
+        #carrusel-dificil .oferta-card { border-color: var(--color-option-1); }
+        #carrusel-facil .oferta-card { border-color: var(--color-option-2); }
+        .oferta-footer { margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* --- Vistas de Proceso (Tarea en Curso) --- */
+        #task-in-progress-view {
+            padding: 40px; border-radius: 10px; background-color: var(--card-bg);
+            box-shadow: 0 0 15px var(--color-accent); border: 2px solid var(--color-accent);
+        }
+        #task-in-progress-view h2 { color: var(--color-option-1); }
+        #current-task-name { font-size: 1.3em; margin: 15px 0; font-weight: bold; }
+        
+        /* --- Timeline y Log (Diseño Aprobado) --- */
+        #timeline-container {
+            margin-top: 40px; padding: 15px; border: 1px solid #444; border-radius: 10px;
+            background-color: #1a2741; text-align: left;
+        }
+        #timeline-slots {
+            display: flex; flex-wrap: nowrap; width: 100%; overflow: hidden; margin-bottom: 10px;
+            border-radius: 5px; border: 1px solid #3a3a3a;
+        }
+        .timeline-slot {
+            height: 15px; width: 1.6666%; margin: 0; cursor: help; flex-shrink: 0;
+            transition: background-color 0.5s;
+        }
+        
+        /* Log de Actividad */
+        #activity-log {
+            max-height: 150px; overflow-y: auto; padding: 10px;
+            border: 1px solid #3a3a3a; border-radius: 5px; background-color: var(--color-bg);
+            font-size: 0.9em;
+        }
+        .log-entry { margin-bottom: 5px; line-height: 1.4; }
+        .log-time { color: var(--color-accent); margin-right: 5px; }
+        .log-diff { font-weight: bold; margin-right: 5px; }
+        
+        /* Colores de Dificultad para el Log y Slots */
+        .color-option-1 { background-color: var(--color-option-1); color: var(--color-option-1); }
+        .color-option-2 { background-color: var(--color-option-2); color: var(--color-option-2); }
+        .color-option-3 { background-color: var(--color-option-3); color: var(--color-option-3); }
+        .color-none { background-color: var(--color-none); color: var(--color-none); }
+        
+        .diff-1 { color: var(--color-option-1); }
+        .diff-2 { color: var(--color-option-2); }
+        .diff-3 { color: var(--color-option-3); }
+        .diff-4 { color: var(--color-none); }
+
+        /* --- Modal (Diseño Consolidado) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--main-container-bg); padding: 30px; border-radius: 10px;
+            max-width: 80%; text-align: center; border: 2px solid var(--color-accent);
+            box-shadow: 0 0 20px var(--color-accent);
+        }
+        .modal-content h3 { color: var(--color-accent); margin-top: 0; }
+        .modal-content p { margin: 15px 0; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    
+    <div id="fixed-hud">
+        <div class="hud-item"><span class="hud-label">PUNTOS PP</span><span id="puntos-pp">0</span></div>
+        <div class="hud-item"><span class="hud-label">HORA ACTUAL</span><span id="current-time"></span></div>
+        <div class="hud-item"><span class="hud-label">ACTIVIDAD</span><span id="actividad-actual">Ninguna</span></div>
+    </div>
+
+    <div class="container">
+        <button id="reset-btn" onclick="resetApp()" title="Resetear Aplicación">♻️</button>
+
+        <h1>🚀 Negociador de Productividad</h1>
+        
+        <div class="input-container">
+            <input type="text" id="nueva-tarea-dificil" placeholder="Nueva Tarea">
+            <select id="select-dificultad">
+                <option value="1">Alto Impacto (Difícil)</option>
+                <option value="2">Bajo Esfuerzo (Fácil)</option>
+                <option value="3">Recarga (Break)</option>
+            </select>
+            <button onclick="agregarTarea()">➕ Añadir</button>
+        </div>
+
+        <p class="subtitle" id="persuasion-mensaje">¡Define el sistema! Elige sabiamente.</p>
+        
+        <div id="negociador-view">
+            <h2 id="oferta-titulo">1. Negociación Inicial: Alto Impacto (Carrusel)</h2>
+            <div id="carrusel-dificil" class="carrusel-ofertas"></div>
+            <div id="carrusel-facil" class="carrusel-ofertas hidden"></div>
+            <div class="ofertas-container hidden" id="oferta-break">
+                <div class="oferta-card" style="border-color: var(--color-option-3);">
+                    <h3>3. Recarga Cognitiva (Rompe Letargo)</h3>
+                    <p class="accion-label">Necesitas un (0 PP / -1 PP):</p>
+                    <p id="break-accion" class="tarea-texto"></p>
+                    <button onclick="iniciarBreak()">☕ Iniciar Break</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="task-in-progress-view" class="hidden">
+            <h2>⏳ Tarea en Curso</h2>
+            <p>Concentración Total en:</p>
+            <p id="current-task-name" class="tarea-texto" style="font-size: 1.3em;"></p>
+            
+            <button onclick="finalizarTarea()">✅ Finalizar Misión</button>
+            <button onclick="abandonarTarea()" style="background-color: var(--color-none);">❌ Abandonar (Mantener Pendiente)</button>
+        </div>
+
+        <div id="break-view" class="hidden">
+            <h2>☕ ¡Break de 5 Minutos!</h2>
+            <p id="break-mensaje"></p>
+            <div id="countdown" class="countdown-timer">05:00</div>
+            <button onclick="finalizarBreak()">🛑 Finalizar Break</button>
+        </div>
+        
+        <div id="timeline-container">
+            <h2>Registro de Productividad (Últimos 60 minutos)</h2>
+            <div id="timeline-slots"></div>
+            <h3>Log de Actividades</h3>
+            <div id="activity-log"></div>
+        </div>
+    </div>
+    
+    <div id="dynamic-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modal-title"></h3>
+            <p id="modal-message"></p>
+            <div id="modal-buttons"></div>
+        </div>
+    </div>
+    
+    <script>
+        // --- JAVASCRIPT (Lógica y Funciones) ---
+        
+        // --- CONSTANTES Y DATOS POR DEFECTO ---
+        const STORAGE_KEY = 'productivityNegociator_V7'; // --- NUEVO ---
+        const TAREAS_DIFICILES_DEFECTO = [
+            "Preparar el presupuesto trimestral (¡Usa el cerebro!).", "Terminar el borrador del documento legal (El más aburrido).",
+            "Resolver los 5 errores críticos del código fuente.", "Diseñar la maqueta de la nueva landing page.",
+        ];
+        const TAREAS_FACILES_POOL_DEFECTO = [
+            "Responder 5 correos en la bandeja de entrada.", "Archivar documentos en la nube.",
+            "Poner notas adhesivas a 5 ideas pendientes.", "Organizar 10 archivos digitales al azar."
+        ];
+        const BREAKS_DEFECTO = [
+            "Meditar 2 minutos y respirar profundo.", "Beber un vaso de agua y estirar el cuello.",
+            "Escuchar 60 segundos de una canción épica (¡Sube el volumen!).", "Hacer 10 sentadillas o estiramientos de espalda.",
+            "Mirar por la ventana y nombrar 5 colores (sin juzgar).", "Hacer 5 minutos de *Journaling* de gratitud.",
+            "Jugar 1 minuto al 'Memory' o 'Tetris' (¡Con límite!).", "Aprender una palabra nueva en otro idioma (¡Rápido!).",
+            "Hacer 10 flexiones de pecho (¡Activa el cuerpo!).", "Ordenar un área pequeña del escritorio (un cajón, por ejemplo).",
+            "Enviar un mensaje positivo a un compañero/amigo.", "Calentar un café/té y beberlo lentamente."
+        ];
+        const MENSAJES_PERSUASIVOS = [
+            "La inercia es tu única enemiga. ¡Un pequeño empujón basta!", "El alto impacto requiere alta concentración. ¡Empieza antes de que la procrastinación te gane!",
+            "Recuerda: El progreso es tu recompensa. ¿Qué quieres construir ahora?", "Elige el camino de mayor resistencia y sé recompensado. ¡El futuro te espera!",
+        ];
+
+        // --- ESTADO DE LA APP (Variables Globales) ---
+        // Estos son los valores por defecto, que serán sobreescritos por loadState() si existe guardado
+        let puntosPP = 0;
+        let rechazosBreak = 0;
+        let tareasPendientes = TAREAS_DIFICILES_DEFECTO.map(t => ({ name: t, type: 1, completed: false }));
+        let tareasFaciles = TAREAS_FACILES_POOL_DEFECTO.map(t => ({ name: t, type: 2, completed: false }));
+        let BREAKS = [...BREAKS_DEFECTO]; // --- MODIFICADO (para que el guardado funcione) ---
+        
+        let tareaActiva = { name: "Ninguna", color: "color-none", type: 4 }; // type 4: Nada
+        let estadoNegociacion = 1; // 1: Difícil, 2: Fácil, 3: Break, 4: En Foco
+        let breakTimer;
+        
+        // --- TIMELINE Y LOG ---
+        const timelineSlots = 60;
+        // --- MODIFICADO (Definición por defecto) ---
+        let timelineData = Array(timelineSlots).fill({ activity: "Ninguna", color: "color-none", type: 4 });
+        let currentSlot = 0;
+        let activityLog = [];
+
+        
+        // --- NUEVO: LÓGICA DE PERSISTENCIA (localStorage) ---
+        function saveState() {
+            try {
+                const state = {
+                    puntosPP,
+                    tareasPendientes,
+                    tareasFaciles,
+                    BREAKS,
+                    activityLog,
+                    timelineData,
+                    rechazosBreak
+                    // No guardamos: tareaActiva, estadoNegociacion, timers (son estados de sesión)
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (error) {
+                console.error("Error al guardar el estado:", error);
+            }
+        }
+
+        function loadState() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const state = JSON.parse(savedData);
+                    
+                    // Re-hidratar el estado (con valores por defecto si no existen)
+                    puntosPP = state.puntosPP || 0;
+                    tareasPendientes = state.tareasPendientes || TAREAS_DIFICILES_DEFECTO.map(t => ({ name: t, type: 1, completed: false }));
+                    tareasFaciles = state.tareasFaciles || TAREAS_FACILES_POOL_DEFECTO.map(t => ({ name: t, type: 2, completed: false }));
+                    BREAKS = state.BREAKS || [...BREAKS_DEFECTO];
+                    activityLog = state.activityLog || [];
+                    timelineData = state.timelineData || Array(timelineSlots).fill({ activity: "Ninguna", color: "color-none", type: 4 });
+                    rechazosBreak = state.rechazosBreak || 0;
+                    
+                    // Asegurar que el timeline tenga el tamaño correcto si se cambió la constante
+                    if (timelineData.length !== timelineSlots) {
+                         timelineData = Array(timelineSlots).fill({ activity: "Ninguna", color: "color-none", type: 4 });
+                    }
+                    if (activityLog.length === 0) {
+                         activityLog.push({ time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }), activity: "Sistema Cargado desde Storage", type: 4 });
+                    }
+                }
+            } catch (error) {
+                console.error("Error al cargar el estado:", error);
+                // Si hay un error (ej. JSON corrupto), se usarán los valores por defecto
+            }
+        }
+
+        function resetApp() {
+            showModal(
+                "🚨 ¿Resetear Aplicación?",
+                "Esto borrará todos tus puntos, tareas personalizadas y el historial de productividad. ¿Estás seguro?",
+                `<button onclick="confirmReset()" style="background-color: var(--color-none); color: white;">Sí, Borrar Todo</button>
+                 <button onclick="hideModal()">Cancelar</button>`
+            );
+        }
+
+        function confirmReset() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            } catch (error) {
+                console.error("Error al resetear:", error);
+            }
+        }
+        // --- FIN DE LÓGICA DE PERSISTENCIA ---
+
+
+        // --- FUNCIONES DE UTILIDAD Y MODAL ---
+        function getRandomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function playSound(type) { /* ... (Implementar lógica de sonido si se desea) ... */ }
+        function getColorByDifficulty(type) {
+            switch(type) {
+                case 1: return 'color-option-1';
+                case 2: return 'color-option-2';
+                case 3: return 'color-option-3';
+                default: return 'color-none';
+            }
+        }
+        function getDifficultyName(type) {
+            switch(type) {
+                case 1: return 'Difícil'; case 2: return 'Fácil'; case 3: return 'Break'; default: return 'Inactivo';
+            }
+        }
+        
+        function showModal(title, message, buttonsHTML) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').innerHTML = message;
+            document.getElementById('modal-buttons').innerHTML = buttonsHTML;
+            document.getElementById('dynamic-modal').classList.remove('hidden');
+        }
+        
+        function hideModal() {
+            document.getElementById('dynamic-modal').classList.add('hidden');
+        }
+        
+        // --- FUNCIÓN PRINCIPAL DE VISTA/ESTADO ---
+        function actualizarVista() {
+            document.getElementById('puntos-pp').textContent = puntosPP;
+            document.getElementById('persuasion-mensaje').textContent = getRandomElement(MENSAJES_PERSUASIVOS);
+            
+            // Actualizar HUD
+            document.getElementById('actividad-actual').textContent = tareaActiva.name;
+            document.getElementById('actividad-actual').style.color = getComputedStyle(document.documentElement).getPropertyValue(`--${tareaActiva.color}`);
+            
+            // Ocultar todas las vistas de negociación y seguimiento
+            document.getElementById('negociador-view').classList.add('hidden');
+            document.getElementById('task-in-progress-view').classList.add('hidden');
+            document.getElementById('break-view').classList.add('hidden');
+
+            if (estadoNegociacion >= 1 && estadoNegociacion <= 3) {
+                document.getElementById('negociador-view').classList.remove('hidden');
+                
+                document.getElementById('carrusel-dificil').classList.add('hidden');
+                document.getElementById('carrusel-facil').classList.add('hidden');
+                document.getElementById('oferta-break').classList.add('hidden');
+
+                if (estadoNegociacion === 1) {
+                    document.getElementById('oferta-titulo').textContent = "1. Negociación Inicial: Alto Impacto (¡Prioriza!).";
+                    document.getElementById('carrusel-dificil').classList.remove('hidden');
+                    generarCarrusel(document.getElementById('carrusel-dificil'), tareasPendientes.filter(t => !t.completed), 1);
+                } else if (estadoNegociacion === 2) {
+                    document.getElementById('oferta-titulo').textContent = "2. Negociación Media: Mejor Trato (Ganar Impulso).";                    document.getElementById('carrusel-facil').classList.remove('hidden');
+                    // --- MODIFICADO (Pasamos el array de tareas faciles) ---
+                    generarCarrusel(document.getElementById('carrusel-facil'), tareasFaciles, 2);
+                } else if (estadoNegociacion === 3) {
+                    document.getElementById('oferta-titulo').textContent = "3. Última Opción: Rompe el Letargo (Recarga).";
+                    document.getElementById('oferta-break').classList.remove('hidden');
+                    document.getElementById('break-accion').textContent = getRandomElement(BREAKS);
+                }
+            } else if (estadoNegociacion === 4) {
+                // Tarea o Break en Foco
+                if (tareaActiva.type === 1 || tareaActiva.type === 2) {
+                    // Tarea de Nivel 1 o 2 en curso (muestra la vista de seguimiento)
+                    document.getElementById('task-in-progress-view').classList.remove('hidden');
+                    document.getElementById('current-task-name').textContent = tareaActiva.name;
+                    document.getElementById('current-task-name').style.color = getComputedStyle(document.documentElement).getPropertyValue(`--${tareaActiva.color}`);
+                } else if (tareaActiva.type === 3) {
+                    // Break en curso (muestra la vista de temporizador)
+                    document.getElementById('break-view').classList.remove('hidden');
+                }
+            }
+            
+            actualizarTimeline();
+            actualizarLog();
+        }
+
+        // --- FUNCIONES DE CAROUSEL y RECHAZO ---
+        // --- MODIFICADO (Añadida lógica de borrado) ---
+        function generarCarrusel(container, tareas, opcion) {
+            container.innerHTML = '';
+            
+            const tareasDisponibles = opcion === 1 ? tareas : tareas.slice(0, 5);
+
+            if (tareasDisponibles.length === 0) {
+                const advanceButtonText = opcion === 1 ? '➡️ Rechazar y Pasar a Fáciles' : '➡️ Rechazar y Pasar a Recarga';
+                const advanceFunction = opcion === 1 ? 'rechazarTareaCarrusel(1)' : 'rechazarTareaCarrusel(2)';
+                container.innerHTML = `<div class="oferta-card"><h3>Vacío</h3><p class="tarea-texto">No hay tareas de ${getDifficultyName(opcion)}. Avanza.</p><div class="oferta-footer"><button onclick="${advanceFunction}">${advanceButtonText}</button></div></div>`;
+                return;
+            }
+
+            tareasDisponibles.forEach((tarea, index) => {
+                const card = document.createElement('div');
+                card.className = 'oferta-card';
+                // --- MODIFICADO (Añadido botón de eliminar y JSON.stringify para el nombre) ---
+                card.innerHTML = `
+                    <button class="delete-task-btn" title="Eliminar Tarea" onclick='eliminarTarea(${opcion}, ${JSON.stringify(tarea.name)})'>×</button>
+                    <h3>${opcion === 1 ? 'Misión ' : 'Mini-Misión '} #${index + 1}</h3>
+                    <p class="tarea-texto">${tarea.name}</p>
+                    <div class="oferta-footer">
+                        <button onclick='aceptarTarea(${opcion}, ${JSON.stringify(tarea.name)})'>✅ Aceptar (+${opcion === 1 ? 5 : 3} PP)</button>
+                        ${index === tareasDisponibles.length - 1 ? 
+                            `<button onclick="rechazarTareaCarrusel(${opcion})">➡️ Rechazar y Avanzar</button>` : 
+                            `<button onclick="scrollCarrusel(${opcion})">➡️ Ojeada Rápida</button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function scrollCarrusel(opcion) {
+            const carrusel = document.getElementById(opcion === 1 ? 'carrusel-dificil' : 'carrusel-facil');
+            const tarjetas = carrusel.querySelectorAll('.oferta-card');
+            
+            if (tarjetas.length > 0) {
+                const currentScroll = carrusel.scrollLeft;
+                const cardWidth = tarjetas[0].offsetWidth + 15; 
+                let nextCardIndex = Math.round(currentScroll / cardWidth) + 1;
+                
+                if (nextCardIndex < tarjetas.length) {
+                    carrusel.scrollLeft = nextCardIndex * cardWidth;
+                    playSound('desaprobacion');
+                } else {
+                    rechazarTareaCarrusel(opcion);
+                }
+            }
+        }
+        
+        function rechazarTareaCarrusel(opcion) {
+            playSound('desaprobacion');
+            if (opcion === 1) { estadoNegociacion = 2; } 
+            else if (opcion === 2) { estadoNegociacion = 3; }
+            actualizarVista();
+            // No guardamos estado aquí, es solo navegación
+        }
+
+        // --- ACCIONES DE TAREA ---
+        // --- MODIFICADO (Llama a saveState) ---
+        function agregarTarea() {
+            const input = document.getElementById('nueva-tarea-dificil');
+            const dificultad = parseInt(document.getElementById('select-dificultad').value);
+            const tarea = input.value.trim();
+            
+            if (tarea) {
+                const nuevaTarea = { name: tarea, type: dificultad, completed: false };
+                if (dificultad === 1) { tareasPendientes.unshift(nuevaTarea); } 
+                else if (dificultad === 2) { tareasFaciles.unshift(nuevaTarea); } 
+                else if (dificultad === 3) { BREAKS.unshift(tarea); }
+                
+                input.value = '';
+                saveState(); // --- NUEVO ---
+                actualizarVista();
+            }
+        }
+
+        // --- NUEVO: Eliminar Tarea ---
+        function eliminarTarea(type, taskName) {
+            showModal(
+                "🚨 Confirmar Eliminación",
+                `¿Estás seguro de que quieres eliminar la tarea: <strong>${taskName}</strong>? Esta acción no se puede deshacer.`,
+                `<button onclick='confirmDelete(${type}, ${JSON.stringify(taskName)})' style="background-color: var(--color-none); color: white;">Sí, Eliminar</button>
+                 <button onclick="hideModal()">Cancelar</button>`
+            );
+        }
+
+        function confirmDelete(type, taskName) {
+            if (type === 1) {
+                const index = tareasPendientes.findIndex(t => t.name === taskName);
+                if (index > -1) tareasPendientes.splice(index, 1);
+            } else if (type === 2) {
+                const index = tareasFaciles.findIndex(t => t.name === taskName);
+                if (index > -1) tareasFaciles.splice(index, 1);
+            }
+            
+            hideModal();
+            saveState();
+            actualizarVista();
+        }
+        // --- FIN DE Eliminar Tarea ---
+
+
+        // --- MODIFICADO (Llama a saveState) ---
+        function completarTarea(tareaName, type) {
+            if (type === 1) {
+                const index = tareasPendientes.findIndex(t => t.name === tareaName);
+                if (index > -1) tareasPendientes.splice(index, 1);
+            } else if (type === 2) {
+                 // Si es tarea fácil, la quitamos del pool
+                const index = tareasFaciles.findIndex(t => t.name === tareaName);
+                if (index > -1) tareasFaciles.splice(index, 1);
+            }
+            
+            const completionTime = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            activityLog.push({ time: completionTime, activity: `✅ Completada: ${tareaName}`, type: type });
+            
+            tareaActiva = { name: "Ninguna", color: "color-none", type: 4 };
+            rechazosBreak = 0;
+            estadoNegociacion = 1; // Volver siempre a la Opción 1
+            
+            saveState(); // --- NUEVO ---
+            actualizarVista();
+        }
+
+        // --- MODIFICADO (Llama a saveState) ---
+        function aceptarTarea(opcion, tarea) {
+            let puntosGanados, colorClass;
+            
+            if (opcion === 1) { puntosGanados = 5; colorClass = 'color-option-1'; } 
+            else if (opcion === 2) { puntosGanados = 3; colorClass = 'color-option-2'; } 
+            else { return; }
+            
+            playSound('aprobacion');
+            puntosPP += puntosGanados;
+            
+            const startTime = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            activityLog.push({ time: startTime, activity: `▶️ Iniciada: ${tarea}`, type: opcion });
+
+            tareaActiva = { name: tarea, color: colorClass, type: opcion };
+            rechazosBreak = 0;
+            estadoNegociacion = 4; // Poner en "En Foco"
+
+            showModal(
+                `🎉 ¡Misión Aceptada! (+${puntosGanados} PP)`,
+                `Has elegido la tarea: <strong>${tarea}</strong> (Nivel ${opcion}).<br>Presiona "Comenzar" y cuando finalices, haz clic en "Finalizar Misión".`,
+                // --- MODIFICADO (Pasamos la tarea como string seguro) ---
+                `<button onclick="hideModal(); iniciarActividadSeguimiento();">Comenzar</button>`
+            );
+            
+            saveState(); // --- NUEVO ---
+            actualizarVista();
+        }
+        
+        function iniciarActividadSeguimiento() {
+            // El estado ya está en 4 y la vista se actualiza para mostrar #task-in-progress-view
+            document.getElementById('negociador-view').classList.add('hidden');
+            document.getElementById('task-in-progress-view').classList.remove('hidden');
+        }
+
+        function finalizarTarea() {
+            const tarea = tareaActiva.name;
+            const type = tareaActiva.type;
+
+            showModal(
+                "¡Misión Cumplida!",
+                `Has completado la tarea <strong>${tarea}</strong>. Excelente trabajo.`,
+                // --- MODIFICADO (Pasamos la tarea como string seguro) ---
+                `<button onclick='hideModal(); completarTarea(${JSON.stringify(tarea)}, ${type});'>¡Aceptar y Volver a Negociar!</button>`
+            );
+            document.getElementById('task-in-progress-view').classList.add('hidden');
+        }
+
+        // --- MODIFICADO (Llama a saveState) ---
+        function abandonarTarea() {
+            const tarea = tareaActiva.name;
+            
+            showModal(
+                "Misión Abandonada",
+                `La tarea <strong>${tarea}</strong> se mantiene pendiente (si es Nivel 1) o se pierde (si es Nivel 2).`,
+                // --- MODIFICADO (Llama a saveState en el onclick) ---
+                `<button onclick="hideModal(); tareaActiva = { name: 'Ninguna', color: 'color-none', type: 4 }; estadoNegociacion = 1; saveState(); actualizarVista();">Entendido</button>`
+            );
+            document.getElementById('task-in-progress-view').classList.add('hidden');
+        }
+
+
+        // --- LÓGICA DEL BREAK (Nivel 3) ---
+        // --- MODIFICADO (Llama a saveState) ---
+        function iniciarBreak() {
+            const breakAccion = document.getElementById('break-accion').textContent;
+            
+            if (rechazosBreak >= 2) {
+                puntosPP = Math.max(-5, puntosPP - 1);
+                showModal("🚨 ¡Punto descontado!", "Abusaste del descanso. Vuelve al trabajo concentrado.", `<button onclick="hideModal()">Aceptar</button>`);
+            }
+            
+            rechazosBreak++; 
+            playSound('aprobacion');
+            
+            const startTime = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            activityLog.push({ time: startTime, activity: `☕ Break: ${breakAccion}`, type: 3 });
+
+            tareaActiva = { name: breakAccion, color: 'color-option-3', type: 3 };
+            estadoNegociacion = 4; 
+            
+            document.getElementById('negociador-view').classList.add('hidden');
+            document.getElementById('break-view').classList.remove('hidden');
+
+            const countdownElement = document.getElementById('countdown');
+            let time = 5 * 60; // 5 minutos
+
+            clearInterval(breakTimer);
+            breakTimer = setInterval(() => {
+                const minutes = Math.floor(time / 60);
+                let seconds = time % 60;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                countdownElement.textContent = `${minutes}:${seconds}`;
+
+                if (time <= 0) {
+                    clearInterval(breakTimer);
+                    finalizarBreak(true); 
+                    showModal("¡Tiempo Terminado!", "Tu break ha finalizado. Es hora de volver a negociar.", `<button onclick="hideModal()">Volver</button>`);
+                }
+                time--;
+            }, 1000);
+            
+            saveState(); // --- NUEVO ---
+            actualizarVista();
+        }
+
+        // --- MODIFICADO (Llama a saveState) ---
+        function finalizarBreak(auto = false) {
+            clearInterval(breakTimer);
+            document.getElementById('break-view').classList.add('hidden');
+            
+            const endTime = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            activityLog.push({ time: endTime, activity: `🛑 Finalizado: ${tareaActiva.name}`, type: 3 });
+
+            tareaActiva = { name: "Ninguna", color: "color-none", type: 4 };
+            estadoNegociacion = 1;
+            
+            saveState(); // --- NUEVO ---
+            actualizarVista();
+        }
+
+        // --- LÓGICA DEL TIMELINE Y TIEMPO REAL ---
+        // --- MODIFICADO (Llama a saveState) ---
+        function registrarActividad(minutos) {
+            const activityToRegister = { activity: tareaActiva.name, color: tareaActiva.color, type: tareaActiva.type };
+            for (let i = 0; i < minutos; i++) {
+                timelineData.shift(); 
+                timelineData.push(activityToRegister);
+            }
+            saveState(); // --- NUEVO ---
+            actualizarTimeline();
+        }
+        function actualizarTimeline() {
+            const timelineDiv = document.getElementById('timeline-slots');
+            timelineDiv.innerHTML = '';
+            timelineData.forEach(item => {
+                const slot = document.createElement('div');
+                slot.className = `timeline-slot ${item.color}`;
+                slot.title = `${item.activity} (${getDifficultyName(item.type)})`;
+                timelineDiv.appendChild(slot);
+            });
+        }
+        function actualizarLog() {
+            const logDiv = document.getElementById('activity-log');
+            logDiv.innerHTML = '';
+            const displayLog = activityLog.slice(-15).reverse();
+
+            displayLog.forEach(entry => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'log-entry';
+                const diffName = getDifficultyName(entry.type);
+                entryDiv.innerHTML = `<span class="log-time">${entry.time}</span><span class="log-diff diff-${entry.type}">${diffName}:</span><span class="log-task">${entry.activity}</span>`;
+                logDiv.appendChild(entryDiv);
+            });
+        }
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('current-time').textContent = timeString;
+            
+            const newSlot = now.getMinutes();
+            if (newSlot !== currentSlot) {
+                registrarActividad(1);
+                currentSlot = newSlot;
+                
+                if (tareaActiva.color === 'color-none' && newSlot % 10 === 0) {
+                    playSound('desaprobacion');
+                    showModal("🔴 ¡Alerta de Inactividad!", "Inactividad prolongada detectada. Vuelve a negociar.", `<button onclick="hideModal(); estadoNegociacion = 1; actualizarVista();">Volver a Negociar</button>`);
+                }
+            }
+        }
+
+        // --- INICIALIZACIÓN ---
+        // --- MODIFICADO (Llama a loadState) ---
+        window.onload = () => {
+            loadState(); // --- NUEVO: Carga el estado guardado ---
+            
+            currentSlot = new Date().getMinutes(); 
+            
+            // Si el log está vacío después de cargar, añade el inicio
+            if (activityLog.length === 0) {
+                activityLog.push({ time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }), activity: "Sistema Iniciado", type: 4 });
+            }
+            
+            actualizarVista();
+            updateClock();
+            setInterval(updateClock, 1000);
+        };
+    </script>
+</body>
+</html>
