@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wardrobe Logistics System</title>
+  <style>
+    :root {
+      --bg-main: #0b0f19;
+      --bg-surface: #151c2c;
+      --bg-card: #1e293b;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #ef4444;
+      --accent-purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); padding: 20px; line-height: 1.5; }
+
+    .container { max-width: 1300px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Header & Top Bar */
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+    header h1 { font-size: 22px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .header-btns { display: flex; gap: 10px; }
+
+    /* Métricas principales */
+    .metrics-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .metric-card { background: var(--bg-surface); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; text-align: center; }
+    .metric-card small { font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .metric-card .val { font-size: 26px; font-weight: 800; margin-top: 4px; color: var(--accent-blue); }
+
+    /* Layout principal */
+    .main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+    @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+
+    /* Paneles */
+    .panel { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .panel-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+
+    /* Filtros */
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+    .filter-btn { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: 0.2s; }
+    .filter-btn.active, .filter-btn:hover { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+
+    /* Grid de Prendas/Outfits */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s; }
+    .card:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
+    .card-img { width: 100%; height: 150px; object-fit: cover; background: #000; }
+    .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+
+    /* Badges */
+    .badge-group { display: flex; gap: 5px; flex-wrap: wrap; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .badge-limpio { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+    .badge-buffer { background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); }
+    .badge-cesta { background: rgba(239, 68, 68, 0.15); color: var(--accent-danger); }
+    .badge-mantenimiento { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+
+    /* Botones y Formulario */
+    .btn { padding: 8px 12px; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-primary { background: var(--accent-blue); color: #fff; }
+    .btn-secondary { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--accent-danger); border: 1px solid var(--accent-danger); }
+    .btn-danger:hover { background: var(--accent-danger); color: #fff; }
+    .btn-full { width: 100%; }
+
+    .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
+    .card-tools { display: flex; justify-content: space-between; margin-top: 5px; padding-top: 8px; border-top: 1px solid var(--border-color); }
+
+    /* Inputs de Formulario */
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .form-control { width: 100%; padding: 8px 10px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; font-size: 13px; }
+
+    /* Modal de Edición */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-overlay.active { display: flex; }
+    .modal { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; width: 100%; max-width: 450px; padding: 20px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>👔 Wardrobe Logistics System</h1>
+    <div class="header-btns">
+      <button class="btn btn-secondary" onclick="resetearDatosPrueba()">🔄 Cargar Datos Ejemplo</button>
+    </div>
+  </header>
+
+  <!-- Barra de Métricas en Tiempo Real -->
+  <div class="metrics-bar">
+    <div class="metric-card"><small>Ahorro Anual Estimado</small><div class="val" id="metricAhorro">91.2 hrs</div></div>
+    <div class="metric-card"><small>Prendas Limpias</small><div class="val" id="metricLimpias" style="color: var(--accent-green);">0</div></div>
+    <div class="metric-card"><small>En Buffer (Worn-Once)</small><div class="val" id="metricBuffer" style="color: var(--accent-warning);">0</div></div>
+    <div class="metric-card"><small>Cesta de Lavandería</small><div class="val" id="metricCesta" style="color: var(--accent-danger);">0%</div></div>
+  </div>
+
+  <div class="main-layout">
+    <!-- Panel de Inventario -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">📦 Inventario de Ropa y Outfits</h2>
+        <div id="alertBox"></div>
+      </div>
+
+      <!-- Filtros de categoría/estado -->
+      <div class="filters">
+        <button class="filter-btn active" onclick="filtrar('todos', this)">Todos</button>
+        <button class="filter-btn" onclick="filtrar('Limpio', this)">Limpios</button>
+        <button class="filter-btn" onclick="filtrar('Buffer', this)">Buffer (En uso)</button>
+        <button class="filter-btn" onclick="filtrar('Cesta', this)">En Cesta</button>
+        <button class="filter-btn" onclick="filtrar('Calzado', this)">Calzado</button>
+      </div>
+
+      <div id="gridItems" class="grid"></div>
+    </div>
+
+    <!-- Barra Lateral: Crear y Protocolos -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- Formulario para Agregar -->
+      <div class="panel">
+        <h2 class="panel-title" style="margin-bottom: 15px;">➕ Añadir Nueva Prenda / Outfit</h2>
+        <form id="addForm">
+          <div class="form-group">
+            <label>Nombre / Descripción</label>
+            <input type="text" id="addNombre" class="form-control" placeholder="Ej. Outfit Oficina / Jeans Negros" required>
+          </div>
+          <div class="form-group">
+            <label>Categoría</label>
+            <select id="addCategoria" class="form-control">
+              <option value="Outfit Completo">Outfit Completo</option>
+              <option value="Prenda Superior">Prenda Superior</option>
+              <option value="Prenda Inferior">Prenda Inferior</option>
+              <option value="Calzado">Calzado</option>
+              <option value="Fail-Safe (Comodín)">Fail-Safe (Comodín)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Máximo de Usos Antes de Lavar/Limpiar</label>
+            <input type="number" id="addMaxUsos" class="form-control" value="3" min="1" max="10" required>
+          </div>
+          <div class="form-group">
+            <label>Imagen (Opcional)</label>
+            <input type="file" id="addFoto" class="form-control" accept="image/*">
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Guardar en Inventario</button>
+        </form>
+      </div>
+
+      <!-- Protocolo de Calzado -->
+      <div class="panel">
+        <h2 class="panel-title" style="margin-bottom: 10px;">👟 Regla de Ventilación 24h</h2>
+        <div id="calzadoStatus" style="font-size: 13px; color: var(--text-muted);">Cargando estado...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Edición (Full CRUD Update) -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2 class="panel-title" style="margin-bottom: 15px;">✏️ Editar Prenda / Outfit</h2>
+    <form id="editForm">
+      <input type="hidden" id="editId">
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="editNombre" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="editCategoria" class="form-control">
+          <option value="Outfit Completo">Outfit Completo</option>
+          <option value="Prenda Superior">Prenda Superior</option>
+          <option value="Prenda Inferior">Prenda Inferior</option>
+          <option value="Calzado">Calzado</option>
+          <option value="Fail-Safe (Comodín)">Fail-Safe (Comodín)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Usos Actuales</label>
+        <input type="number" id="editUsosActuales" class="form-control" min="0" required>
+      </div>
+      <div class="form-group">
+        <label>Límite de Usos</label>
+        <input type="number" id="editMaxUsos" class="form-control" min="1" required>
+      </div>
+      <div class="form-group">
+        <label>Estado Manual</label>
+        <select id="editEstado" class="form-control">
+          <option value="Limpio">Limpio</option>
+          <option value="Buffer">Buffer (En uso)</option>
+          <option value="Cesta">Cesta (Para lavar)</option>
+          <option value="Mantenimiento">Mantenimiento (Reparar)</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary btn-full" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-full">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+/**
+ * DATOS DE PRUEBA INICIALES (MOCK DATA PRE-LLENADO)
+ */
+const INITIAL_MOCK_DATA = [
+  {
+    id: 101,
+    nombre: "Fail-Safe: Hoodie Negro + Jeans Dark",
+    categoria: "Fail-Safe (Comodín)",
+    maxUsos: 4,
+    usosActuales: 0,
+    estado: "Limpio",
+    foto: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=400&q=80",
+    ultimoUso: null
+  },
+  {
+    id: 102,
+    nombre: "Outfit Oficina: Blazer Gris + Chino",
+    categoria: "Outfit Completo",
+    maxUsos: 2,
+    usosActuales: 1,
+    estado: "Buffer",
+    foto: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&q=80",
+    ultimoUso: Date.now() - 3600000 * 5 // hace 5 horas
+  },
+  {
+    id: 103,
+    nombre: "Camisa Oxford Azul",
+    categoria: "Prenda Superior",
+    maxUsos: 2,
+    usosActuales: 2,
+    estado: "Cesta",
+    foto: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80",
+    ultimoUso: Date.now() - 3600000 * 20
+  },
+  {
+    id: 104,
+    nombre: "Sneakers Blancas Running",
+    categoria: "Calzado",
+    maxUsos: 6,
+    usosActuales: 1,
+    estado: "Buffer",
+    foto: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&q=80",
+    ultimoUso: Date.now() - 3600000 * 8 // Usado hace 8 hrs (en ventilación)
+  },
+  {
+    id: 105,
+    nombre: "Zapatos Formales Cuero",
+    categoria: "Calzado",
+    maxUsos: 8,
+    usosActuales: 0,
+    estado: "Limpio",
+    foto: "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=400&q=80",
+    ultimoUso: Date.now() - 3600000 * 30 // Reposado (>24h)
+  }
+];
+
+// Estado Inicial
+let rawItems = JSON.parse(localStorage.getItem('wardrobe_app_data'));
+if (!rawItems || rawItems.length === 0) {
+  rawItems = INITIAL_MOCK_DATA;
+  localStorage.setItem('wardrobe_app_data', JSON.stringify(rawItems));
+}
+
+let filtroActual = 'todos';
+let tempBase64 = null;
+
+// Store Reactivo con Proxy
+const state = { items: rawItems };
+const store = new Proxy(state, {
+  set(target, prop, value) {
+    target[prop] = value;
+    if (prop === 'items') {
+      localStorage.setItem('wardrobe_app_data', JSON.stringify(value));
+      render();
+    }
+    return true;
+  }
+});
+
+// Convertir foto subida a Base64
+document.getElementById('addFoto').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => { tempBase64 = evt.target.result; };
+  reader.readAsDataURL(file);
+});
+
+// OPERACIONES CRUD
+
+// 1. Create (Agregar)
+document.getElementById('addForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const newItem = {
+    id: Date.now(),
+    nombre: document.getElementById('addNombre').value,
+    categoria: document.getElementById('addCategoria').value,
+    maxUsos: parseInt(document.getElementById('addMaxUsos').value),
+    usosActuales: 0,
+    estado: 'Limpio',
+    foto: tempBase64 || 'https://via.placeholder.com/300x200/1e293b/FFFFFF?text=Sin+Imagen',
+    ultimoUso: null
+  };
+  
+  store.items = [...store.items, newItem];
+  e.target.reset();
+  tempBase64 = null;
+});
+
+// 2. Update Status / Usos Rápidos
+function registrarUso(id) {
+  store.items = store.items.map(item => {
+    if (item.id === id) {
+      const nuevosUsos = item.usosActuales + 1;
+      let nuevoEstado = 'Buffer';
+      if (nuevosUsos >= item.maxUsos) nuevoEstado = 'Cesta';
+      return { ...item, usosActuales: nuevosUsos, estado: nuevoEstado, ultimoUso: Date.now() };
+    }
+    return item;
+  });
+}
+
+function lavarItem(id) {
+  store.items = store.items.map(item => {
+    if (item.id === id) {
+      return { ...item, usosActuales: 0, estado: 'Limpio' };
+    }
+    return item;
+  });
+}
+
+// 3. Update Completo (Modal)
+function abrirModalEdicion(id) {
+  const item = store.items.find(i => i.id === id);
+  if (!item) return;
+
+  document.getElementById('editId').value = item.id;
+  document.getElementById('editNombre').value = item.nombre;
+  document.getElementById('editCategoria').value = item.categoria;
+  document.getElementById('editUsosActuales').value = item.usosActuales;
+  document.getElementById('editMaxUsos').value = item.maxUsos;
+  document.getElementById('editEstado').value = item.estado;
+
+  document.getElementById('editModal').classList.add('active');
+}
+
+function cerrarModal() {
+  document.getElementById('editModal').classList.remove('active');
+}
+
+document.getElementById('editForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id = parseInt(document.getElementById('editId').value);
+  
+  store.items = store.items.map(item => {
+    if (item.id === id) {
+      return {
+        ...item,
+        nombre: document.getElementById('editNombre').value,
+        categoria: document.getElementById('editCategoria').value,
+        usosActuales: parseInt(document.getElementById('editUsosActuales').value),
+        maxUsos: parseInt(document.getElementById('editMaxUsos').value),
+        estado: document.getElementById('editEstado').value
+      };
+    }
+    return item;
+  });
+  
+  cerrarModal();
+});
+
+// 4. Delete (Eliminar)
+function eliminarItem(id) {
+  if (confirm('¿Seguro que deseas eliminar este ítem del inventario?')) {
+    store.items = store.items.filter(item => item.id !== id);
+  }
+}
+
+// Resetear Datos de Prueba
+function resetearDatosPrueba() {
+  if (confirm('¿Restablecer el inventario con prendas de ejemplo?')) {
+    store.items = INITIAL_MOCK_DATA;
+  }
+}
+
+// Filtrado
+function filtrar(criterio, btn) {
+  filtroActual = criterio;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+// RENDERIZADO PRINCIPAL
+function render() {
+  const grid = document.getElementById('gridItems');
+  grid.innerHTML = '';
+
+  let limpias = 0, buffer = 0, cesta = 0;
+
+  const itemsFiltrados = store.items.filter(item => {
+    if (filtroActual === 'todos') return true;
+    if (filtroActual === 'Calzado') return item.categoria === 'Calzado';
+    return item.estado === filtroActual;
+  });
+
+  store.items.forEach(item => {
+    if (item.estado === 'Limpio') limpias++;
+    if (item.estado === 'Buffer') buffer++;
+    if (item.estado === 'Cesta') cesta++;
+  });
+
+  // Render Grid
+  itemsFiltrados.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    let badgeClass = 'badge-limpio';
+    if (item.estado === 'Buffer') badgeClass = 'badge-buffer';
+    if (item.estado === 'Cesta') badgeClass = 'badge-cesta';
+    if (item.estado === 'Mantenimiento') badgeClass = 'badge-mantenimiento';
+
+    const btnAccion = item.estado === 'Cesta'
+      ? `<button onclick="lavarItem(${item.id})" class="btn btn-primary btn-full">🧺 Marcar Lavado</button>`
+      : `<button onclick="registrarUso(${item.id})" class="btn btn-secondary btn-full">👔 Usar (${item.usosActuales}/${item.maxUsos})</button>`;
+
+    card.innerHTML = `
+      <img src="${item.foto}" class="card-img" alt="${item.nombre}">
+      <div class="card-body">
+        <div>
+          <div class="badge-group">
+            <span class="badge ${badgeClass}">${item.estado}</span>
+            <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">${item.categoria}</span>
+          </div>
+          <h3 style="font-size: 14px; margin-top: 6px; font-weight: 600;">${item.nombre}</h3>
+        </div>
+        <div>
+          ${btnAccion}
+          <div class="card-tools">
+            <button onclick="abrirModalEdicion(${item.id})" class="btn" style="background:transparent; color: var(--accent-blue); padding:0;">✏️ Editar</button>
+            <button onclick="eliminarItem(${item.id})" class="btn" style="background:transparent; color: var(--accent-danger); padding:0;">🗑️ Quitar</button>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Render Métricas
+  document.getElementById('metricLimpias').textContent = limpias;
+  document.getElementById('metricBuffer').textContent = buffer;
+  const total = store.items.length;
+  const pctCesta = total > 0 ? Math.round((cesta / total) * 100) : 0;
+  document.getElementById('metricCesta').textContent = `${pctCesta}%`;
+
+  // Alerta de Lavandería
+  const alertBox = document.getElementById('alertBox');
+  if (pctCesta >= 80) {
+    alertBox.innerHTML = `<span class="badge badge-cesta" style="font-size: 11px; padding: 5px 10px;">⚠️ Cesta al ${pctCesta}%: Lavar Ropa</span>`;
+  } else {
+    alertBox.innerHTML = `<span class="badge badge-limpio" style="font-size: 11px; padding: 5px 10px;">✅ Sistema Estable</span>`;
+  }
+
+  // Protocolo de Calzado (Resting Status)
+  const calzadoList = store.items.filter(i => i.categoria === 'Calzado');
+  const calzadoContainer = document.getElementById('calzadoStatus');
+  if (calzadoList.length === 0) {
+    calzadoContainer.innerHTML = 'No hay calzado registrado.';
+  } else {
+    const ahora = Date.now();
+    calzadoContainer.innerHTML = calzadoList.map(zapatos => {
+      const horasDesdeUso = zapatos.ultimoUso ? Math.round((ahora - zapatos.ultimoUso) / 3600000) : 99;
+      const reposado = horasDesdeUso >= 24;
+      const statusText = reposado ? '🟢 Listo para usar' : `🔴 En reposo (${24 - horasDesdeUso}h restantes)`;
+      return `<div style="margin-bottom: 6px; display:flex; justify-content:space-between;">
+        <span>${zapatos.nombre}</span>
+        <strong>${statusText}</strong>
+      </div>`;
+    }).join('');
+  }
+}
+
+// Inicializar
+render();
+</script>
+</body>
+</html>
