@@ -4,105 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Organízate Ya - Vue Reactivo</title>
-    <!-- Librerías (En la PWA final, estas se descargarán localmente) -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
         :root {
-            --bg-main: #0f0e0e;
-            --bg-card: #143758;
-            --bg-task: #0d2136;
-            --primary: #2196F3;
-            --success: #5cb315;
-            --warning: #FFC107;
-            --danger: #FF5722;
-            --text: #e9ecef;
+            --bg-main: #0f0e0e; --bg-card: #143758; --bg-task: #0d2136;
+            --primary: #2196F3; --success: #5cb315; --warning: #FFC107;
+            --danger: #FF5722; --text: #e9ecef;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background-color: var(--bg-main); color: var(--text);
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
         }
         .container {
-            width: 100%;
-            max-width: 600px;
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            width: 100%; max-width: 600px; background: var(--bg-card);
+            border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
         .header-sticky {
-            position: sticky;
-            top: 10px;
-            background: var(--success);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 20px;
-            z-index: 10;
+            position: sticky; top: 10px; background: var(--success);
+            padding: 10px; border-radius: 8px; text-align: center;
+            font-weight: bold; margin-bottom: 20px; z-index: 10;
+            display: flex; justify-content: space-between; align-items: center;
         }
         h1, h2 { text-align: center; margin-top: 0; }
-        
         .btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            background: transparent;
-            color: var(--text);
-            border: 2px solid var(--primary);
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
+            display: block; width: 100%; padding: 12px; margin-bottom: 10px;
+            background: transparent; color: var(--text); border: 2px solid var(--primary);
+            border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s;
         }
         .btn:hover { background: var(--primary); color: white; }
         .btn-danger { border-color: var(--danger); color: var(--danger); }
         .btn-danger:hover { background: var(--danger); color: white; }
         .btn-warning { border-color: var(--warning); color: var(--warning); }
         .btn-warning:hover { background: var(--warning); color: black; }
+        .btn-small { width: auto; padding: 5px 10px; font-size: 14px; border-radius: 5px; }
         
         .progress-container {
-            height: 30px;
-            background-color: #3e4858;
-            border-radius: 6px;
-            overflow: hidden;
-            margin: 20px 0;
-            position: relative;
+            height: 30px; background-color: #3e4858; border-radius: 6px;
+            overflow: hidden; margin: 20px 0; position: relative;
         }
         .progress-bar {
-            height: 100%;
-            background-color: var(--success);
+            height: 100%; background-color: var(--success);
             transition: width 0.3s linear, background-color 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-            white-space: nowrap;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 14px; white-space: nowrap;
         }
         .progress-bar.overtime { background-color: var(--danger); }
-        .task-card {
-            background: var(--bg-task);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .message-box {
-            text-align: center;
-            color: var(--warning);
-            font-weight: bold;
-            min-height: 24px;
-            margin-bottom: 15px;
-        }
+        .task-card { background: var(--bg-task); padding: 15px; border-radius: 8px; text-align: center; }
+        .message-box { text-align: center; color: var(--warning); font-weight: bold; min-height: 24px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -110,48 +60,43 @@
 <div id="app" class="container">
     <h1>hazlo ya <span v-if="procesoActual">| {{ procesoActual.nombre }}</span></h1>
 
-    <!-- Reloj global sticky -->
     <div v-if="procesoActual" class="header-sticky">
-        ⏱️ Tiempo Global: {{ minutosGlobales }} min
+        <span>⏱️ Total: {{ minutosGlobales }} min</span>
+        <button class="btn btn-primary btn-small" @click="toggleVoz" style="margin:0; border-color: white;">
+            {{ vozActivada ? '🗣️ Voz: ON' : '🔇 Voz: OFF' }}
+        </button>
     </div>
 
-    <!-- Menú de Selección -->
     <div v-if="!procesoActual">
         <h2>Selecciona un Proceso</h2>
-        <button 
-            v-for="proceso in procesosDB" 
-            :key="proceso.id" 
-            class="btn" 
-            @click="iniciarProceso(proceso)">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+             <button class="btn btn-primary btn-small" @click="toggleVoz">
+                {{ vozActivada ? '🗣️ Voz: ON' : '🔇 Voz: OFF' }}
+            </button>
+        </div>
+        <button v-for="proceso in procesosDB" :key="proceso.id" class="btn" @click="iniciarProceso(proceso)">
             {{ proceso.nombre }}
         </button>
-        <p v-if="procesosDB.length === 0" style="text-align: center;">Cargando base de datos...</p>
     </div>
 
-    <!-- Pantalla de Ejecución de Tarea -->
     <div v-else class="task-card">
         <h3 style="color: var(--primary);">{{ pasoActual?.nombre }}</h3>
         <p>Tiempo asignado: {{ pasoActual?.tiempoMin }} minutos</p>
         
         <div class="progress-container">
-            <div class="progress-bar" 
-                 :class="{ overtime: porcentajeProgreso >= 100 }"
-                 :style="{ width: Math.min(porcentajeProgreso, 100) + '%' }">
+            <div class="progress-bar" :class="{ overtime: porcentajeProgreso >= 100 }" :style="{ width: Math.min(porcentajeProgreso, 100) + '%' }">
                 {{ Math.floor(porcentajeProgreso) }}%
             </div>
         </div>
         
         <div class="message-box">{{ mensajeFeedback }}</div>
-
         <p>Tiempo usado: {{ minutosUsados }}m {{ segundosUsados }}s</p>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button class="btn btn-warning" @click="togglePausa">
                 {{ pausado ? '▶️ Reanudar' : '⏸️ Pausar' }}
             </button>
-            <button class="btn btn-danger" @click="siguientePaso">
-                ✅ Siguiente
-            </button>
+            <button class="btn btn-danger" @click="siguientePaso">✅ Siguiente</button>
         </div>
         <button class="btn btn-danger" style="margin-top: 10px; opacity: 0.7;" @click="abandonarProceso">
             ⏹️ Finalizar Todo
@@ -160,48 +105,63 @@
 </div>
 
 <script>
-const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+const { createApp, ref, computed, onMounted, onUnmounted, watch } = Vue;
 
-// 1. CONFIGURACIÓN DE BASE DE DATOS (IndexedDB via Dexie)
 const db = new Dexie('OrganizateYaDB');
 db.version(1).stores({
     procesos: '++id, nombre',
     pasos: '++id, idProceso, nombre, tiempoMin, orden',
-    estadoApp: 'id, procesoActivoId, pasoActivoId, inicioAbsolutoMs, inicioGlobalMs' 
+    estadoApp: 'id, procesoActivoId, pasoActivoId, inicioAbsolutoMs, inicioGlobalMs, vozActivada' 
 });
 
 createApp({
     setup() {
-        // Estado Reactivo
         const procesosDB = ref([]);
         const procesoActual = ref(null);
         const pasosRestantes = ref([]);
         const pasoActual = ref(null);
         
-        // Variables de tiempo
         const tiempoActual = ref(Date.now());
         const inicioAbsolutoMs = ref(0);
         const inicioGlobalMs = ref(0);
         const pausado = ref(false);
         const mensajeFeedback = ref('');
+        const vozActivada = ref(true);
         let timerInterval = null;
 
-        // Sembrar datos de ejemplo si la DB está vacía
+        // Motor de Síntesis de Voz
+        const hablar = (texto) => {
+            if (vozActivada.value && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Detiene audios pendientes
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.05; // Ligeramente más rápido para dar sensación de urgencia
+                window.speechSynthesis.speak(utterance);
+            }
+        };
+
+        const toggleVoz = async () => {
+            vozActivada.value = !vozActivada.value;
+            if (vozActivada.value) hablar("Voz activada");
+            else window.speechSynthesis.cancel();
+            
+            // Guardar preferencia de voz
+            if (procesoActual.value) await guardarEstado();
+        };
+
         const initDB = async () => {
             const count = await db.procesos.count();
             if (count === 0) {
                 const procesoId = await db.procesos.add({ nombre: "Rutina de Activación (Ejemplo)" });
                 await db.pasos.bulkAdd([
                     { idProceso: procesoId, orden: 1, nombre: "Beber agua", tiempoMin: 1 },
-                    { idProceso: procesoId, orden: 2, nombre: "Tender la cama", tiempoMin: 5 },
-                    { idProceso: procesoId, orden: 3, nombre: "Ducha fría", tiempoMin: 10 }
+                    { idProceso: procesoId, orden: 2, nombre: "Tender la cama", tiempoMin: 5 }
                 ]);
             }
             procesosDB.value = await db.procesos.toArray();
             await recuperarEstado();
         };
 
-        // Lógica de cálculo estricto (A prueba de cierres de app)
         const updateTimer = () => {
             if (!pausado.value && pasoActual.value) {
                 tiempoActual.value = Date.now();
@@ -209,20 +169,34 @@ createApp({
             }
         };
 
+        const guardarEstado = async () => {
+            await db.estadoApp.put({
+                id: 1,
+                procesoActivoId: procesoActual.value?.id || null,
+                pasoActivoId: pasoActual.value?.id || null,
+                inicioAbsolutoMs: inicioAbsolutoMs.value,
+                inicioGlobalMs: inicioGlobalMs.value,
+                vozActivada: vozActivada.value
+            });
+        };
+
         const recuperarEstado = async () => {
             const estadoGuardado = await db.estadoApp.get(1);
-            if (estadoGuardado && estadoGuardado.procesoActivoId) {
-                procesoActual.value = await db.procesos.get(estadoGuardado.procesoActivoId);
-                const todosLosPasos = await db.pasos.where('idProceso').equals(procesoActual.value.id).sortBy('orden');
+            if (estadoGuardado) {
+                vozActivada.value = estadoGuardado.vozActivada !== undefined ? estadoGuardado.vozActivada : true;
                 
-                // Retomar desde el paso guardado
-                const index = todosLosPasos.findIndex(p => p.id === estadoGuardado.pasoActivoId);
-                if (index !== -1) {
-                    pasoActual.value = todosLosPasos[index];
-                    pasosRestantes.value = todosLosPasos.slice(index + 1);
-                    inicioAbsolutoMs.value = estadoGuardado.inicioAbsolutoMs;
-                    inicioGlobalMs.value = estadoGuardado.inicioGlobalMs;
-                    iniciarLoop();
+                if (estadoGuardado.procesoActivoId) {
+                    procesoActual.value = await db.procesos.get(estadoGuardado.procesoActivoId);
+                    const todosLosPasos = await db.pasos.where('idProceso').equals(procesoActual.value.id).sortBy('orden');
+                    
+                    const index = todosLosPasos.findIndex(p => p.id === estadoGuardado.pasoActivoId);
+                    if (index !== -1) {
+                        pasoActual.value = todosLosPasos[index];
+                        pasosRestantes.value = todosLosPasos.slice(index + 1);
+                        inicioAbsolutoMs.value = estadoGuardado.inicioAbsolutoMs;
+                        inicioGlobalMs.value = estadoGuardado.inicioGlobalMs;
+                        iniciarLoop();
+                    }
                 }
             }
         };
@@ -232,30 +206,26 @@ createApp({
             const pasos = await db.pasos.where('idProceso').equals(proceso.id).sortBy('orden');
             pasosRestantes.value = [...pasos];
             inicioGlobalMs.value = Date.now();
+            hablar(`Iniciando ${proceso.nombre}. No me decepciones.`);
             siguientePaso();
         };
 
         const siguientePaso = async () => {
             if (pasosRestantes.value.length === 0) {
-                abandonarProceso(); // Proceso terminado
-                alert("¡Proceso Completado con éxito!");
+                hablar("Proceso completado. Gran victoria.");
+                abandonarProceso();
                 return;
             }
             
             pasoActual.value = pasosRestantes.value.shift();
-            inicioAbsolutoMs.value = Date.now(); // Hora exacta e inmutable de inicio
+            inicioAbsolutoMs.value = Date.now();
             pausado.value = false;
-            mensajeFeedback.value = `¡Vamos! Tienes ${pasoActual.value.tiempoMin} minutos.`;
+            
+            const msg = `Siguiente: ${pasoActual.value.nombre}. Tienes ${pasoActual.value.tiempoMin} minutos.`;
+            mensajeFeedback.value = msg;
+            hablar(msg);
 
-            // Guardar estado en base de datos
-            await db.estadoApp.put({
-                id: 1,
-                procesoActivoId: procesoActual.value.id,
-                pasoActivoId: pasoActual.value.id,
-                inicioAbsolutoMs: inicioAbsolutoMs.value,
-                inicioGlobalMs: inicioGlobalMs.value
-            });
-
+            await guardarEstado();
             iniciarLoop();
         };
 
@@ -263,7 +233,7 @@ createApp({
             clearInterval(timerInterval);
             procesoActual.value = null;
             pasoActual.value = null;
-            await db.estadoApp.clear();
+            await guardarEstado();
         };
 
         const iniciarLoop = () => {
@@ -275,28 +245,37 @@ createApp({
             pausado.value = !pausado.value;
             if (pausado.value) {
                 mensajeFeedback.value = "⏸️ Proceso pausado.";
+                hablar("Proceso pausado.");
             } else {
-                // Al reanudar, desplazamos el inicio absoluto hacia adelante para compensar el tiempo que estuvo pausado
                 const tiempoQueEstuvoPausado = Date.now() - tiempoActual.value;
                 inicioAbsolutoMs.value += tiempoQueEstuvoPausado;
                 inicioGlobalMs.value += tiempoQueEstuvoPausado;
-                
-                db.estadoApp.update(1, { 
-                    inicioAbsolutoMs: inicioAbsolutoMs.value,
-                    inicioGlobalMs: inicioGlobalMs.value 
-                });
+                guardarEstado();
+                hablar("Reanudando. Muévete.");
             }
         };
 
+        let ultimoPorcentajeHablado = 0;
         const evaluarMensajes = () => {
             const pct = Math.floor(porcentajeProgreso.value);
-            if (pct === 25) mensajeFeedback.value = "¡Buen arranque! Sigue así.";
-            if (pct === 50) mensajeFeedback.value = "Vas por la mitad. ¡No te distraigas!";
-            if (pct === 75) mensajeFeedback.value = "¡Ya casi! Último esfuerzo.";
-            if (pct >= 100 && pct < 101) mensajeFeedback.value = "¡Tiempo límite alcanzado! Acelera.";
+            
+            // Reiniciar el control de mensajes si empezamos un nuevo paso o reanudamos desde cero
+            if (pct < ultimoPorcentajeHablado) ultimoPorcentajeHablado = 0;
+
+            const dispararMensaje = (nivel, texto) => {
+                if (pct >= nivel && ultimoPorcentajeHablado < nivel) {
+                    ultimoPorcentajeHablado = nivel;
+                    mensajeFeedback.value = texto;
+                    hablar(texto);
+                }
+            };
+
+            dispararMensaje(25, "25 por ciento. Buen arranque.");
+            dispararMensaje(50, "50 por ciento. Vas por la mitad.");
+            dispararMensaje(75, "75 por ciento. Último esfuerzo, apúrate.");
+            dispararMensaje(100, "Tiempo límite alcanzado. Eres demasiado lento.");
         };
 
-        // Propiedades Computadas (Reactividad automática)
         const transcurridoMs = computed(() => Math.max(0, tiempoActual.value - inicioAbsolutoMs.value));
         const minutosUsados = computed(() => Math.floor(transcurridoMs.value / 60000));
         const segundosUsados = computed(() => Math.floor((transcurridoMs.value % 60000) / 1000));
@@ -314,8 +293,8 @@ createApp({
         return {
             procesosDB, procesoActual, pasoActual, porcentajeProgreso,
             minutosUsados, segundosUsados, minutosGlobales,
-            iniciarProceso, siguientePaso, abandonarProceso, togglePausa,
-            pausado, mensajeFeedback
+            iniciarProceso, siguientePaso, abandonarProceso, togglePausa, toggleVoz,
+            pausado, mensajeFeedback, vozActivada
         };
     }
 }).mount('#app');
