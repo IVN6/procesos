@@ -3,260 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapeo de Trayectoria 3D</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>Organízate Ya - Vue Reactivo</title>
+    <!-- Librerías (En la PWA final, estas se descargarán localmente) -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        :root {
+            --bg-main: #0f0e0e;
+            --bg-card: #143758;
+            --bg-task: #0d2136;
+            --primary: #2196F3;
+            --success: #5cb315;
+            --warning: #FFC107;
+            --danger: #FF5722;
+            --text: #e9ecef;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        .header-sticky {
+            position: sticky;
+            top: 10px;
+            background: var(--success);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+        h1, h2 { text-align: center; margin-top: 0; }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: transparent;
+            color: var(--text);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: var(--primary); color: white; }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: white; }
+        .btn-warning { border-color: var(--warning); color: var(--warning); }
+        .btn-warning:hover { background: var(--warning); color: black; }
+        
+        .progress-container {
+            height: 30px;
+            background-color: #3e4858;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 20px 0;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--success);
+            transition: width 0.3s linear, background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .progress-bar.overtime { background-color: var(--danger); }
+        .task-card {
+            background: var(--bg-task);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .message-box {
+            text-align: center;
+            color: var(--warning);
+            font-weight: bold;
+            min-height: 24px;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
-
-
-<style>
-
-
-    body {
-    margin: 0;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-}
-#container {
-    width: 100vw;
-    height: 100vh;
-}
-#ui-overlay {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    color: white;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 10px;
-    border-radius: 5px;
-    z-index: 100;
-}
-#startButton {
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-}
-#debug-info {
-    margin-top: 10px;
-    font-size: 12px;
-}
-    
-</style>
-
-    
 <body>
-    <div id="container">
-        </div>
-    <div id="ui-overlay">
-        <button id="startButton">INICIAR RASTREO (Start)</button>
-        <div id="status">Esperando inicio...</div>
-        <div id="debug-info">
-            Altura Z: 0.00 m<br>
-            Presión: 0.00 hPa<br>
-            Deriva: 0.00 m/s
-        </div>
+
+<div id="app" class="container">
+    <h1>hazlo ya <span v-if="procesoActual">| {{ procesoActual.nombre }}</span></h1>
+
+    <!-- Reloj global sticky -->
+    <div v-if="procesoActual" class="header-sticky">
+        ⏱️ Tiempo Global: {{ minutosGlobales }} min
     </div>
-    <script>
-      
-// --- [ 1. CONFIGURACIÓN INICIAL DE THREE.JS ] ---
-const container = document.getElementById('container');
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
 
-renderer.setSize(window.innerWidth, window.innerHeight);
-container.appendChild(renderer.domElement);
+    <!-- Menú de Selección -->
+    <div v-if="!procesoActual">
+        <h2>Selecciona un Proceso</h2>
+        <button 
+            v-for="proceso in procesosDB" 
+            :key="proceso.id" 
+            class="btn" 
+            @click="iniciarProceso(proceso)">
+            {{ proceso.nombre }}
+        </button>
+        <p v-if="procesosDB.length === 0" style="text-align: center;">Cargando base de datos...</p>
+    </div>
 
-scene.background = new THREE.Color(0x1a1a1a);
-const light = new THREE.AmbientLight(0x404040); // soft white light
-scene.add(light);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-scene.add(directionalLight);
-
-// Inicialmente, la cámara se coloca detrás y mirando al origen
-camera.position.set(0, 5, 10);
-camera.lookAt(0, 0, 0);
-
-// Objeto que representa la trayectoria del usuario
-const pathGeometry = new THREE.BufferGeometry();
-const MAX_POINTS = 5000;
-const positions = new Float32Array(MAX_POINTS * 3);
-pathGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-const material = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 });
-const line = new THREE.Line(pathGeometry, material);
-scene.add(line);
-
-// --- [ 2. FUSIÓN DE SENSORES Y VARIABLES DE ESTADO ] ---
-let tracking = false;
-const position = new THREE.Vector3(0, 0, 0); // Posición (x, y, z)
-let velocity = new THREE.Vector3(0, 0, 0); // Velocidad (vx, vy, vz)
-let orientation = 0; // Ángulo de rotación en el plano (Heading)
-let numPoints = 0;
-
-// Variables para PDR (Pedestrian Dead Reckoning)
-let stepDetectionThreshold = 10.0; // Umbral de aceleración para detectar un paso
-let stepLength = 0.75; // Longitud promedio de un paso en metros
-let lastAcceleration = 0;
-
-// Variables Barómetro
-let seaLevelPressure = 1013.25; // Presión de referencia a nivel del mar (hPa)
-let initialPressure = null; // Presión al inicio del tracking
-let pressureAltitude = 0; // Altitud calculada por barómetro
-
-// --- [ 3. PROCESAMIENTO DE DATOS DEL BARÓMETRO Y ALTITUD ] ---
-
-// Fórmula barométrica para altitud (derivada de la ecuación hipsométrica)
-function calculateAltitude(pressure, referencePressure) {
-    if (pressure === 0 || referencePressure === 0) return 0;
-    // La constante 1/5.257 es una aproximación de la atmósfera estándar
-    return 44330 * (1.0 - Math.pow(pressure / referencePressure, 1 / 5.257));
-}
-
-function handlePressure(e) {
-    const pressure = e.reading.pressure;
-    document.getElementById('debug-info').innerHTML = `Presión: ${pressure.toFixed(2)} hPa`;
-
-    if (initialPressure === null) {
-        initialPressure = pressure;
-        // Ajustamos la posición Z inicial a 0
-        position.z = 0;
-    }
-
-    // Calculamos la altitud relativa usando la presión inicial como referencia
-    // (Esto simula el cambio de piso o desnivel)
-    const newAltitude = calculateAltitude(pressure, initialPressure);
-    
-    // Suavizado y aplicación al eje Y (Altura en Three.js)
-    // Aplicamos una corrección suavizada (Factor de amortiguación: 0.1)
-    position.y += (newAltitude - position.y) * 0.1;
-    pressureAltitude = newAltitude;
-}
-
-// --- [ 4. PROCESAMIENTO DE DATOS INERCIALES (IMU) ] ---
-
-function handleMotion(e) {
-    if (!tracking) return;
-
-    const dt = 1 / 60; // Asumiendo ~60 FPS/Hz
-    
-    // Aceleración (m/s^2)
-    const acc = e.acceleration;
-
-    // Orientación (Giroscopio)
-    const gyro = e.rotationRate;
-    // Acumular la rotación en el eje Y (vertical)
-    orientation += gyro.y * dt;
-    
-    // --- [ DETECCIÓN DE PASOS (PDR) ] ---
-    
-    // Usamos la aceleración total (magnitud) para detectar un paso
-    const magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
-
-    if (magnitude > stepDetectionThreshold && lastAcceleration <= stepDetectionThreshold) {
-        // Paso detectado. 
-        // 1. Calcular el desplazamiento (stepLength)
-        // 2. Usar la orientación para proyectar en X y Z (plano horizontal)
-        const dx = stepLength * Math.sin(orientation);
-        const dz = stepLength * Math.cos(orientation);
-
-        // Aplicamos el desplazamiento a la posición
-        position.x += dx;
-        position.z += dz;
+    <!-- Pantalla de Ejecución de Tarea -->
+    <div v-else class="task-card">
+        <h3 style="color: var(--primary);">{{ pasoActual?.nombre }}</h3>
+        <p>Tiempo asignado: {{ pasoActual?.tiempoMin }} minutos</p>
         
-        // El eje Y (altura) ya está siendo corregido por el barómetro
+        <div class="progress-container">
+            <div class="progress-bar" 
+                 :class="{ overtime: porcentajeProgreso >= 100 }"
+                 :style="{ width: Math.min(porcentajeProgreso, 100) + '%' }">
+                {{ Math.floor(porcentajeProgreso) }}%
+            </div>
+        </div>
         
-        // Agregar el punto a la geometría de la línea
-        if (numPoints < MAX_POINTS) {
-            positions[numPoints * 3] = position.x;
-            positions[numPoints * 3 + 1] = position.y; 
-            positions[numPoints * 3 + 2] = position.z;
-            numPoints++;
-            pathGeometry.setDrawRange(0, numPoints);
-            pathGeometry.attributes.position.needsUpdate = true;
-        }
-    }
-    lastAcceleration = magnitude;
+        <div class="message-box">{{ mensajeFeedback }}</div>
 
-    // Actualizar la cámara para seguir al usuario
-    // Colocamos la cámara detrás del usuario, mirando hacia adelante
-    camera.position.x = position.x - 5 * Math.sin(orientation);
-    camera.position.y = position.y + 3; // Ligeramente por encima
-    camera.position.z = position.z - 5 * Math.cos(orientation);
-    
-    camera.lookAt(position.x, position.y, position.z);
-    
-    // Actualizar la información de depuración
-    document.getElementById('debug-info').innerHTML = `
-        Altura Y (Baro): ${position.y.toFixed(2)} m<br>
-        Presión Altitud: ${pressureAltitude.toFixed(2)} m<br>
-        Orientación (Yaw): ${(orientation * 180 / Math.PI).toFixed(2)} °
-    `;
-}
+        <p>Tiempo usado: {{ minutosUsados }}m {{ segundosUsados }}s</p>
 
-// --- [ 5. INICIALIZACIÓN DE SENSORES Y BUCLE DE RENDERIZADO ] ---
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-warning" @click="togglePausa">
+                {{ pausado ? '▶️ Reanudar' : '⏸️ Pausar' }}
+            </button>
+            <button class="btn btn-danger" @click="siguientePaso">
+                ✅ Siguiente
+            </button>
+        </div>
+        <button class="btn btn-danger" style="margin-top: 10px; opacity: 0.7;" @click="abandonarProceso">
+            ⏹️ Finalizar Todo
+        </button>
+    </div>
+</div>
 
-// Función principal de inicialización
-async function initTracking() {
-    document.getElementById('status').innerText = 'Solicitando permisos...';
-    
-    // 1. Permisos (Solo en iOS se necesita la solicitud explícita)
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
-        const permission = await DeviceMotionEvent.requestPermission();
-        if (permission !== 'granted') {
-            document.getElementById('status').innerText = 'Permiso denegado para sensores de movimiento.';
-            return;
-        }
-    }
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
-    // 2. Inicialización del Acelerómetro/Giroscopio
-    window.addEventListener('devicemotion', handleMotion);
-
-    // 3. Inicialización del Barómetro (PressureSensor API, experimental y requiere HTTPS)
-    try {
-        if ('PressureSensor' in window) {
-            const sensor = new PressureSensor({ frequency: 1 }); // 1Hz es suficiente
-            sensor.onreading = handlePressure;
-            sensor.onerror = (event) => {
-                document.getElementById('status').innerText = 'Error con Barómetro. Usando solo IMU+PDR.';
-            };
-            sensor.start();
-        } else {
-             document.getElementById('status').innerText = 'Barómetro (PressureSensor) no soportado. Usando solo IMU+PDR.';
-        }
-    } catch (error) {
-         document.getElementById('status').innerText = 'Excepción al iniciar Barómetro. Usando solo IMU+PDR.';
-    }
-
-    tracking = true;
-    document.getElementById('status').innerText = 'RASTREANDO...';
-}
-
-// Bucle principal de renderizado (simula la cuerda o raya)
-function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-}
-
-// --- [ 6. MANEJADOR DE EVENTOS ] ---
-
-document.getElementById('startButton').addEventListener('click', () => {
-    if (!tracking) {
-        initTracking();
-    }
+// 1. CONFIGURACIÓN DE BASE DE DATOS (IndexedDB via Dexie)
+const db = new Dexie('OrganizateYaDB');
+db.version(1).stores({
+    procesos: '++id, nombre',
+    pasos: '++id, idProceso, nombre, tiempoMin, orden',
+    estadoApp: 'id, procesoActivoId, pasoActivoId, inicioAbsolutoMs, inicioGlobalMs' 
 });
 
-// Ajustar la escena cuando la ventana cambie de tamaño
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// Iniciar el bucle de renderizado
-animate();
-
-
+createApp({
+    setup() {
+        // Estado Reactivo
+        const procesosDB = ref([]);
+        const procesoActual = ref(null);
+        const pasosRestantes = ref([]);
+        const pasoActual = ref(null);
         
-    </script>
+        // Variables de tiempo
+        const tiempoActual = ref(Date.now());
+        const inicioAbsolutoMs = ref(0);
+        const inicioGlobalMs = ref(0);
+        const pausado = ref(false);
+        const mensajeFeedback = ref('');
+        let timerInterval = null;
+
+        // Sembrar datos de ejemplo si la DB está vacía
+        const initDB = async () => {
+            const count = await db.procesos.count();
+            if (count === 0) {
+                const procesoId = await db.procesos.add({ nombre: "Rutina de Activación (Ejemplo)" });
+                await db.pasos.bulkAdd([
+                    { idProceso: procesoId, orden: 1, nombre: "Beber agua", tiempoMin: 1 },
+                    { idProceso: procesoId, orden: 2, nombre: "Tender la cama", tiempoMin: 5 },
+                    { idProceso: procesoId, orden: 3, nombre: "Ducha fría", tiempoMin: 10 }
+                ]);
+            }
+            procesosDB.value = await db.procesos.toArray();
+            await recuperarEstado();
+        };
+
+        // Lógica de cálculo estricto (A prueba de cierres de app)
+        const updateTimer = () => {
+            if (!pausado.value && pasoActual.value) {
+                tiempoActual.value = Date.now();
+                evaluarMensajes();
+            }
+        };
+
+        const recuperarEstado = async () => {
+            const estadoGuardado = await db.estadoApp.get(1);
+            if (estadoGuardado && estadoGuardado.procesoActivoId) {
+                procesoActual.value = await db.procesos.get(estadoGuardado.procesoActivoId);
+                const todosLosPasos = await db.pasos.where('idProceso').equals(procesoActual.value.id).sortBy('orden');
+                
+                // Retomar desde el paso guardado
+                const index = todosLosPasos.findIndex(p => p.id === estadoGuardado.pasoActivoId);
+                if (index !== -1) {
+                    pasoActual.value = todosLosPasos[index];
+                    pasosRestantes.value = todosLosPasos.slice(index + 1);
+                    inicioAbsolutoMs.value = estadoGuardado.inicioAbsolutoMs;
+                    inicioGlobalMs.value = estadoGuardado.inicioGlobalMs;
+                    iniciarLoop();
+                }
+            }
+        };
+
+        const iniciarProceso = async (proceso) => {
+            procesoActual.value = proceso;
+            const pasos = await db.pasos.where('idProceso').equals(proceso.id).sortBy('orden');
+            pasosRestantes.value = [...pasos];
+            inicioGlobalMs.value = Date.now();
+            siguientePaso();
+        };
+
+        const siguientePaso = async () => {
+            if (pasosRestantes.value.length === 0) {
+                abandonarProceso(); // Proceso terminado
+                alert("¡Proceso Completado con éxito!");
+                return;
+            }
+            
+            pasoActual.value = pasosRestantes.value.shift();
+            inicioAbsolutoMs.value = Date.now(); // Hora exacta e inmutable de inicio
+            pausado.value = false;
+            mensajeFeedback.value = `¡Vamos! Tienes ${pasoActual.value.tiempoMin} minutos.`;
+
+            // Guardar estado en base de datos
+            await db.estadoApp.put({
+                id: 1,
+                procesoActivoId: procesoActual.value.id,
+                pasoActivoId: pasoActual.value.id,
+                inicioAbsolutoMs: inicioAbsolutoMs.value,
+                inicioGlobalMs: inicioGlobalMs.value
+            });
+
+            iniciarLoop();
+        };
+
+        const abandonarProceso = async () => {
+            clearInterval(timerInterval);
+            procesoActual.value = null;
+            pasoActual.value = null;
+            await db.estadoApp.clear();
+        };
+
+        const iniciarLoop = () => {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        };
+
+        const togglePausa = () => {
+            pausado.value = !pausado.value;
+            if (pausado.value) {
+                mensajeFeedback.value = "⏸️ Proceso pausado.";
+            } else {
+                // Al reanudar, desplazamos el inicio absoluto hacia adelante para compensar el tiempo que estuvo pausado
+                const tiempoQueEstuvoPausado = Date.now() - tiempoActual.value;
+                inicioAbsolutoMs.value += tiempoQueEstuvoPausado;
+                inicioGlobalMs.value += tiempoQueEstuvoPausado;
+                
+                db.estadoApp.update(1, { 
+                    inicioAbsolutoMs: inicioAbsolutoMs.value,
+                    inicioGlobalMs: inicioGlobalMs.value 
+                });
+            }
+        };
+
+        const evaluarMensajes = () => {
+            const pct = Math.floor(porcentajeProgreso.value);
+            if (pct === 25) mensajeFeedback.value = "¡Buen arranque! Sigue así.";
+            if (pct === 50) mensajeFeedback.value = "Vas por la mitad. ¡No te distraigas!";
+            if (pct === 75) mensajeFeedback.value = "¡Ya casi! Último esfuerzo.";
+            if (pct >= 100 && pct < 101) mensajeFeedback.value = "¡Tiempo límite alcanzado! Acelera.";
+        };
+
+        // Propiedades Computadas (Reactividad automática)
+        const transcurridoMs = computed(() => Math.max(0, tiempoActual.value - inicioAbsolutoMs.value));
+        const minutosUsados = computed(() => Math.floor(transcurridoMs.value / 60000));
+        const segundosUsados = computed(() => Math.floor((transcurridoMs.value % 60000) / 1000));
+        const minutosGlobales = computed(() => Math.floor((tiempoActual.value - inicioGlobalMs.value) / 60000));
+        
+        const porcentajeProgreso = computed(() => {
+            if (!pasoActual.value) return 0;
+            const totalMs = pasoActual.value.tiempoMin * 60000;
+            return (transcurridoMs.value / totalMs) * 100;
+        });
+
+        onMounted(() => { initDB(); });
+        onUnmounted(() => { clearInterval(timerInterval); });
+
+        return {
+            procesosDB, procesoActual, pasoActual, porcentajeProgreso,
+            minutosUsados, segundosUsados, minutosGlobales,
+            iniciarProceso, siguientePaso, abandonarProceso, togglePausa,
+            pausado, mensajeFeedback
+        };
+    }
+}).mount('#app');
+</script>
 </body>
 </html>
