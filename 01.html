@@ -155,7 +155,6 @@
     <h1 id="mainTitle">Instalación de Procesos</h1>
 
     <div class="header-controls">
-        <button class="btn-outline" id="musicButton">🎵 Música</button>
         <div id="tiempoTranscurridoContainer">Sistema en Espera</div>
     </div>
 
@@ -211,42 +210,98 @@
         <button class="btn-outline" style="margin-top: 20px;" onclick="App.switchView('view-menu')">⬅️ Volver al Menú</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-    <script>/**
+    <script>
+/**
  * DATOS POR DEFECTO Y MENSAJES (Configuración)
  */
 const DEFAULT_PROCESSES = {
     habitacion: {
         id: 'habitacion',
-        nombre: "Organizar Habitación 52",
+        nombre: "🧹 Organizar Habitación",
         tareas: [
             { nombre: "Hacer la cama", tiempoMin: 4 },
-            { nombre: "Despejar superficies", tiempoMin: 10 },
-            { nombre: "Limpiar polvo", tiempoMin: 5 }
+            { nombre: "Despejar superficies como mesas cama escritorio", tiempoMin: 10 },
+            { nombre: "Organizar objetos fuera de sitio", tiempoMin: 10 },
+            { nombre: "Limpiar el polvo ", tiempoMin: 5 },
+            { nombre: "Recoger ropa sucia", tiempoMin: 10 },
+            { nombre: "Barrida rápida ", tiempoMin: 10 },
+            { nombre: "Botar al menos una cosa innecesaria", tiempoMin: 3 }
         ]
     },
     activacion76: {
         id: 'activacion76',
-        nombre: "Rutina de Activación",
+        nombre: "🌞 Rutina de Activación Base",
         tareas: [
-            { nombre: "Beber agua", tiempoMin: 3 },
-            { nombre: "Aseo dental 🪥", tiempoMin: 5 },
-            { nombre: "Ducha y Vestirse", tiempoMin: 15 }
+            { nombre: "Beber vaso de agua🐧", tiempoMin: 3 },
+            { nombre: "Ponerte los zapatos", tiempoMin: 4 },
+            { nombre: "Aseo dental impecable 🪥", tiempoMin: 5 },
+            { nombre: "Tender la cama como campeón", tiempoMin: 7 },
+            { nombre: "Movimiento físico ligero para despertar", tiempoMin: 14 },
+            { nombre: "Concentración y doblar pijama", tiempoMin: 12 },
+            { nombre: "Entra al baño y despabílate", tiempoMin: 3 },
+            { nombre: "Ducha de poder", tiempoMin: 15 },
+            { nombre: "Pantalón y ordenar toalla", tiempoMin: 10 },
+            { nombre: "Vestirse con toda la actitud", tiempoMin: 7 },
+            { nombre: "Preparar un buen café", tiempoMin: 5 },
+        
+            
+            { nombre: "Revisión rápida de 3 objetivos", tiempoMin: 5 },
+            { nombre: "Dividir la primera tarea en partes", tiempoMin: 10 },
+            { nombre: "Elegir la más fácil y... ¡Arrancar!", tiempoMin: 10 }
+        ]
+    },
+    desactivacion: {
+        id: 'desactivacion',
+        nombre: "🌙 Rutina de Desactivación",
+        tareas: [
+            { nombre: "anotar pensamientos y pendientes", tiempoMin: 5 },
+            { nombre: "pijama cómoda y ordenar ropa", tiempoMin: 5 },
+            { nombre: "Preparar outfit ropa para mañana", tiempoMin: 3 },
+            { nombre: "Skin care lavar cara y cepillado dental ", tiempoMin: 5 },
+            { nombre: "Programar alarmas fijas", tiempoMin: 2 },
+            { nombre: "Preparar mochila o maletín", tiempoMin: 5 },
+            { nombre: "Tomar vaso de agua fresco", tiempoMin: 4 },
+            { nombre: "Anotar 3 prioridades absolutas de mañana", tiempoMin: 4 },
+            { nombre: "Escribir reflexiones conclusiones del día", tiempoMin: 5 },
+        
+            { nombre: "desconectar pensmientos", tiempoMin: 15 },
+            { nombre: "Apagar todas las luces e ir a dormir pingüineitor", tiempoMin: 3 }
         ]
     }
 };
 
 const MSG = {
-    ANIMO: ["¡Continúa, lo estás haciendo excelente!", "¡Buen trabajo, sigue el ritmo!", "Casi lo logras, no te detengas."],
-    ADVERTENCIA: ["El tiempo se agota, acelera el paso.", "Te estás demorando más de lo previsto."],
-    FRASE_INICIO: ["Cargando programa. Inicia la ejecución."]
+    PCT_25: [
+        "🐧 25% completado. ¡De una, papá, a paso firme!",
+        " Vamos un cuarto. ¡Sigue moviendo el ala, no te quedes, mano!",
+        "🐧 25% listo. ¡Órale carnal, apenas vamos calentando!"
+    ],
+    PCT_50: [
+        "🐧 50%. ¡A la mitad! Con toda, no sea flojo.",
+        " ¡50% listo, mi pana! Metiéndole candela a esto.",
+        "🐧 ¡Ya llevas la mitad, güey! ¡A toda máquina!"
+    ],
+    PCT_75: [
+        "🐧 75% completado. ¡Uy wuara parce casi coronamos!",
+        " ¡75%! Falta el último jalón, primo, no te rindas.",
+        "🐧 ¡75%! Ya casi llegamos a la meta, ¡arriba ese ánimo!"
+    ],
+    ADVERTENCIA: [
+        "🐧 ¡Te me estás durmiendo como pingüino en hielo! ¡Apúrate!",
+        "🐧 Cuidado, mano, vas más lento que tortuga con sueño.",
+        "🐧 ¡na wuara , se acabó el tiempo! Mueve las aletas ya."
+    ],
+    FRASE_INICIO: [
+        "🐧 ¡Arrancamos de una, papá! ¡Sin miedo al éxito!",
+        "🐧 ¡Listos los pingüinos! A ejecutar sin excusas, mi pana.",
+        "🐧 ¡na wara pues! Inicia el proceso, ¡a darle duro!"
+    ]
 };
 
 /**
  * NÚCLEO DE LA APLICACIÓN
  */
 const App = {
-    // Estado Global
     State: {
         procesos: {},         
         estadisticas: [],
@@ -259,13 +314,9 @@ const App = {
         intervaloTarea: null,
         tiempoInicioGlobal: null,
         isPausado: false,
-        tiempoPausaInicio: null, // Nuevo: Para calcular el desfase si se recarga estando pausado
-        
-        musicPlayer: null,
-        musicPlaying: false
+        tiempoPausaInicio: null
     },
 
-    // Variables para el Editor CRUD
     Draft: {
         id: null,
         nombre: '',
@@ -288,11 +339,9 @@ const App = {
 
     init: function() {
         this.loadData();
-        this.initMusic();
         this.addEventListeners();
         this.renderMenu();
         
-        // Intentar restaurar sesión activa, si no hay, ir al menú
         if (!this.loadActiveState()) {
             this.switchView('view-menu');
         }
@@ -334,7 +383,6 @@ const App = {
         localStorage.setItem('matrix_stats', JSON.stringify(this.State.estadisticas));
     },
 
-    // --- PERSISTENCIA DE EJECUCIÓN (NUEVO) ---
     saveActiveState: function() {
         const activeState = {
             procesoActivoId: this.State.procesoActivoId,
@@ -359,7 +407,6 @@ const App = {
         const saved = JSON.parse(stateStr);
         if (!saved.procesoActivoId || !this.State.procesos[saved.procesoActivoId]) return false;
 
-        // Restaurar estado
         this.State.procesoActivoId = saved.procesoActivoId;
         this.State.tareasRestantes = saved.tareasRestantes;
         this.State.tareaActual = saved.tareaActual;
@@ -367,19 +414,16 @@ const App = {
         this.State.tiempoInicioGlobal = saved.tiempoInicioGlobal;
         this.State.isPausado = saved.isPausado;
 
-        // Ajustar tiempos si se recargó estando en pausa
         if (this.State.isPausado && saved.tiempoPausaInicio) {
             const tiempoDesconectado = Date.now() - saved.tiempoPausaInicio;
             if (this.State.tiempoInicioGlobal) this.State.tiempoInicioGlobal += tiempoDesconectado;
             if (this.State.tareaActual && this.State.tareaActual.inicioMs) this.State.tareaActual.inicioMs += tiempoDesconectado;
         }
 
-        // Restaurar Interfaz
         this.DOM.tituloEjecucion.textContent = `Proceso: ${this.State.procesos[this.State.procesoActivoId].nombre}`;
         this.switchView('view-execution');
 
         if (this.State.tareaActual) {
-            // Estaba en ejecución
             this.DOM.btnIniciar.classList.add('hidden');
             this.DOM.btnPausar.classList.remove('hidden');
             this.DOM.btnFinalizar.classList.remove('hidden');
@@ -393,7 +437,6 @@ const App = {
             }
             this.updateUI();
         } else {
-            // Estaba preparado pero no iniciado
             this.DOM.btnIniciar.classList.remove('hidden');
             this.DOM.btnPausar.classList.add('hidden');
             this.DOM.btnFinalizar.classList.add('hidden');
@@ -474,7 +517,7 @@ const App = {
         this.DOM.progreso.innerHTML = '';
         this.DOM.mensaje.innerHTML = '';
 
-        this.saveActiveState(); // Guardamos estado de preparación
+        this.saveActiveState();
         this.switchView('view-execution');
     },
 
@@ -485,7 +528,9 @@ const App = {
         this.DOM.btnFinalizar.classList.remove('hidden');
 
         this.State.intervaloGlobal = setInterval(() => this.updateUI(), 1000);
-        this.hablar(this.getRandomMsg(MSG.FRASE_INICIO));
+        const msgInicio = this.getRandomMsg(MSG.FRASE_INICIO);
+        this.DOM.mensaje.innerHTML = msgInicio;
+        this.hablar(msgInicio);
         this.siguienteTarea();
     },
 
@@ -511,7 +556,7 @@ const App = {
         this.hablar(`Tarea: ${this.State.tareaActual.nombre}. Tiempo estimado: ${this.State.tareaActual.tiempoMin} minutos.`);
         
         this.State.intervaloTarea = setInterval(() => this.updateUI(), 1000);
-        this.saveActiveState(); // Guardar avance
+        this.saveActiveState();
     },
 
     finalizarTarea: function() {
@@ -529,11 +574,9 @@ const App = {
         this.siguienteTarea();
     },
 
-    // AQUÍ ESTABA EL ERROR: Invertimos el orden para guardar antes de borrar la memoria
     finalizarProcesoCompleto: function() {
         const proceso = this.State.procesos[this.State.procesoActivoId];
         
-        // 1. Guardar estadísticas primero
         this.State.estadisticas.push({
             procesoNombre: proceso.nombre,
             fecha: new Date().toLocaleString(),
@@ -541,13 +584,11 @@ const App = {
         });
         this.saveStats();
 
-        // 2. Limpiar todo
         this.limpiarEjecucion();
         
-        // 3. Informar al usuario
         this.vibrar([300, 100, 300, 100, 500]);
-        this.hablar("Programa ejecutado con éxito. Secuencia terminada.");
-        alert("¡Proceso completado! Estadísticas guardadas.");
+        this.hablar("🐧 ¡Excelente trabajo, mano! Proceso completado. Misión cumplida.");
+        alert("🐧 ¡Proceso completado! Estadísticas guardadas.");
         this.switchView('view-menu');
     },
 
@@ -559,7 +600,7 @@ const App = {
         this.State.tareaActual = null;
         this.State.procesoActivoId = null;
         this.DOM.tiempoTotal.innerHTML = "Sistema en Espera";
-        this.clearActiveState(); // Borrar autoguardado al terminar/abandonar
+        this.clearActiveState();
     },
 
     updateUI: function() {
@@ -584,11 +625,29 @@ const App = {
         progressBar.style.width = `${Math.min(porcentaje, 100)}%`;
         progressBar.textContent = `${Math.round(porcentaje)}%`;
 
+        // Lógica de avisos cada 25%
+        const currentPctLevel = Math.floor(porcentaje / 25) * 25;
+        if (currentPctLevel > (tarea.mensajePrevioPct || 0) && currentPctLevel <= 100) {
+            tarea.mensajePrevioPct = currentPctLevel;
+            let msg = "";
+            if (currentPctLevel === 25) msg = this.getRandomMsg(MSG.PCT_25);
+            else if (currentPctLevel === 50) msg = this.getRandomMsg(MSG.PCT_50);
+            else if (currentPctLevel === 75) msg = this.getRandomMsg(MSG.PCT_75);
+
+            if (msg) {
+                this.DOM.mensaje.innerHTML = msg;
+                this.hablar(msg);
+            }
+        }
+
         if (porcentaje >= 100) {
             progressBar.classList.add('advertencia');
-            if (porcentaje > 100 && porcentaje < 102) {
+            if (porcentaje > 100 && porcentaje < 102 && tarea.mensajePrevioPct !== 105) {
+                tarea.mensajePrevioPct = 105;
+                const msgAdv = this.getRandomMsg(MSG.ADVERTENCIA);
+                this.DOM.mensaje.innerHTML = msgAdv;
                 this.vibrar([500]); 
-                this.hablar(this.getRandomMsg(MSG.ADVERTENCIA));
+                this.hablar(msgAdv);
             }
         }
     },
@@ -605,7 +664,6 @@ const App = {
         } else {
             this.DOM.btnPausar.innerHTML = '⏸️ Pausar Tarea';
             
-            // Compensar tiempo offline o de pausa
             const estadoGuardado = JSON.parse(localStorage.getItem('matrix_active_state'));
             const tiempoPausado = Date.now() - (estadoGuardado?.tiempoPausaInicio || Date.now());
             
@@ -729,32 +787,10 @@ const App = {
         this.DOM.btnIniciar.addEventListener('click', () => this.iniciarProceso());
         this.DOM.btnPausar.addEventListener('click', () => this.togglePausa());
         this.DOM.btnFinalizar.addEventListener('click', () => this.finalizarTarea());
-        document.getElementById('musicButton').addEventListener('click', () => this.toggleMusic());
-    },
-
-    initMusic: function() {
-        this.State.musicPlayer = new Howl({
-            src: ['https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'],
-            loop: true,
-            volume: 0.5
-        });
-    },
-
-    toggleMusic: function() {
-        const btn = document.getElementById('musicButton');
-        if (this.State.musicPlaying) {
-            this.State.musicPlayer.pause();
-            btn.textContent = '🎵 Música OFF';
-        } else {
-            this.State.musicPlayer.play();
-            btn.textContent = '🎶 Música ON';
-        }
-        this.State.musicPlaying = !this.State.musicPlaying;
     }
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
-
     </script>
 </body>
 </html>
