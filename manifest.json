@@ -1,0 +1,20 @@
+{
+  "name": "Organízate Ya - Procesos",
+  "short_name": "Organízate 🐧",
+  "description": "Gestor de procesos, rutinas y estadísticas offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0e0e",
+  "theme_color": "#143758",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f427.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
