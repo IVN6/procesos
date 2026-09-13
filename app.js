@@ -432,3 +432,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const ui = new UIController(app);
     app.init().then(() => ui.init());
 });
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Evita que el navegador muestre su propio banner automático
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Muestra tu botón personalizado
+    const installBtn = document.getElementById('btn-instalar');
+    if (installBtn) {
+        installBtn.style.display = 'inline-block';
+    }
+});
+
+document.getElementById('btn-instalar')?.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    
+    // Lanza el diálogo nativo de instalación
+    deferredPrompt.prompt();
+    
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        console.log('El usuario aceptó instalar la PWA');
+    }
+    deferredPrompt = null;
+    document.getElementById('btn-instalar').style.display = 'none';
+});
+
+// Detectar si ya fue instalada para ocultar el botón permanentemente
+window.addEventListener('appinstalled', () => {
+    const installBtn = document.getElementById('btn-instalar');
+    if (installBtn) installBtn.style.display = 'none';
+    deferredPrompt = null;
+});
