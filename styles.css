@@ -1,0 +1,256 @@
+/* ==========================================
+   VARIABLES Y RESET
+   ========================================== */
+:root {
+    --bg-main: #0f0e0e;
+    --bg-card: #143758;
+    --bg-card-hover: #1c4b78;
+    --text-main: #e9ecef;
+    --accent: #2196F3;
+    --success: #5cb315;
+    --warning: #FFC107;
+    --danger: #FF5722;
+    --radius: 12px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.6;
+    padding-bottom: 40px;
+}
+
+/* ==========================================
+   CABECERA Y NAVEGACIÓN
+   ========================================== */
+.app-header {
+    text-align: center;
+    padding: 20px 10px;
+    background: linear-gradient(180deg, rgba(20,55,88,0.8) 0%, rgba(15,14,14,1) 100%);
+    margin-bottom: 20px;
+}
+
+.app-header h1 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: #ffffff;
+}
+
+.main-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.main-nav button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-main);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.main-nav button:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+#app-root {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.view-container {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--accent);
+}
+
+/* ==========================================
+   TARJETAS Y LISTAS (Menú Inicio y Editor)
+   ========================================== */
+.procesos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.proceso-card, .editor-item {
+    background-color: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: left;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.proceso-card:hover {
+    transform: translateY(-3px);
+    background-color: var(--bg-card-hover);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+
+.proceso-card h3 {
+    margin-bottom: 5px;
+    font-size: 1.2rem;
+}
+
+.proceso-card small {
+    color: #a0aec0;
+}
+
+.editor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    cursor: default;
+}
+
+/* ==========================================
+   VISTA DE EJECUCIÓN (Runner)
+   ========================================== */
+.time-tracker {
+    display: flex;
+    justify-content: space-between;
+    background: var(--bg-card);
+    padding: 12px 20px;
+    border-radius: 30px;
+    margin-bottom: 20px;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.time-badge.highlight {
+    color: var(--warning);
+}
+
+.tarea-card {
+    background: var(--bg-card);
+    padding: 25px;
+    border-radius: var(--radius);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.tarea-titulo {
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+}
+
+/* Barra de Progreso */
+.progreso-container {
+    height: 25px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.progreso-bar {
+    height: 100%;
+    background-color: var(--success);
+    width: 0%;
+    transition: width 0.4s ease-out, background-color 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* ==========================================
+   CONTROLES Y BOTONES
+   ========================================== */
+.action-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+button[data-action], .btn-primary, .btn-warning, .btn-success, .btn-instalar {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    color: white;
+    transition: filter 0.2s, transform 0.1s;
+}
+
+button[data-action]:active { transform: scale(0.95); }
+button:hover { filter: brightness(1.1); }
+
+.btn-primary { background-color: var(--accent); }
+.btn-warning { background-color: var(--warning); color: #000; }
+.btn-success { background-color: var(--success); }
+.btn-instalar { background-color: #9c27b0; display: block; margin: 10px auto; }
+
+/* ==========================================
+   FORMULARIOS Y EVIDENCIA
+   ========================================== */
+.evidence-section {
+    background: rgba(255,255,255,0.03);
+    padding: 15px;
+    border-radius: var(--radius);
+    border: 1px dashed rgba(255,255,255,0.2);
+}
+
+.evidence-section h4 {
+    margin-bottom: 10px;
+    color: #a0aec0;
+}
+
+textarea.task-comment {
+    width: 100%;
+    min-height: 80px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: white;
+    padding: 10px;
+    margin-bottom: 10px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+input[type="file"] {
+    display: block;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #a0aec0;
+}
+
+/* ==========================================
+   UTILIDADES
+   ========================================== */
+.hidden { display: none !important; }
