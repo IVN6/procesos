@@ -1,303 +1,133 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="manifest" href="manifest.json">
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organízate Ya - Vue Reactivo</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-    <style>
-        :root {
-            --bg-main: #0f0e0e; --bg-card: #143758; --bg-task: #0d2136;
-            --primary: #2196F3; --success: #5cb315; --warning: #FFC107;
-            --danger: #FF5722; --text: #e9ecef;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-main); color: var(--text);
-            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
-        }
-        .container {
-            width: 100%; max-width: 600px; background: var(--bg-card);
-            border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-        }
-        .header-sticky {
-            position: sticky; top: 10px; background: var(--success);
-            padding: 10px; border-radius: 8px; text-align: center;
-            font-weight: bold; margin-bottom: 20px; z-index: 10;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        h1, h2 { text-align: center; margin-top: 0; }
-        .btn {
-            display: block; width: 100%; padding: 12px; margin-bottom: 10px;
-            background: transparent; color: var(--text); border: 2px solid var(--primary);
-            border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s;
-        }
-        .btn:hover { background: var(--primary); color: white; }
-        .btn-danger { border-color: var(--danger); color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: white; }
-        .btn-warning { border-color: var(--warning); color: var(--warning); }
-        .btn-warning:hover { background: var(--warning); color: black; }
-        .btn-small { width: auto; padding: 5px 10px; font-size: 14px; border-radius: 5px; }
-        
-        .progress-container {
-            height: 30px; background-color: #3e4858; border-radius: 6px;
-            overflow: hidden; margin: 20px 0; position: relative;
-        }
-        .progress-bar {
-            height: 100%; background-color: var(--success);
-            transition: width 0.3s linear, background-color 0.3s;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: bold; font-size: 14px; white-space: nowrap;
-        }
-        .progress-bar.overtime { background-color: var(--danger); }
-        .task-card { background: var(--bg-task); padding: 15px; border-radius: 8px; text-align: center; }
-        .message-box { text-align: center; color: var(--warning); font-weight: bold; min-height: 24px; margin-bottom: 15px; }
-    </style>
+    <title>Organízate Ya - Procesos</title>
+    <!-- Preparado para PWA -->
+    <link rel="icon" sizes="192x192" href="icon.png">
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
 
-<div id="app" class="container">
-    <h1>hazlo ya <span v-if="procesoActual">| {{ procesoActual.nombre }}</span></h1>
-
-    <div v-if="procesoActual" class="header-sticky">
-        <span>⏱️ Total: {{ minutosGlobales }} min</span>
-        <button class="btn btn-primary btn-small" @click="toggleVoz" style="margin:0; border-color: white;">
-            {{ vozActivada ? '🗣️ Voz: ON' : '🔇 Voz: OFF' }}
-        </button>
-    </div>
-
-    <div v-if="!procesoActual">
-        <h2>Selecciona un Proceso</h2>
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-             <button class="btn btn-primary btn-small" @click="toggleVoz">
-                {{ vozActivada ? '🗣️ Voz: ON' : '🔇 Voz: OFF' }}
-            </button>
-        </div>
-        <button v-for="proceso in procesosDB" :key="proceso.id" class="btn" @click="iniciarProceso(proceso)">
-            {{ proceso.nombre }}
-        </button>
-    </div>
-
-    <div v-else class="task-card">
-        <h3 style="color: var(--primary);">{{ pasoActual?.nombre }}</h3>
-        <p>Tiempo asignado: {{ pasoActual?.tiempoMin }} minutos</p>
+    <!-- CABECERA PRINCIPAL -->
+    <header class="app-header">
+        <h1>La incompetencia da Asco <span id="header-subtitle"></span></h1>
+        <button id="btn-instalar" style="display: none;" class="btn-instalar">📲 Instalar </button>
         
-        <div class="progress-container">
-            <div class="progress-bar" :class="{ overtime: porcentajeProgreso >= 100 }" :style="{ width: Math.min(porcentajeProgreso, 100) + '%' }">
-                {{ Math.floor(porcentajeProgreso) }}%
+        <!-- Navegación Principal -->
+        <nav class="main-nav">
+            <button data-route="home">🏠 Inicio</button>
+            <button data-route="editor">✏️ Editar Procesos</button>
+            <button data-route="messages">💬 Mensajes</button>
+            <button data-route="settings">⚙️ Ajustes</button>
+        </nav>
+    </header>
+
+    <!-- CONTENEDOR DINÁMICO (Aquí JS inyectará las vistas) -->
+    <main id="app-root"></main>
+
+    <!-- ========================================== -->
+    <!-- PLANTILLAS (No se ven hasta que JS las usa) -->
+    <!-- ========================================== -->
+
+    <!-- 1. Plantilla: Menú Principal (Selección de Procesos) -->
+    <template id="tpl-home">
+        <div class="view-container">
+            <h2>Selecciona tu proceso</h2>
+            <div class="procesos-grid" id="procesos-list">
+                <!-- Los botones de procesos se inyectarán aquí -->
             </div>
         </div>
-        
-        <div class="message-box">{{ mensajeFeedback }}</div>
-        <p>Tiempo usado: {{ minutosUsados }}m {{ segundosUsados }}s</p>
+    </template>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn btn-warning" @click="togglePausa">
-                {{ pausado ? '▶️ Reanudar' : '⏸️ Pausar' }}
-            </button>
-            <button class="btn btn-danger" @click="siguientePaso">✅ Siguiente</button>
+    <!-- 2. Plantilla: Ejecución del Proceso (Runner) -->
+    <template id="tpl-runner">
+        <div class="view-container runner-view">
+            <!-- Tiempos (Se eliminó hora actual, se resaltó fin, se añadió inicio) -->
+            <div class="time-tracker">
+                <div class="time-badge">Inicio: <span class="start-time">--:--</span></div>
+                <div class="time-badge highlight">Fin Estimado: <span class="end-time">--:--</span></div>
+            </div>
+
+            <!-- Tarea Actual y Progreso -->
+            <div class="tarea-card">
+                <h3 class="tarea-titulo">Cargando tarea...</h3>
+                <div class="progreso-container">
+                    <div class="progreso-bar" style="width: 0%;">0%</div>
+                </div>
+            </div>
+            
+            <div class="mensaje-display"></div>
+
+            <!-- Controles de Tarea -->
+            <div class="action-controls">
+                <button data-action="start" class="btn-primary">▶️ Iniciar</button>
+                <button data-action="pause" class="btn-warning hidden">⏸️ Pausar</button>
+                <button data-action="finish" class="btn-success hidden">✅ Finalizar</button>
+            </div>
+
+            <!-- NUEVO: Registro de evidencia (Comentarios y Archivos) -->
+            <div class="evidence-section hidden">
+                <h4>Registro de la Tarea</h4>
+                <textarea class="task-comment" placeholder="Deja notas, observaciones o usa variables como {{nombre}}..."></textarea>
+                <input type="file" class="task-file" accept="image/*, audio/*, video/*" multiple>
+            </div>
         </div>
-        <button class="btn btn-danger" style="margin-top: 10px; opacity: 0.7;" @click="abandonarProceso">
-            ⏹️ Finalizar Todo
-        </button>
-    </div>
-</div>
+    </template>
 
-<script>
-const { createApp, ref, computed, onMounted, onUnmounted, watch } = Vue;
+    <!-- 3. Plantilla: Editor de Procesos (CRUD) -->
+    <template id="tpl-editor">
+        <div class="view-container editor-view">
+            <h2>Gestión de Procesos</h2>
+            <button data-action="new-process" class="btn-primary">+ Nuevo Proceso</button>
+            <div class="editor-list">
+                <!-- Lista editable de procesos y sus pasos -->
+            </div>
+        </div>
+    </template>
 
-const db = new Dexie('OrganizateYaDB');
-db.version(1).stores({
-    procesos: '++id, nombre',
-    pasos: '++id, idProceso, nombre, tiempoMin, orden',
-    estadoApp: 'id, procesoActivoId, pasoActivoId, inicioAbsolutoMs, inicioGlobalMs, vozActivada' 
-});
-
-createApp({
-    setup() {
-        const procesosDB = ref([]);
-        const procesoActual = ref(null);
-        const pasosRestantes = ref([]);
-        const pasoActual = ref(null);
-        
-        const tiempoActual = ref(Date.now());
-        const inicioAbsolutoMs = ref(0);
-        const inicioGlobalMs = ref(0);
-        const pausado = ref(false);
-        const mensajeFeedback = ref('');
-        const vozActivada = ref(true);
-        let timerInterval = null;
-
-        // Motor de Síntesis de Voz
-        const hablar = (texto) => {
-            if (vozActivada.value && 'speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Detiene audios pendientes
-                const utterance = new SpeechSynthesisUtterance(texto);
-                utterance.lang = 'es-ES';
-                utterance.rate = 1.05; // Ligeramente más rápido para dar sensación de urgencia
-                window.speechSynthesis.speak(utterance);
-            }
-        };
-
-        const toggleVoz = async () => {
-            vozActivada.value = !vozActivada.value;
-            if (vozActivada.value) hablar("Voz activada");
-            else window.speechSynthesis.cancel();
+    <!-- 4. Plantilla: Configuración -->
+    <template id="tpl-settings">
+        <div class="view-container settings-view">
+            <h2>Configuración del Sistema</h2>
             
-            // Guardar preferencia de voz
-            if (procesoActual.value) await guardarEstado();
-        };
-
-        const initDB = async () => {
-            const count = await db.procesos.count();
-            if (count === 0) {
-                const procesoId = await db.procesos.add({ nombre: "Rutina de Activación (Ejemplo)" });
-                await db.pasos.bulkAdd([
-                    { idProceso: procesoId, orden: 1, nombre: "Beber agua", tiempoMin: 1 },
-                    { idProceso: procesoId, orden: 2, nombre: "Tender la cama", tiempoMin: 5 }
-                ]);
-            }
-            procesosDB.value = await db.procesos.toArray();
-            await recuperarEstado();
-        };
-
-        const updateTimer = () => {
-            if (!pausado.value && pasoActual.value) {
-                tiempoActual.value = Date.now();
-                evaluarMensajes();
-            }
-        };
-
-        const guardarEstado = async () => {
-            await db.estadoApp.put({
-                id: 1,
-                procesoActivoId: procesoActual.value?.id || null,
-                pasoActivoId: pasoActual.value?.id || null,
-                inicioAbsolutoMs: inicioAbsolutoMs.value,
-                inicioGlobalMs: inicioGlobalMs.value,
-                vozActivada: vozActivada.value
-            });
-        };
-
-        const recuperarEstado = async () => {
-            const estadoGuardado = await db.estadoApp.get(1);
-            if (estadoGuardado) {
-                vozActivada.value = estadoGuardado.vozActivada !== undefined ? estadoGuardado.vozActivada : true;
-                
-                if (estadoGuardado.procesoActivoId) {
-                    procesoActual.value = await db.procesos.get(estadoGuardado.procesoActivoId);
-                    const todosLosPasos = await db.pasos.where('idProceso').equals(procesoActual.value.id).sortBy('orden');
-                    
-                    const index = todosLosPasos.findIndex(p => p.id === estadoGuardado.pasoActivoId);
-                    if (index !== -1) {
-                        pasoActual.value = todosLosPasos[index];
-                        pasosRestantes.value = todosLosPasos.slice(index + 1);
-                        inicioAbsolutoMs.value = estadoGuardado.inicioAbsolutoMs;
-                        inicioGlobalMs.value = estadoGuardado.inicioGlobalMs;
-                        iniciarLoop();
-                    }
-                }
-            }
-        };
-
-        const iniciarProceso = async (proceso) => {
-            procesoActual.value = proceso;
-            const pasos = await db.pasos.where('idProceso').equals(proceso.id).sortBy('orden');
-            pasosRestantes.value = [...pasos];
-            inicioGlobalMs.value = Date.now();
-            hablar(`Iniciando ${proceso.nombre}. No me decepciones.`);
-            siguientePaso();
-        };
-
-        const siguientePaso = async () => {
-            if (pasosRestantes.value.length === 0) {
-                hablar("Proceso completado. Gran victoria.");
-                abandonarProceso();
-                return;
-            }
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="toggle-voice"> 
+                    Habilitar comandos de voz (Micrófono)
+                </label>
+            </div>
             
-            pasoActual.value = pasosRestantes.value.shift();
-            inicioAbsolutoMs.value = Date.now();
-            pausado.value = false;
-            
-            const msg = `Siguiente: ${pasoActual.value.nombre}. Tienes ${pasoActual.value.tiempoMin} minutos.`;
-            mensajeFeedback.value = msg;
-            hablar(msg);
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="toggle-speech"> 
+                    Habilitar respuestas de voz (Altavoz)
+                </label>
+            </div>
 
-            await guardarEstado();
-            iniciarLoop();
-        };
+            <!-- Opciones para variables de usuario -->
+            <div class="setting-item">
+                <label>Tu Nombre (Para mensajes personalizados):</label>
+                <input type="text" id="user-name-input" placeholder="Ej: Jhon">
+            </div>
+        </div>
+    </template>
 
-        const abandonarProceso = async () => {
-            clearInterval(timerInterval);
-            procesoActual.value = null;
-            pasoActual.value = null;
-            await guardarEstado();
-        };
+    <!-- 5. Plantilla: Resultados y Estadísticas -->
+    <template id="tpl-stats">
+        <div class="view-container stats-view">
+            <h2>📊 Resultados del Proceso</h2>
+            <div class="charts-container">
+                <!-- Gráficos generados por JS -->
+            </div>
+            <button data-route="home" class="btn-primary">Volver al Inicio</button>
+        </div>
+    </template>
 
-        const iniciarLoop = () => {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(updateTimer, 1000);
-        };
-
-        const togglePausa = () => {
-            pausado.value = !pausado.value;
-            if (pausado.value) {
-                mensajeFeedback.value = "⏸️ Proceso pausado.";
-                hablar("Proceso pausado.");
-            } else {
-                const tiempoQueEstuvoPausado = Date.now() - tiempoActual.value;
-                inicioAbsolutoMs.value += tiempoQueEstuvoPausado;
-                inicioGlobalMs.value += tiempoQueEstuvoPausado;
-                guardarEstado();
-                hablar("Reanudando. Muévete.");
-            }
-        };
-
-        let ultimoPorcentajeHablado = 0;
-        const evaluarMensajes = () => {
-            const pct = Math.floor(porcentajeProgreso.value);
-            
-            // Reiniciar el control de mensajes si empezamos un nuevo paso o reanudamos desde cero
-            if (pct < ultimoPorcentajeHablado) ultimoPorcentajeHablado = 0;
-
-            const dispararMensaje = (nivel, texto) => {
-                if (pct >= nivel && ultimoPorcentajeHablado < nivel) {
-                    ultimoPorcentajeHablado = nivel;
-                    mensajeFeedback.value = texto;
-                    hablar(texto);
-                }
-            };
-
-            dispararMensaje(25, "25 por ciento. Buen arranque.");
-            dispararMensaje(50, "50 por ciento. Vas por la mitad.");
-            dispararMensaje(75, "75 por ciento. Último esfuerzo, apúrate.");
-            dispararMensaje(100, "Tiempo límite alcanzado. Eres demasiado lento.");
-        };
-
-        const transcurridoMs = computed(() => Math.max(0, tiempoActual.value - inicioAbsolutoMs.value));
-        const minutosUsados = computed(() => Math.floor(transcurridoMs.value / 60000));
-        const segundosUsados = computed(() => Math.floor((transcurridoMs.value % 60000) / 1000));
-        const minutosGlobales = computed(() => Math.floor((tiempoActual.value - inicioGlobalMs.value) / 60000));
-        
-        const porcentajeProgreso = computed(() => {
-            if (!pasoActual.value) return 0;
-            const totalMs = pasoActual.value.tiempoMin * 60000;
-            return (transcurridoMs.value / totalMs) * 100;
-        });
-
-        onMounted(() => { initDB(); });
-        onUnmounted(() => { clearInterval(timerInterval); });
-
-        return {
-            procesosDB, procesoActual, pasoActual, porcentajeProgreso,
-            minutosUsados, segundosUsados, minutosGlobales,
-            iniciarProceso, siguientePaso, abandonarProceso, togglePausa, toggleVoz,
-            pausado, mensajeFeedback, vozActivada
-        };
-    }
-}).mount('#app');
-</script>
+    <!-- Se eliminó Howler.js y el iframe de Google Forms para mantenerlo nativo e IndexedDB -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
