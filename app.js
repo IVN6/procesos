@@ -80,7 +80,7 @@ class LocalDB {
  * Preparado para enviar solo la estructura de texto (Procesos) y evitar peso.
  */
 class CloudSync {
-    static BACKEND_URL = 'URL_DE_TU_WEB_APP_APPS_SCRIPT_AQUI';
+    static BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwRVJW4UWvomOdLhqbnDNb5CyT8y9evNJjY9YgF5xRrDtiF75srK_2iUQ1UFAn24nkrYQ/exec';
 
     static async shareProcess(proceso) {
         // Limpiamos datos pesados (archivos/audios) por seguridad antes de enviar
