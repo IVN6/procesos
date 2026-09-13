@@ -1,11 +1,48 @@
 "use strict";
-
+/**
+ * ==========================================
+ * DATOS DE MUESTRA INICIALES (Seed Data)
+ * ==========================================
+ */
+const INITIAL_PROCESSES = [
+    {
+        id: 'proc_activacion_manana',
+        nombre: '🌅 Rutina de Activación (Mañana)',
+        tareas: [
+            { nombre: 'Hidratación y ventilación de habitación', tiempoMin: 3 },
+            { nombre: 'Movilidad articular y estiramientos', tiempoMin: 7 },
+            { nombre: 'Higiene personal y vestimenta', tiempoMin: 10 },
+            { nombre: 'Revisión del plan del día', tiempoMin: 5 }
+        ]
+    },
+    {
+        id: 'proc_desactivacion_noche',
+        nombre: '🌙 Rutina de Desactivación (Noche)',
+        tareas: [
+            { nombre: 'Desconexión de pantallas principales', tiempoMin: 5 },
+            { nombre: 'Preparación de ropa y cosas para mañana', tiempoMin: 7 },
+            { nombre: 'Higiene nocturna', tiempoMin: 8 },
+            { nombre: 'Lectura ligera o pausa de respiración', tiempoMin: 10 }
+        ]
+    },
+    {
+        id: 'proc_limpieza_habitacion',
+        nombre: '🧹 Organización de Habitación',
+        tareas: [
+            { nombre: 'Ventilar y tender la cama', tiempoMin: 4 },
+            { nombre: 'Recoger ropa y despejar el piso', tiempoMin: 5 },
+            { nombre: 'Organizar escritorio y mesa de noche', tiempoMin: 6 },
+            { nombre: 'Sacudir polvo rápido y ordenar cables', tiempoMin: 5 }
+        ]
+    }
+];
 /**
  * ==========================================
  * 1. CAPA DE DATOS (IndexedDB)
  * ==========================================
  * Gestiona de forma asíncrona y robusta el almacenamiento local.
  */
+
 class LocalDB {
     constructor(dbName = 'OrganizateYaDB', version = 1) {
         this.dbName = dbName;
@@ -70,6 +107,16 @@ class LocalDB {
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
         });
+    }
+    async seedInitialData() {
+        const procesosExistentes = await this.getAll('procesos');
+        // Si la base de datos no tiene procesos, guardamos los predeterminados
+        if (procesosExistentes.length === 0) {
+            for (const proc of INITIAL_PROCESSES) {
+                await this.save('procesos', proc);
+            }
+            console.log("🌱 Datos de muestra cargados correctamente en IndexedDB.");
+        }
     }
 }
 
@@ -204,7 +251,7 @@ class App {
         this.registerServiceWorker();
         await this.db.init();
         this.runner = new ProcessRunner(this.db);
-        
+        await this.db.seedInitialData();
         // TODO: Inyectar la clase de UI Controller que crearemos en el siguiente paso
         console.log("🚀 Motor de datos, PWA y lógica de tiempo inicializados correctamente.");
     }
