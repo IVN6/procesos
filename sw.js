@@ -6,6 +6,9 @@ const ASSETS_TO_CACHE = [
   './index.html',
   './style.css',
   './app.js',
+  './mia.html',
+  './log.html',
+  './speachAssistant.html',
   './manifest.json',
   'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f427.svg'
 ];
