@@ -27,7 +27,7 @@
             padding: 20px;
         }
 
-        h1, h2 { text-align: center; color: #fff; }
+        h1, h2, h3 { text-align: center; color: #fff; }
         
         .hidden { display: none !important; }
 
@@ -48,7 +48,7 @@
         .view-section.active { display: block; }
 
         /* ===============================================
-           Elementos UI (Barras, Botones)
+           Elementos UI (Barras, Botones, Horarios)
            =============================================== */
         #tiempoTranscurridoContainer {
             background-color: var(--success);
@@ -60,7 +60,17 @@
             z-index: 10;
             border-radius: 8px;
             font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .horarios-container {
+            text-align: center;
+            font-size: 0.9em;
+            color: #aaa;
             margin-bottom: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 5px;
         }
 
         #progresoDisplay {
@@ -106,22 +116,27 @@
         /* Variantes de Botones */
         .btn-outline { border-color: var(--text-light); color: var(--text-light); }
         .btn-outline:hover { background-color: rgba(255,255,255,0.1); }
-        
         .btn-primary { border-color: var(--primary); color: var(--primary); }
         .btn-primary:hover { background-color: var(--primary); color: #fff; }
-        
         .btn-danger { border-color: var(--danger); color: var(--danger); }
         .btn-danger:hover { background-color: var(--danger); color: #fff; }
-        
         .btn-warning { border-color: var(--warning); color: var(--warning); }
         .btn-warning:hover { background-color: var(--warning); color: #000; }
+        .btn-success { border-color: var(--success); color: var(--success); }
+        .btn-success:hover { background-color: var(--success); color: #fff; }
+
+        .btn-icon {
+            padding: 5px 10px;
+            margin: 2px;
+            font-size: 14px;
+        }
 
         /* ===============================================
            Formulario y Listas (CRUD)
            =============================================== */
         .process-list button { width: 90%; display: block; margin: 10px auto; }
         
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], textarea {
             width: calc(100% - 20px);
             padding: 10px;
             margin: 5px 0 15px;
@@ -129,6 +144,7 @@
             border: 1px solid #ccc;
             background: #2a3b4c;
             color: white;
+            font-family: inherit;
         }
 
         .task-item {
@@ -139,42 +155,66 @@
             justify-content: space-between;
             align-items: center;
             border-radius: 5px;
+            flex-wrap: wrap;
         }
         
-        .stats-item {
+        .task-info { flex-grow: 1; text-align: left; }
+        .task-actions { display: flex; gap: 5px; }
+
+        .stats-item, .result-item {
             background: rgba(255,255,255,0.05);
             padding: 15px;
             margin-bottom: 10px;
             border-left: 4px solid var(--primary);
             text-align: left;
         }
+
+        .result-bar-bg {
+            background: #3e4858;
+            height: 15px;
+            border-radius: 5px;
+            width: 100%;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .result-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1s;
+        }
     </style>
 </head>
 <body>
 
-    <h1 id="mainTitle">Instalación de Procesos</h1>
+    <button id="btnToggleSonido" class="btn-outline" style="position: absolute; top: 15px; right: 15px; padding: 8px 12px; font-size: 0.9em;" onclick="App.toggleSonido()">🔊 Sonido: ON</button>
+
+    <h1 id="mainTitle" style="margin-top: 40px;">Instalación de Procesos</h1>
 
     <div class="header-controls">
         <div id="tiempoTranscurridoContainer">Sistema en Espera</div>
     </div>
 
+    <!-- VISTA: MENÚ PRINCIPAL -->
     <div id="view-menu" class="view-section active card">
         <h2>Tus Procesos</h2>
         <div id="procesosMenu" class="process-list"></div>
         <hr style="border-color: #3e4858; margin: 20px 0;">
         <button class="btn-outline" onclick="App.CRUD.openEditor()">➕ Crear Nuevo Proceso</button>
         <button class="btn-outline" onclick="App.Stats.show()">📊 Ver Estadísticas</button>
+        <button class="btn-outline" onclick="App.Messages.open()">💬 Editar Mensajes</button>
     </div>
 
+    <!-- VISTA: EJECUCIÓN -->
     <div id="view-execution" class="view-section card">
         <h2 id="tituloProcesoEjecucion"></h2>
+        <div id="horariosInfo" class="horarios-container hidden"></div>
         
         <div id="tareasContainer" class="card" style="background: var(--bg-card-dark); margin-top: 0;">
             <div id="tareaActualDisplay" style="font-size: 1.2em; margin-bottom: 10px;"></div>
             <div id="progresoDisplay"></div> 
         </div>
         
-        <div id="mensajeContainer" style="color: var(--primary); font-weight: bold;"></div>
+        <div id="mensajeContainer" style="color: var(--primary); font-weight: bold; min-height: 45px;"></div>
         <div id="estadoContainer" style="color: var(--success); font-weight: bold; margin-top: 10px;"></div>
 
         <div class="action-controls" style="margin-top: 20px;">
@@ -185,6 +225,7 @@
         </div>
     </div>
 
+    <!-- VISTA: EDITOR DE PROCESOS -->
     <div id="view-editor" class="view-section card">
         <h2>Crear / Editar Proceso</h2>
         <input type="text" id="editProcessName" placeholder="Nombre del proceso (ej. Limpieza Profunda)">
@@ -196,14 +237,40 @@
             <button class="btn-primary" onclick="App.CRUD.addTaskToDraft()">+ Añadir Tarea</button>
         </div>
 
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Lista de Tareas</h3>
+            <span id="draftTotalTime" style="color: var(--warning); font-weight: bold;">Total: 0 min</span>
+        </div>
+        
         <div id="draftTasksList"></div>
 
         <div style="margin-top: 20px;">
-            <button class="btn-success" style="border-color: var(--success); color: var(--success);" onclick="App.CRUD.saveProcess()">💾 Guardar Proceso</button>
+            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar Proceso</button>
             <button class="btn-outline" onclick="App.switchView('view-menu')">❌ Cancelar</button>
         </div>
     </div>
 
+    <!-- VISTA: EDITOR DE MENSAJES -->
+    <div id="view-messages" class="view-section card">
+        <h2>Personalizar Mensajes</h2>
+        <p style="font-size: 0.9em; color: #aaa;">Escribe un mensaje por línea. El sistema elegirá uno al azar.</p>
+        <div id="msgFormsContainer" style="text-align: left;"></div>
+        <div style="margin-top: 20px;">
+            <button class="btn-success" onclick="App.Messages.save()">💾 Guardar Mensajes</button>
+            <button class="btn-outline" onclick="App.Messages.resetDefault()">🔄 Restaurar Valores</button>
+            <button class="btn-outline" onclick="App.switchView('view-menu')">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- VISTA: RESULTADOS FINALES -->
+    <div id="view-results" class="view-section card">
+        <h2>¡Proceso Completado! 🎉</h2>
+        <p>Resumen de tu desempeño por tarea (Estimado vs Real):</p>
+        <div id="resultsChartContainer" style="margin: 20px 0;"></div>
+        <button class="btn-primary" onclick="App.switchView('view-menu')">⬅️ Volver al Menú</button>
+    </div>
+
+    <!-- VISTA: HISTORIAL DE ESTADÍSTICAS -->
     <div id="view-stats" class="view-section card">
         <h2>Historial de Ejecuciones</h2>
         <div id="statsListContainer"></div>
@@ -212,7 +279,7 @@
 
     <script>
 /**
- * DATOS POR DEFECTO Y MENSAJES (Configuración)
+ * DATOS POR DEFECTO Y MENSAJES
  */
 const DEFAULT_PROCESSES = {
     habitacion: {
@@ -227,41 +294,15 @@ const DEFAULT_PROCESSES = {
             { nombre: "Barrida rápida ", tiempoMin: 10 },
             { nombre: "Botar al menos una cosa innecesaria", tiempoMin: 3 }
         ]
-    },
-    activacion76: {
-        id: 'activacion76',
-        nombre: "🌞 Rutina de Activación Base",
-        tareas: [
-            { nombre: "Beber agua y Aseo dental", tiempoMin: 5 },
-            { nombre: "Tender la cama", tiempoMin: 4 },
-            { nombre: "Movimiento físico ligero para despertar", tiempoMin: 6 },
-            { nombre: "Concentración y doblar pijama", tiempoMin: 4 },
-            { nombre: "Entra al baño y ducha", tiempoMin: 12 },
-            { nombre: "Pantalón y ordenar toalla", tiempoMin: 10 },
-            { nombre: "Vestirse con actitud", tiempoMin: 7 },
-            { nombre: "Preparar un buen café", tiempoMin: 5 },
-            { nombre: "Revisión rápida de objetivos escritos ayer", tiempoMin: 5 },
-            { nombre: "Arrancar despacio con el objetivo mas fácil", tiempoMin: 5 }
-        ]
-    },
-    desactivacion: {
-        id: 'desactivacion',
-        nombre: "🌙 Rutina de Desactivación",
-        tareas: [
-            { nombre: "Anotar pensamientos y pendientes de mañana", tiempoMin: 5 },
-            { nombre: "pijama y ordenar ropa", tiempoMin: 5 },
-            { nombre: "Preparar outfit ropa para mañana", tiempoMin: 3 },
-            { nombre: "Skin care lavar cara y cepillado dental", tiempoMin: 5 },
-            { nombre: "Programar alarmas", tiempoMin: 3 },
-            { nombre: "Preparar mochila", tiempoMin: 5 },
-            { nombre: "Alistar vaso de agua para mañana", tiempoMin: 4 },
-            { nombre: "desconectar pensmientos", tiempoMin: 5 },
-            { nombre: "Apagar todas las luces e ir a dormir ", tiempoMin: 3 }
-        ]
     }
 };
 
-const MSG = {
+const DEFAULT_MSG = {
+    FRASE_INICIO: [
+        "¡Arrancamos de una!",
+        "¡Listo!",
+        "¡na wara pues! Inicia el proceso"
+    ],
     PCT_25: [
         "25% completado. ¡De una!",
         " Vamos un cuarto. ¡Sigue moviendo el ala!",
@@ -281,12 +322,15 @@ const MSG = {
         "¡Te me estás durmiendo como pingüino en hielo! ¡Apúrate!",
         "Cuidado, vas más lento que tortuga con sueño.",
         "¡na wuara , se acabó el tiempo! Mueve las aletas ya."
-    ],
-    FRASE_INICIO: [
-        "¡Arrancamos de una!",
-        "¡Listo!",
-        "¡na wara pues! Inicia el proceso"
     ]
+};
+
+const NOMBRES_MSG = {
+    FRASE_INICIO: "Frases de Inicio",
+    PCT_25: "Al llegar al 25%",
+    PCT_50: "Al llegar al 50%",
+    PCT_75: "Al llegar al 75%",
+    ADVERTENCIA: "Advertencia (Tiempo superado)"
 };
 
 /**
@@ -296,6 +340,9 @@ const App = {
     State: {
         procesos: {},         
         estadisticas: [],
+        mensajes: {},
+        sonidoActivo: true,
+
         procesoActivoId: null,
         tareasRestantes: [],
         tareaActual: null,
@@ -304,6 +351,7 @@ const App = {
         intervaloGlobal: null,
         intervaloTarea: null,
         tiempoInicioGlobal: null,
+        horaFinEstimada: null, // Para Req 4
         isPausado: false,
         tiempoPausaInicio: null
     },
@@ -321,6 +369,7 @@ const App = {
         mensaje: document.getElementById('mensajeContainer'),
         estado: document.getElementById('estadoContainer'),
         tituloEjecucion: document.getElementById('tituloProcesoEjecucion'),
+        horariosInfo: document.getElementById('horariosInfo'),
         
         btnIniciar: document.getElementById('botonIniciar'),
         btnPausar: document.getElementById('botonPausar'),
@@ -355,15 +404,13 @@ const App = {
     // --- CARGA Y GUARDADO (LocalStorage) ---
     loadData: function() {
         const stored = localStorage.getItem('matrix_procesos');
-        if (stored) {
-            this.State.procesos = JSON.parse(stored);
-        } else {
-            this.State.procesos = { ...DEFAULT_PROCESSES };
-            this.saveData();
-        }
-
+        this.State.procesos = stored ? JSON.parse(stored) : { ...DEFAULT_PROCESSES };
+        
         const stats = localStorage.getItem('matrix_stats');
         if (stats) this.State.estadisticas = JSON.parse(stats);
+
+        const msgs = localStorage.getItem('matrix_mensajes');
+        this.State.mensajes = msgs ? JSON.parse(msgs) : JSON.parse(JSON.stringify(DEFAULT_MSG));
     },
 
     saveData: function() {
@@ -374,6 +421,10 @@ const App = {
         localStorage.setItem('matrix_stats', JSON.stringify(this.State.estadisticas));
     },
 
+    saveMessages: function() {
+        localStorage.setItem('matrix_mensajes', JSON.stringify(this.State.mensajes));
+    },
+
     saveActiveState: function() {
         const activeState = {
             procesoActivoId: this.State.procesoActivoId,
@@ -381,6 +432,7 @@ const App = {
             tareaActual: this.State.tareaActual,
             historialEjecucion: this.State.historialEjecucion,
             tiempoInicioGlobal: this.State.tiempoInicioGlobal,
+            horaFinEstimada: this.State.horaFinEstimada,
             isPausado: this.State.isPausado,
             tiempoPausaInicio: this.State.isPausado ? Date.now() : null
         };
@@ -403,11 +455,13 @@ const App = {
         this.State.tareaActual = saved.tareaActual;
         this.State.historialEjecucion = saved.historialEjecucion;
         this.State.tiempoInicioGlobal = saved.tiempoInicioGlobal;
+        this.State.horaFinEstimada = saved.horaFinEstimada;
         this.State.isPausado = saved.isPausado;
 
         if (this.State.isPausado && saved.tiempoPausaInicio) {
             const tiempoDesconectado = Date.now() - saved.tiempoPausaInicio;
             if (this.State.tiempoInicioGlobal) this.State.tiempoInicioGlobal += tiempoDesconectado;
+            if (this.State.horaFinEstimada) this.State.horaFinEstimada += tiempoDesconectado;
             if (this.State.tareaActual && this.State.tareaActual.inicioMs) this.State.tareaActual.inicioMs += tiempoDesconectado;
         }
 
@@ -415,11 +469,11 @@ const App = {
         this.switchView('view-execution');
 
         if (this.State.tareaActual) {
+            this.mostrarHorarios();
             this.DOM.btnIniciar.classList.add('hidden');
             this.DOM.btnPausar.classList.remove('hidden');
             this.DOM.btnFinalizar.classList.remove('hidden');
             this.DOM.btnVolver.classList.remove('hidden');
-            
             this.DOM.btnPausar.innerHTML = this.State.isPausado ? '▶️ Reanudar' : '⏸️ Pausar Tarea';
 
             if (!this.State.isPausado) {
@@ -438,7 +492,13 @@ const App = {
     },
 
     // --- UTILIDADES ---
+    toggleSonido: function() {
+        this.State.sonidoActivo = !this.State.sonidoActivo;
+        document.getElementById('btnToggleSonido').innerHTML = this.State.sonidoActivo ? '🔊 Sonido: ON' : '🔇 Sonido: OFF';
+    },
+
     hablar: function(texto) {
+        if (!this.State.sonidoActivo) return; // Validación de Req 1
         if (globalThis.speechSynthesis) {
             globalThis.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(texto);
@@ -450,7 +510,9 @@ const App = {
         if (navigator.vibrate) navigator.vibrate(patron);
     },
 
-    getRandomMsg: function(arr) {
+    getRandomMsg: function(categoria) {
+        const arr = this.State.mensajes[categoria];
+        if (!arr || arr.length === 0) return "";
         return arr[Math.floor(Math.random() * arr.length)];
     },
 
@@ -499,6 +561,7 @@ const App = {
         this.State.isPausado = false;
 
         this.DOM.tituloEjecucion.textContent = `Proceso: ${proceso.nombre}`;
+        this.DOM.horariosInfo.classList.add('hidden');
         this.DOM.btnIniciar.classList.remove('hidden');
         this.DOM.btnPausar.classList.add('hidden');
         this.DOM.btnFinalizar.classList.add('hidden');
@@ -514,21 +577,34 @@ const App = {
 
     iniciarProceso: function() {
         this.State.tiempoInicioGlobal = Date.now();
+        
+        // Req 4: Calcular hora estimada de fin
+        const totalEstimadoMin = this.State.tareasRestantes.reduce((acc, t) => acc + t.tiempoMin, 0);
+        this.State.horaFinEstimada = this.State.tiempoInicioGlobal + (totalEstimadoMin * 60000);
+        this.mostrarHorarios();
+
         this.DOM.btnIniciar.classList.add('hidden');
         this.DOM.btnPausar.classList.remove('hidden');
         this.DOM.btnFinalizar.classList.remove('hidden');
 
         this.State.intervaloGlobal = setInterval(() => this.updateUI(), 1000);
-        const msgInicio = this.getRandomMsg(MSG.FRASE_INICIO);
+        
+        const msgInicio = this.getRandomMsg('FRASE_INICIO');
         this.DOM.mensaje.innerHTML = msgInicio;
         this.hablar(msgInicio);
         this.siguienteTarea();
     },
 
+    mostrarHorarios: function() {
+        if(!this.State.tiempoInicioGlobal || !this.State.horaFinEstimada) return;
+        const hInicio = new Date(this.State.tiempoInicioGlobal).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const hFin = new Date(this.State.horaFinEstimada).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        this.DOM.horariosInfo.innerHTML = `⏱️ Inicio: <strong>${hInicio}</strong> | Fin Estimado: <strong>${hFin}</strong>`;
+        this.DOM.horariosInfo.classList.remove('hidden');
+    },
+
     siguienteTarea: function() {
-        if (this.State.tareaActual) {
-            clearInterval(this.State.intervaloTarea);
-        }
+        if (this.State.tareaActual) clearInterval(this.State.intervaloTarea);
 
         if (this.State.tareasRestantes.length === 0) {
             this.finalizarProcesoCompleto();
@@ -552,7 +628,6 @@ const App = {
 
     finalizarTarea: function() {
         if (!this.State.tareaActual) return;
-        
         const tiempoRealMs = Date.now() - this.State.tareaActual.inicioMs;
         
         this.State.historialEjecucion.push({
@@ -571,16 +646,44 @@ const App = {
         this.State.estadisticas.push({
             procesoNombre: proceso.nombre,
             fecha: new Date().toLocaleString(),
-            tareas: this.State.historialEjecucion
+            tareas: [...this.State.historialEjecucion]
         });
         this.saveStats();
-
-        this.limpiarEjecucion();
         
         this.vibrar([300, 100, 300, 100, 500]);
-        this.hablar("🐧 ¡Excelente trabajo, mano! Proceso completado. Misión cumplida.");
-        alert("🐧 ¡Proceso completado! Estadísticas guardadas.");
-        this.switchView('view-menu');
+        this.hablar("¡Excelente trabajo! Proceso completado.");
+        
+        // Req 2: Mostrar resultados en gráfico de barras en vez del alert
+        this.mostrarResultadosBarras();
+        this.limpiarEjecucion();
+    },
+
+    mostrarResultadosBarras: function() {
+        const container = document.getElementById('resultsChartContainer');
+        container.innerHTML = '';
+
+        this.State.historialEjecucion.forEach(t => {
+            const realMin = (t.realMs / 60000).toFixed(1);
+            const estMin = (t.estimadoMs / 60000).toFixed(1);
+            // Calculamos el porcentaje para el ancho de la barra (máximo 100% para que no desborde)
+            const pct = Math.min((t.realMs / t.estimadoMs) * 100, 100);
+            const color = t.realMs > t.estimadoMs ? 'var(--danger)' : 'var(--success)';
+            
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:5px;">
+                    <strong>${t.nombre}</strong>
+                    <span>Real: ${realMin}m / Est: ${estMin}m</span>
+                </div>
+                <div class="result-bar-bg">
+                    <div class="result-bar-fill" style="width: ${pct}%; background-color: ${color};"></div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        this.switchView('view-results');
     },
 
     limpiarEjecucion: function() {
@@ -590,7 +693,9 @@ const App = {
         this.State.intervaloTarea = null;
         this.State.tareaActual = null;
         this.State.procesoActivoId = null;
+        this.State.horaFinEstimada = null;
         this.DOM.tiempoTotal.innerHTML = "Sistema en Espera";
+        this.DOM.horariosInfo.classList.add('hidden');
         this.clearActiveState();
     },
 
@@ -616,14 +721,13 @@ const App = {
         progressBar.style.width = `${Math.min(porcentaje, 100)}%`;
         progressBar.textContent = `${Math.round(porcentaje)}%`;
 
-        // Lógica de avisos cada 25%
         const currentPctLevel = Math.floor(porcentaje / 25) * 25;
         if (currentPctLevel > (tarea.mensajePrevioPct || 0) && currentPctLevel <= 100) {
             tarea.mensajePrevioPct = currentPctLevel;
             let msg = "";
-            if (currentPctLevel === 25) msg = this.getRandomMsg(MSG.PCT_25);
-            else if (currentPctLevel === 50) msg = this.getRandomMsg(MSG.PCT_50);
-            else if (currentPctLevel === 75) msg = this.getRandomMsg(MSG.PCT_75);
+            if (currentPctLevel === 25) msg = this.getRandomMsg('PCT_25');
+            else if (currentPctLevel === 50) msg = this.getRandomMsg('PCT_50');
+            else if (currentPctLevel === 75) msg = this.getRandomMsg('PCT_75');
 
             if (msg) {
                 this.DOM.mensaje.innerHTML = msg;
@@ -635,7 +739,7 @@ const App = {
             progressBar.classList.add('advertencia');
             if (porcentaje > 100 && porcentaje < 102 && tarea.mensajePrevioPct !== 105) {
                 tarea.mensajePrevioPct = 105;
-                const msgAdv = this.getRandomMsg(MSG.ADVERTENCIA);
+                const msgAdv = this.getRandomMsg('ADVERTENCIA');
                 this.DOM.mensaje.innerHTML = msgAdv;
                 this.vibrar([500]); 
                 this.hablar(msgAdv);
@@ -660,20 +764,58 @@ const App = {
             
             this.State.tareaActual.inicioMs += tiempoPausado;
             this.State.tiempoInicioGlobal += tiempoPausado;
+            if(this.State.horaFinEstimada) this.State.horaFinEstimada += tiempoPausado;
 
+            this.mostrarHorarios(); // Actualizar nueva hora fin
             this.State.intervaloGlobal = setInterval(() => this.updateUI(), 1000);
             this.State.intervaloTarea = setInterval(() => this.updateUI(), 1000);
         }
         this.saveActiveState();
     },
 
-    // --- SISTEMA CRUD ---
+    // --- REQ 5: EDITOR DE MENSAJES ---
+    Messages: {
+        open: function() {
+            const container = document.getElementById('msgFormsContainer');
+            container.innerHTML = '';
+            
+            Object.keys(NOMBRES_MSG).forEach(key => {
+                const titulo = NOMBRES_MSG[key];
+                const frases = App.State.mensajes[key] || [];
+                
+                const html = `
+                    <div style="margin-bottom: 15px;">
+                        <label style="color: var(--primary); font-weight:bold;">${titulo}</label>
+                        <textarea id="msg_${key}" rows="3" placeholder="Escribe un mensaje por línea">${frases.join('\n')}</textarea>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+            App.switchView('view-messages');
+        },
+        save: function() {
+            Object.keys(NOMBRES_MSG).forEach(key => {
+                const text = document.getElementById(`msg_${key}`).value;
+                const frases = text.split('\n').map(f => f.trim()).filter(f => f !== "");
+                App.State.mensajes[key] = frases;
+            });
+            App.saveMessages();
+            alert("Mensajes guardados con éxito.");
+            App.switchView('view-menu');
+        },
+        resetDefault: function() {
+            if(confirm("¿Restaurar los mensajes a sus valores originales?")) {
+                App.State.mensajes = JSON.parse(JSON.stringify(DEFAULT_MSG));
+                App.saveMessages();
+                this.open();
+            }
+        }
+    },
+
+    // --- SISTEMA CRUD MEJORADO ---
     CRUD: {
         openEditor: function(id = null) {
             const self = App;
-            const listContainer = document.getElementById('draftTasksList');
-            listContainer.innerHTML = '';
-
             if (id && self.State.procesos[id]) {
                 const proc = self.State.procesos[id];
                 self.Draft.id = id;
@@ -684,7 +826,6 @@ const App = {
                 self.Draft.nombre = '';
                 self.Draft.tareas = [];
             }
-
             document.getElementById('editProcessName').value = self.Draft.nombre;
             this.renderDraftTasks();
             self.switchView('view-editor');
@@ -695,14 +836,38 @@ const App = {
             const timeInput = document.getElementById('newTaskTime');
             
             if (!nameInput.value || !timeInput.value) return alert("Llena ambos campos");
-
             App.Draft.tareas.push({
                 nombre: nameInput.value,
                 tiempoMin: parseInt(timeInput.value)
             });
-
             nameInput.value = '';
             timeInput.value = '';
+            this.renderDraftTasks();
+        },
+
+        // Req 3: Mover tareas de lugar (Reordenamiento)
+        moveTask: function(index, direction) {
+            const arr = App.Draft.tareas;
+            if (index + direction < 0 || index + direction >= arr.length) return;
+            const temp = arr[index];
+            arr[index] = arr[index + direction];
+            arr[index + direction] = temp;
+            this.renderDraftTasks();
+        },
+
+        // Req 3: Editar tarea existente (Patch)
+        editTask: function(index) {
+            const t = App.Draft.tareas[index];
+            const nuevoNombre = prompt("Modifica el nombre de la tarea:", t.nombre);
+            if(nuevoNombre === null || nuevoNombre.trim() === '') return;
+            
+            const nuevoTiempo = prompt("Modifica el tiempo estimado (minutos):", t.tiempoMin);
+            if(nuevoTiempo === null || nuevoTiempo.trim() === '' || isNaN(nuevoTiempo)) return;
+
+            App.Draft.tareas[index] = {
+                nombre: nuevoNombre,
+                tiempoMin: parseInt(nuevoTiempo)
+            };
             this.renderDraftTasks();
         },
 
@@ -714,12 +879,24 @@ const App = {
         renderDraftTasks: function() {
             const container = document.getElementById('draftTasksList');
             container.innerHTML = '';
+            
+            // Req 3: Calcular y mostrar tiempo total
+            const totalMin = App.Draft.tareas.reduce((sum, t) => sum + t.tiempoMin, 0);
+            document.getElementById('draftTotalTime').innerText = `Total: ${totalMin} min`;
+
             App.Draft.tareas.forEach((t, index) => {
                 const div = document.createElement('div');
                 div.className = 'task-item';
                 div.innerHTML = `
-                    <span>${index + 1}. ${t.nombre} (${t.tiempoMin} min)</span>
-                    <button class="btn-danger" style="padding: 5px 10px; margin:0;" onclick="App.CRUD.removeTaskFromDraft(${index})">X</button>
+                    <div class="task-info">
+                        <strong>${index + 1}.</strong> ${t.nombre} <br><small>(${t.tiempoMin} min)</small>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${index}, -1)">↑</button>
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${index}, 1)">↓</button>
+                        <button class="btn-warning btn-icon" onclick="App.CRUD.editTask(${index})">✏️</button>
+                        <button class="btn-danger btn-icon" onclick="App.CRUD.removeTaskFromDraft(${index})">❌</button>
+                    </div>
                 `;
                 container.appendChild(div);
             });
@@ -727,26 +904,19 @@ const App = {
 
         saveProcess: function() {
             const name = document.getElementById('editProcessName').value;
-            if (!name || App.Draft.tareas.length === 0) return alert("Falta nombre o tareas.");
-
-            App.State.procesos[App.Draft.id] = {
-                id: App.Draft.id,
-                nombre: name,
-                tareas: App.Draft.tareas
-            };
-
+            if (!name || App.Draft.tareas.length === 0) return alert("Por favor asigna un nombre y al menos una tarea.");
+            App.State.procesos[App.Draft.id] = { id: App.Draft.id, nombre: name, tareas: App.Draft.tareas };
             App.saveData();
             App.renderMenu();
             App.switchView('view-menu');
         }
     },
 
-    // --- ESTADÍSTICAS ---
+    // --- ESTADÍSTICAS DEL MENÚ PRINCIPAL ---
     Stats: {
         show: function() {
             const container = document.getElementById('statsListContainer');
             container.innerHTML = '';
-
             if (!App.State.estadisticas || App.State.estadisticas.length === 0) {
                 container.innerHTML = '<p>No hay datos aún. Completa un proceso primero.</p>';
             } else {
@@ -773,7 +943,6 @@ const App = {
         }
     },
 
-    // --- EVENTOS ---
     addEventListeners: function() {
         this.DOM.btnIniciar.addEventListener('click', () => this.iniciarProceso());
         this.DOM.btnPausar.addEventListener('click', () => this.togglePausa());
