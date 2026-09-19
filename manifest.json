@@ -1,8 +1,8 @@
 {
-  "name": "Organízate Ya - Procesos",
+  "name": "Organízate Facil",
   "short_name": "Organízate facil🐧",
   "description": "Gestor de procesos, rutinas y estadísticas offline.",
-  "start_url": "./index.html",
+  "start_url": "./01.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
