@@ -1,133 +1,987 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="manifest" href="manifest.json">
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organízate Ya - Procesos</title>
-    <!-- Preparado para PWA -->
-    <link rel="icon" sizes="192x192" href="icon.png">
-    <link rel="stylesheet" href="style.css"> 
+    <title>Matrix Process Loader - Hazlo Ya</title>
+    <style>
+        /* ===============================================
+           Variables y Tipografía
+           =============================================== */
+        :root {
+            --bg-main: #0f0e0e;
+            --bg-card: #143758;
+            --bg-card-dark: #0d2136;
+            --primary: #2196F3;
+            --success: #5cb315;
+            --warning: #FFC107;
+            --danger: #FF5722;
+            --text-light: #e9ecef;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2, h3 { text-align: center; color: #fff; }
+        
+        .hidden { display: none !important; }
+
+        /* ===============================================
+           Contenedores y Tarjetas
+           =============================================== */
+        .card {
+            margin: 20px auto;
+            max-width: 600px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            padding: 25px;
+            text-align: center;
+        }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        /* ===============================================
+           Elementos UI (Barras, Botones, Horarios)
+           =============================================== */
+        #tiempoTranscurridoContainer {
+            background-color: var(--success);
+            color: white;
+            padding: 12px 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .horarios-container {
+            text-align: center;
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        #progresoDisplay {
+            height: 35px;
+            background-color: #3e4858;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            border: 2px solid var(--bg-card-dark);
+        }
+
+        .progreso-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--success);
+            transition: width 0.5s ease-out, background-color 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .progreso-bar.advertencia { background-color: var(--danger); }
+
+        button {
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 12px 20px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background-color: transparent;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 8px;
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(255, 255, 255, 0.1); }
+
+        /* Variantes de Botones */
+        .btn-outline { border-color: var(--text-light); color: var(--text-light); }
+        .btn-outline:hover { background-color: rgba(255,255,255,0.1); }
+        .btn-primary { border-color: var(--primary); color: var(--primary); }
+        .btn-primary:hover { background-color: var(--primary); color: #fff; }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background-color: var(--danger); color: #fff; }
+        .btn-warning { border-color: var(--warning); color: var(--warning); }
+        .btn-warning:hover { background-color: var(--warning); color: #000; }
+        .btn-success { border-color: var(--success); color: var(--success); }
+        .btn-success:hover { background-color: var(--success); color: #fff; }
+
+        .btn-icon {
+            padding: 5px 10px;
+            margin: 2px;
+            font-size: 14px;
+        }
+
+        /* ===============================================
+           Formulario y Listas (CRUD)
+           =============================================== */
+        .process-list button { width: 90%; display: block; margin: 10px auto; }
+        
+        input[type="text"], input[type="number"], textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 5px 0 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: #2a3b4c;
+            color: white;
+            font-family: inherit;
+        }
+
+        .task-item {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .task-info { flex-grow: 1; text-align: left; }
+        .task-actions { display: flex; gap: 5px; }
+
+        .stats-item, .result-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
+            text-align: left;
+        }
+
+        .result-bar-bg {
+            background: #3e4858;
+            height: 15px;
+            border-radius: 5px;
+            width: 100%;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .result-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1s;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- CABECERA PRINCIPAL -->
-    <header class="app-header">
-        <h1>La incompetencia da Asco <span id="header-subtitle"></span></h1>
-        <button id="btn-instalar" style="display: none;" class="btn-instalar">📲 Instalar </button>
+    <button id="btnToggleSonido" class="btn-outline" style="position: absolute; top: 15px; right: 15px; padding: 8px 12px; font-size: 0.9em;" onclick="App.toggleSonido()">🔊 Sonido: ON</button>
+
+    <h1 id="mainTitle" style="margin-top: 40px;">Instalación de Procesos</h1>
+
+    <div class="header-controls">
+        <div id="tiempoTranscurridoContainer">Sistema en Espera</div>
+    </div>
+
+    <!-- VISTA: MENÚ PRINCIPAL -->
+    <div id="view-menu" class="view-section active card">
+        <h2>Tus Procesos</h2>
+        <div id="procesosMenu" class="process-list"></div>
+        <hr style="border-color: #3e4858; margin: 20px 0;">
+        <button class="btn-outline" onclick="App.CRUD.openEditor()">➕ Crear Nuevo Proceso</button>
+        <button class="btn-outline" onclick="App.Stats.show()">📊 Ver Estadísticas</button>
+        <button class="btn-outline" onclick="App.Messages.open()">💬 Editar Mensajes</button>
+    </div>
+
+    <!-- VISTA: EJECUCIÓN -->
+    <div id="view-execution" class="view-section card">
+        <h2 id="tituloProcesoEjecucion"></h2>
+        <div id="horariosInfo" class="horarios-container hidden"></div>
         
-        <!-- Navegación Principal -->
-        <nav class="main-nav">
-            <button data-route="home">🏠 Inicio</button>
-            <button data-route="editor">✏️ Editar Procesos</button>
-            <button data-route="messages">💬 Mensajes</button>
-            <button data-route="settings">⚙️ Ajustes</button>
-        </nav>
-    </header>
-
-    <!-- CONTENEDOR DINÁMICO (Aquí JS inyectará las vistas) -->
-    <main id="app-root"></main>
-
-    <!-- ========================================== -->
-    <!-- PLANTILLAS (No se ven hasta que JS las usa) -->
-    <!-- ========================================== -->
-
-    <!-- 1. Plantilla: Menú Principal (Selección de Procesos) -->
-    <template id="tpl-home">
-        <div class="view-container">
-            <h2>Selecciona tu proceso</h2>
-            <div class="procesos-grid" id="procesos-list">
-                <!-- Los botones de procesos se inyectarán aquí -->
-            </div>
+        <div id="tareasContainer" class="card" style="background: var(--bg-card-dark); margin-top: 0;">
+            <div id="tareaActualDisplay" style="font-size: 1.2em; margin-bottom: 10px;"></div>
+            <div id="progresoDisplay"></div> 
         </div>
-    </template>
+        
+        <div id="mensajeContainer" style="color: var(--primary); font-weight: bold; min-height: 45px;"></div>
+        <div id="estadoContainer" style="color: var(--success); font-weight: bold; margin-top: 10px;"></div>
 
-    <!-- 2. Plantilla: Ejecución del Proceso (Runner) -->
-    <template id="tpl-runner">
-        <div class="view-container runner-view">
-            <!-- Tiempos (Se eliminó hora actual, se resaltó fin, se añadió inicio) -->
-            <div class="time-tracker">
-                <div class="time-badge">Inicio: <span class="start-time">--:--</span></div>
-                <div class="time-badge highlight">Fin Estimado: <span class="end-time">--:--</span></div>
-            </div>
+        <div class="action-controls" style="margin-top: 20px;">
+            <button id="botonIniciar" class="btn-primary">▶️ Iniciar Proceso</button>
+            <button id="botonPausar" class="btn-warning hidden">⏸️ Pausar Tarea</button>
+            <button id="botonFinalizar" class="btn-danger hidden">✅ Finalizar Tarea</button>
+            <button id="botonVolver" class="btn-outline hidden" onclick="App.volverAlMenu()">⬅️ Abandonar</button>
+        </div>
+    </div>
 
-            <!-- Tarea Actual y Progreso -->
-            <div class="tarea-card">
-                <h3 class="tarea-titulo">Cargando tarea...</h3>
-                <div class="progreso-container">
-                    <div class="progreso-bar" style="width: 0%;">0%</div>
+    <!-- VISTA: EDITOR DE PROCESOS -->
+    <div id="view-editor" class="view-section card">
+        <h2>Crear / Editar Proceso</h2>
+        <input type="text" id="editProcessName" placeholder="Nombre del proceso (ej. Limpieza Profunda)">
+        
+        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3>Añadir Tarea</h3>
+            <input type="text" id="newTaskName" placeholder="Descripción de la tarea">
+            <input type="number" id="newTaskTime" placeholder="Minutos estimados" min="1">
+            <button class="btn-primary" onclick="App.CRUD.addTaskToDraft()">+ Añadir Tarea</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Lista de Tareas</h3>
+            <span id="draftTotalTime" style="color: var(--warning); font-weight: bold;">Total: 0 min</span>
+        </div>
+        
+        <div id="draftTasksList"></div>
+
+        <div style="margin-top: 20px;">
+            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar Proceso</button>
+            <button class="btn-outline" onclick="App.switchView('view-menu')">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- VISTA: EDITOR DE MENSAJES -->
+    <div id="view-messages" class="view-section card">
+        <h2>Personalizar Mensajes</h2>
+        <p style="font-size: 0.9em; color: #aaa;">Escribe un mensaje por línea. El sistema elegirá uno al azar.</p>
+        <div id="msgFormsContainer" style="text-align: left;"></div>
+        <div style="margin-top: 20px;">
+            <button class="btn-success" onclick="App.Messages.save()">💾 Guardar Mensajes</button>
+            <button class="btn-outline" onclick="App.Messages.resetDefault()">🔄 Restaurar Valores</button>
+            <button class="btn-outline" onclick="App.switchView('view-menu')">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- VISTA: RESULTADOS FINALES -->
+    <div id="view-results" class="view-section card">
+        <h2>¡Proceso Completado! 🎉</h2>
+        <p>Resumen de tu desempeño por tarea (Estimado vs Real):</p>
+        <div id="resultsChartContainer" style="margin: 20px 0;"></div>
+        <button class="btn-primary" onclick="App.switchView('view-menu')">⬅️ Volver al Menú</button>
+    </div>
+
+    <!-- VISTA: HISTORIAL DE ESTADÍSTICAS -->
+    <div id="view-stats" class="view-section card">
+        <h2>Historial de Ejecuciones</h2>
+        <div id="statsListContainer"></div>
+        <button class="btn-outline" style="margin-top: 20px;" onclick="App.switchView('view-menu')">⬅️ Volver al Menú</button>
+    </div>
+
+    <script>
+/**
+ * DATOS POR DEFECTO Y MENSAJES
+ */
+const DEFAULT_PROCESSES = {
+    habitacion: {
+        id: 'habitacion',
+        nombre: "🧹 Organizar Habitación",
+        tareas: [
+            { nombre: "Hacer la cama", tiempoMin: 4 },
+            { nombre: "Despejar superficies como mesas cama escritorio", tiempoMin: 10 },
+            { nombre: "Organizar objetos fuera de sitio", tiempoMin: 10 },
+            { nombre: "Limpiar el polvo ", tiempoMin: 5 },
+            { nombre: "Recoger ropa sucia", tiempoMin: 10 },
+            { nombre: "Barrida rápida ", tiempoMin: 10 },
+            { nombre: "Botar al menos una cosa innecesaria", tiempoMin: 3 }
+        ]
+    },
+    activacion76: {
+        id: 'activacion76',
+        nombre: "🌞 Rutina de Activación Base",
+        tareas: [
+            { nombre: "Beber agua y Aseo dental", tiempoMin: 5 },
+            { nombre: "Tender la cama", tiempoMin: 4 },
+            { nombre: "Movimiento físico ligero para despertar", tiempoMin: 6 },
+            { nombre: "Concentración y doblar pijama", tiempoMin: 4 },
+            { nombre: "Entra al baño y ducha", tiempoMin: 12 },
+            { nombre: "Pantalón y ordenar toalla", tiempoMin: 10 },
+            { nombre: "Vestirse con actitud", tiempoMin: 7 },
+            { nombre: "Preparar un buen café", tiempoMin: 5 },
+            { nombre: "Revisión rápida de objetivos escritos ayer", tiempoMin: 5 },
+            { nombre: "Arrancar despacio con el objetivo mas fácil", tiempoMin: 5 }
+        ]
+    },
+    desactivacion: {
+        id: 'desactivacion',
+        nombre: "🌙 Rutina de Desactivación",
+        tareas: [
+            { nombre: "Anotar pensamientos y pendientes de mañana", tiempoMin: 5 },
+            { nombre: "pijama y ordenar ropa", tiempoMin: 5 },
+            { nombre: "Preparar outfit ropa para mañana", tiempoMin: 3 },
+            { nombre: "Skin care lavar cara y cepillado dental", tiempoMin: 5 },
+            { nombre: "Programar alarmas", tiempoMin: 3 },
+            { nombre: "Preparar mochila", tiempoMin: 5 },
+            { nombre: "Alistar vaso de agua para mañana", tiempoMin: 4 },
+            { nombre: "desconectar pensmientos", tiempoMin: 5 },
+            { nombre: "Apagar todas las luces e ir a dormir ", tiempoMin: 3 }
+        ]
+    }
+};
+
+const DEFAULT_MSG = {
+    FRASE_INICIO: [
+        "¡Arrancamos de una!",
+        "¡Listo!",
+        "¡na wara pue! Inició el proceso pue"
+    ],
+    PCT_25: [
+        "25% completado. ¡De una!",
+        " Vamos un cuarto. ¡Sigue moviendo el ala!",
+        " 25% listo. ¡vamos calentando!"
+    ],
+    PCT_50: [
+        "50%. ¡A la mitad! Con toda",
+        "¡50% listo! Metéle candela",
+        "¡Ya llevas la mitad!"
+    ],
+    PCT_75: [
+        "75% completado. ¡casi!",
+        "¡75%! Falta el último jalón.",
+        "¡75%! ¡arriba!"
+    ],
+    ADVERTENCIA: [
+        "¡Te me estás durmiendo como pingüino en hielo! ¡Apúrate!",
+        "Cuidado, vas más lento que tortuga con sueño.",
+        "¡na wuara , se acabó el tiempo! Mueve las aletas ya."
+    ]
+};
+
+const NOMBRES_MSG = {
+    FRASE_INICIO: "Frases de Inicio",
+    PCT_25: "Al llegar al 25%",
+    PCT_50: "Al llegar al 50%",
+    PCT_75: "Al llegar al 75%",
+    ADVERTENCIA: "Advertencia (Tiempo superado)"
+};
+
+/**
+ * NÚCLEO DE LA APLICACIÓN
+ */
+const App = {
+    State: {
+        procesos: {},         
+        estadisticas: [],
+        mensajes: {},
+        sonidoActivo: true,
+
+        procesoActivoId: null,
+        tareasRestantes: [],
+        tareaActual: null,
+        historialEjecucion: [], 
+        
+        intervaloGlobal: null,
+        intervaloTarea: null,
+        tiempoInicioGlobal: null,
+        horaFinEstimada: null, // Para Req 4
+        isPausado: false,
+        tiempoPausaInicio: null
+    },
+
+    Draft: {
+        id: null,
+        nombre: '',
+        tareas: []
+    },
+
+    DOM: {
+        tiempoTotal: document.getElementById('tiempoTranscurridoContainer'),
+        tareaActual: document.getElementById('tareaActualDisplay'),
+        progreso: document.getElementById('progresoDisplay'),
+        mensaje: document.getElementById('mensajeContainer'),
+        estado: document.getElementById('estadoContainer'),
+        tituloEjecucion: document.getElementById('tituloProcesoEjecucion'),
+        horariosInfo: document.getElementById('horariosInfo'),
+        
+        btnIniciar: document.getElementById('botonIniciar'),
+        btnPausar: document.getElementById('botonPausar'),
+        btnFinalizar: document.getElementById('botonFinalizar'),
+        btnVolver: document.getElementById('botonVolver')
+    },
+
+    init: function() {
+        this.loadData();
+        this.addEventListeners();
+        this.renderMenu();
+        
+        if (!this.loadActiveState()) {
+            this.switchView('view-menu');
+        }
+    },
+
+    // --- NAVEGACIÓN ---
+    switchView: function(viewId) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    },
+
+    volverAlMenu: function() {
+        if (this.State.intervaloGlobal || this.State.intervaloTarea || this.State.tareaActual) {
+            if(!confirm("¿Estás seguro de abandonar el proceso en curso? No se guardarán las estadísticas.")) return;
+        }
+        this.limpiarEjecucion();
+        this.switchView('view-menu');
+    },
+
+    // --- CARGA Y GUARDADO (LocalStorage) ---
+    loadData: function() {
+        const stored = localStorage.getItem('matrix_procesos');
+        this.State.procesos = stored ? JSON.parse(stored) : { ...DEFAULT_PROCESSES };
+        
+        const stats = localStorage.getItem('matrix_stats');
+        if (stats) this.State.estadisticas = JSON.parse(stats);
+
+        const msgs = localStorage.getItem('matrix_mensajes');
+        this.State.mensajes = msgs ? JSON.parse(msgs) : JSON.parse(JSON.stringify(DEFAULT_MSG));
+    },
+
+    saveData: function() {
+        localStorage.setItem('matrix_procesos', JSON.stringify(this.State.procesos));
+    },
+
+    saveStats: function() {
+        localStorage.setItem('matrix_stats', JSON.stringify(this.State.estadisticas));
+    },
+
+    saveMessages: function() {
+        localStorage.setItem('matrix_mensajes', JSON.stringify(this.State.mensajes));
+    },
+
+    saveActiveState: function() {
+        const activeState = {
+            procesoActivoId: this.State.procesoActivoId,
+            tareasRestantes: this.State.tareasRestantes,
+            tareaActual: this.State.tareaActual,
+            historialEjecucion: this.State.historialEjecucion,
+            tiempoInicioGlobal: this.State.tiempoInicioGlobal,
+            horaFinEstimada: this.State.horaFinEstimada,
+            isPausado: this.State.isPausado,
+            tiempoPausaInicio: this.State.isPausado ? Date.now() : null
+        };
+        localStorage.setItem('matrix_active_state', JSON.stringify(activeState));
+    },
+
+    clearActiveState: function() {
+        localStorage.removeItem('matrix_active_state');
+    },
+
+    loadActiveState: function() {
+        const stateStr = localStorage.getItem('matrix_active_state');
+        if (!stateStr) return false;
+
+        const saved = JSON.parse(stateStr);
+        if (!saved.procesoActivoId || !this.State.procesos[saved.procesoActivoId]) return false;
+
+        this.State.procesoActivoId = saved.procesoActivoId;
+        this.State.tareasRestantes = saved.tareasRestantes;
+        this.State.tareaActual = saved.tareaActual;
+        this.State.historialEjecucion = saved.historialEjecucion;
+        this.State.tiempoInicioGlobal = saved.tiempoInicioGlobal;
+        this.State.horaFinEstimada = saved.horaFinEstimada;
+        this.State.isPausado = saved.isPausado;
+
+        if (this.State.isPausado && saved.tiempoPausaInicio) {
+            const tiempoDesconectado = Date.now() - saved.tiempoPausaInicio;
+            if (this.State.tiempoInicioGlobal) this.State.tiempoInicioGlobal += tiempoDesconectado;
+            if (this.State.horaFinEstimada) this.State.horaFinEstimada += tiempoDesconectado;
+            if (this.State.tareaActual && this.State.tareaActual.inicioMs) this.State.tareaActual.inicioMs += tiempoDesconectado;
+        }
+
+        this.DOM.tituloEjecucion.textContent = `Proceso: ${this.State.procesos[this.State.procesoActivoId].nombre}`;
+        this.switchView('view-execution');
+
+        if (this.State.tareaActual) {
+            this.mostrarHorarios();
+            this.DOM.btnIniciar.classList.add('hidden');
+            this.DOM.btnPausar.classList.remove('hidden');
+            this.DOM.btnFinalizar.classList.remove('hidden');
+            this.DOM.btnVolver.classList.remove('hidden');
+            this.DOM.btnPausar.innerHTML = this.State.isPausado ? '▶️ Reanudar' : '⏸️ Pausar Tarea';
+
+            if (!this.State.isPausado) {
+                this.State.intervaloGlobal = setInterval(() => this.updateUI(), 1000);
+                this.State.intervaloTarea = setInterval(() => this.updateUI(), 1000);
+            }
+            this.updateUI();
+        } else {
+            this.DOM.btnIniciar.classList.remove('hidden');
+            this.DOM.btnPausar.classList.add('hidden');
+            this.DOM.btnFinalizar.classList.add('hidden');
+            this.DOM.btnVolver.classList.remove('hidden');
+            this.DOM.tareaActual.innerHTML = "Listo para iniciar...";
+        }
+        return true;
+    },
+
+    // --- UTILIDADES ---
+    toggleSonido: function() {
+        this.State.sonidoActivo = !this.State.sonidoActivo;
+        document.getElementById('btnToggleSonido').innerHTML = this.State.sonidoActivo ? '🔊 Sonido: ON' : '🔇 Sonido: OFF';
+    },
+
+    hablar: function(texto) {
+        if (!this.State.sonidoActivo) return; // Validación de Req 1
+        if (globalThis.speechSynthesis) {
+            globalThis.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            globalThis.speechSynthesis.speak(utterance);
+        }
+    },
+
+    vibrar: function(patron) {
+        if (navigator.vibrate) navigator.vibrate(patron);
+    },
+
+    getRandomMsg: function(categoria) {
+        const arr = this.State.mensajes[categoria];
+        if (!arr || arr.length === 0) return "";
+        return arr[Math.floor(Math.random() * arr.length)];
+    },
+
+    formatTime: function(ms) {
+        const totalSec = Math.floor(ms / 1000);
+        const min = Math.floor(totalSec / 60);
+        const sec = totalSec % 60;
+        return `${min}m ${sec}s`;
+    },
+
+    // --- MOTOR DE EJECUCIÓN ---
+    renderMenu: function() {
+        const menu = document.getElementById('procesosMenu');
+        menu.innerHTML = '';
+        
+        Object.values(this.State.procesos).forEach(proceso => {
+            const totalMin = proceso.tareas.reduce((sum, t) => sum + t.tiempoMin, 0);
+            const btn = document.createElement('button');
+            btn.className = 'btn-primary';
+            btn.innerHTML = `<strong>${proceso.nombre}</strong> <br><small>(${proceso.tareas.length} pasos | ~${totalMin} min)</small>`;
+            btn.onclick = () => this.prepararProceso(proceso.id);
+            
+            const btnEdit = document.createElement('button');
+            btnEdit.className = 'btn-warning';
+            btnEdit.style.width = 'auto';
+            btnEdit.style.display = 'inline-block';
+            btnEdit.innerHTML = '✏️';
+            btnEdit.onclick = (e) => { e.stopPropagation(); this.CRUD.openEditor(proceso.id); };
+
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.appendChild(btn);
+            wrapper.appendChild(btnEdit);
+            
+            menu.appendChild(wrapper);
+        });
+    },
+
+    prepararProceso: function(id) {
+        const proceso = this.State.procesos[id];
+        this.State.procesoActivoId = id;
+        this.State.tareasRestantes = JSON.parse(JSON.stringify(proceso.tareas)); 
+        this.State.historialEjecucion = []; 
+        this.State.tareaActual = null;
+        this.State.isPausado = false;
+
+        this.DOM.tituloEjecucion.textContent = `Proceso: ${proceso.nombre}`;
+        this.DOM.horariosInfo.classList.add('hidden');
+        this.DOM.btnIniciar.classList.remove('hidden');
+        this.DOM.btnPausar.classList.add('hidden');
+        this.DOM.btnFinalizar.classList.add('hidden');
+        this.DOM.btnVolver.classList.remove('hidden');
+        
+        this.DOM.tareaActual.innerHTML = "Listo para iniciar...";
+        this.DOM.progreso.innerHTML = '';
+        this.DOM.mensaje.innerHTML = '';
+
+        this.saveActiveState();
+        this.switchView('view-execution');
+    },
+
+    iniciarProceso: function() {
+        this.State.tiempoInicioGlobal = Date.now();
+        
+        // Req 4: Calcular hora estimada de fin
+        const totalEstimadoMin = this.State.tareasRestantes.reduce((acc, t) => acc + t.tiempoMin, 0);
+        this.State.horaFinEstimada = this.State.tiempoInicioGlobal + (totalEstimadoMin * 60000);
+        this.mostrarHorarios();
+
+        this.DOM.btnIniciar.classList.add('hidden');
+        this.DOM.btnPausar.classList.remove('hidden');
+        this.DOM.btnFinalizar.classList.remove('hidden');
+
+        this.State.intervaloGlobal = setInterval(() => this.updateUI(), 1000);
+        
+        const msgInicio = this.getRandomMsg('FRASE_INICIO');
+        this.DOM.mensaje.innerHTML = msgInicio;
+        this.hablar(msgInicio);
+        this.siguienteTarea();
+    },
+
+    mostrarHorarios: function() {
+        if(!this.State.tiempoInicioGlobal || !this.State.horaFinEstimada) return;
+        const hInicio = new Date(this.State.tiempoInicioGlobal).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const hFin = new Date(this.State.horaFinEstimada).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        this.DOM.horariosInfo.innerHTML = `⏱️ Inicio: <strong>${hInicio}</strong> | Fin Estimado: <strong>${hFin}</strong>`;
+        this.DOM.horariosInfo.classList.remove('hidden');
+    },
+
+    siguienteTarea: function() {
+        if (this.State.tareaActual) clearInterval(this.State.intervaloTarea);
+
+        if (this.State.tareasRestantes.length === 0) {
+            this.finalizarProcesoCompleto();
+            return;
+        }
+
+        const tareaData = this.State.tareasRestantes.shift();
+        this.State.tareaActual = {
+            ...tareaData,
+            tiempoTotalMs: tareaData.tiempoMin * 60 * 1000,
+            inicioMs: Date.now(),
+            mensajePrevioPct: 0
+        };
+
+        this.DOM.mensaje.innerHTML = `Siguiente instrucción: <strong>${this.State.tareaActual.nombre}</strong>`;
+        this.hablar(`Tarea: ${this.State.tareaActual.nombre}. Tiempo estimado: ${this.State.tareaActual.tiempoMin} minutos.`);
+        
+        this.State.intervaloTarea = setInterval(() => this.updateUI(), 1000);
+        this.saveActiveState();
+    },
+
+    finalizarTarea: function() {
+        if (!this.State.tareaActual) return;
+        const tiempoRealMs = Date.now() - this.State.tareaActual.inicioMs;
+        
+        this.State.historialEjecucion.push({
+            nombre: this.State.tareaActual.nombre,
+            estimadoMs: this.State.tareaActual.tiempoTotalMs,
+            realMs: tiempoRealMs
+        });
+
+        this.vibrar([100, 50, 100]); 
+        this.siguienteTarea();
+    },
+
+    finalizarProcesoCompleto: function() {
+        const proceso = this.State.procesos[this.State.procesoActivoId];
+        
+        this.State.estadisticas.push({
+            procesoNombre: proceso.nombre,
+            fecha: new Date().toLocaleString(),
+            tareas: [...this.State.historialEjecucion]
+        });
+        this.saveStats();
+        
+        this.vibrar([300, 100, 300, 100, 500]);
+        this.hablar("¡Excelente trabajo! Proceso completado.");
+        
+        // Req 2: Mostrar resultados en gráfico de barras en vez del alert
+        this.mostrarResultadosBarras();
+        this.limpiarEjecucion();
+    },
+
+    mostrarResultadosBarras: function() {
+        const container = document.getElementById('resultsChartContainer');
+        container.innerHTML = '';
+
+        this.State.historialEjecucion.forEach(t => {
+            const realMin = (t.realMs / 60000).toFixed(1);
+            const estMin = (t.estimadoMs / 60000).toFixed(1);
+            // Calculamos el porcentaje para el ancho de la barra (máximo 100% para que no desborde)
+            const pct = Math.min((t.realMs / t.estimadoMs) * 100, 100);
+            const color = t.realMs > t.estimadoMs ? 'var(--danger)' : 'var(--success)';
+            
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:5px;">
+                    <strong>${t.nombre}</strong>
+                    <span>Real: ${realMin}m / Est: ${estMin}m</span>
                 </div>
-            </div>
+                <div class="result-bar-bg">
+                    <div class="result-bar-fill" style="width: ${pct}%; background-color: ${color};"></div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        this.switchView('view-results');
+    },
+
+    limpiarEjecucion: function() {
+        clearInterval(this.State.intervaloGlobal);
+        clearInterval(this.State.intervaloTarea);
+        this.State.intervaloGlobal = null;
+        this.State.intervaloTarea = null;
+        this.State.tareaActual = null;
+        this.State.procesoActivoId = null;
+        this.State.horaFinEstimada = null;
+        this.DOM.tiempoTotal.innerHTML = "Sistema en Espera";
+        this.DOM.horariosInfo.classList.add('hidden');
+        this.clearActiveState();
+    },
+
+    updateUI: function() {
+        if (this.State.isPausado || !this.State.tareaActual) return;
+
+        const elapsedGlobal = Date.now() - this.State.tiempoInicioGlobal;
+        this.DOM.tiempoTotal.innerHTML = `Tiempo Total Transcurrido: ${this.formatTime(elapsedGlobal)}`;
+
+        const tarea = this.State.tareaActual;
+        const tiempoTranscurrido = Date.now() - tarea.inicioMs;
+        const porcentaje = (tiempoTranscurrido / tarea.tiempoTotalMs) * 100;
+
+        this.DOM.tareaActual.innerHTML = `<strong>Tarea:</strong> ${tarea.nombre} <br> Usado: ${this.formatTime(tiempoTranscurrido)}`;
+
+        let progressBar = this.DOM.progreso.querySelector('.progreso-bar');
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'progreso-bar';
+            this.DOM.progreso.appendChild(progressBar);
+        }
+
+        progressBar.style.width = `${Math.min(porcentaje, 100)}%`;
+        progressBar.textContent = `${Math.round(porcentaje)}%`;
+
+        const currentPctLevel = Math.floor(porcentaje / 25) * 25;
+        if (currentPctLevel > (tarea.mensajePrevioPct || 0) && currentPctLevel <= 100) {
+            tarea.mensajePrevioPct = currentPctLevel;
+            let msg = "";
+            if (currentPctLevel === 25) msg = this.getRandomMsg('PCT_25');
+            else if (currentPctLevel === 50) msg = this.getRandomMsg('PCT_50');
+            else if (currentPctLevel === 75) msg = this.getRandomMsg('PCT_75');
+
+            if (msg) {
+                this.DOM.mensaje.innerHTML = msg;
+                this.hablar(msg);
+            }
+        }
+
+        if (porcentaje >= 100) {
+            progressBar.classList.add('advertencia');
+            if (porcentaje > 100 && porcentaje < 102 && tarea.mensajePrevioPct !== 105) {
+                tarea.mensajePrevioPct = 105;
+                const msgAdv = this.getRandomMsg('ADVERTENCIA');
+                this.DOM.mensaje.innerHTML = msgAdv;
+                this.vibrar([500]); 
+                this.hablar(msgAdv);
+            }
+        }
+    },
+
+    togglePausa: function() {
+        if (!this.State.tareaActual) return;
+        this.State.isPausado = !this.State.isPausado;
+        
+        if (this.State.isPausado) {
+            this.DOM.btnPausar.innerHTML = '▶️ Reanudar';
+            this.DOM.tiempoTotal.innerHTML += " [PAUSADO]";
+            clearInterval(this.State.intervaloGlobal);
+            clearInterval(this.State.intervaloTarea);
+        } else {
+            this.DOM.btnPausar.innerHTML = '⏸️ Pausar Tarea';
             
-            <div class="mensaje-display"></div>
-
-            <!-- Controles de Tarea -->
-            <div class="action-controls">
-                <button data-action="start" class="btn-primary">▶️ Iniciar</button>
-                <button data-action="pause" class="btn-warning hidden">⏸️ Pausar</button>
-                <button data-action="finish" class="btn-success hidden">✅ Finalizar</button>
-            </div>
-
-            <!-- NUEVO: Registro de evidencia (Comentarios y Archivos) -->
-            <div class="evidence-section hidden">
-                <h4>Registro de la Tarea</h4>
-                <textarea class="task-comment" placeholder="Deja notas, observaciones o usa variables como {{nombre}}..."></textarea>
-                <input type="file" class="task-file" accept="image/*, audio/*, video/*" multiple>
-            </div>
-        </div>
-    </template>
-
-    <!-- 3. Plantilla: Editor de Procesos (CRUD) -->
-    <template id="tpl-editor">
-        <div class="view-container editor-view">
-            <h2>Gestión de Procesos</h2>
-            <button data-action="new-process" class="btn-primary">+ Nuevo Proceso</button>
-            <div class="editor-list">
-                <!-- Lista editable de procesos y sus pasos -->
-            </div>
-        </div>
-    </template>
-
-    <!-- 4. Plantilla: Configuración -->
-    <template id="tpl-settings">
-        <div class="view-container settings-view">
-            <h2>Configuración del Sistema</h2>
+            const estadoGuardado = JSON.parse(localStorage.getItem('matrix_active_state'));
+            const tiempoPausado = Date.now() - (estadoGuardado?.tiempoPausaInicio || Date.now());
             
-            <div class="setting-item">
-                <label>
-                    <input type="checkbox" id="toggle-voice"> 
-                    Habilitar comandos de voz (Micrófono)
-                </label>
-            </div>
+            this.State.tareaActual.inicioMs += tiempoPausado;
+            this.State.tiempoInicioGlobal += tiempoPausado;
+            if(this.State.horaFinEstimada) this.State.horaFinEstimada += tiempoPausado;
+
+            this.mostrarHorarios(); // Actualizar nueva hora fin
+            this.State.intervaloGlobal = setInterval(() => this.updateUI(), 1000);
+            this.State.intervaloTarea = setInterval(() => this.updateUI(), 1000);
+        }
+        this.saveActiveState();
+    },
+
+    // --- REQ 5: EDITOR DE MENSAJES ---
+    Messages: {
+        open: function() {
+            const container = document.getElementById('msgFormsContainer');
+            container.innerHTML = '';
             
-            <div class="setting-item">
-                <label>
-                    <input type="checkbox" id="toggle-speech"> 
-                    Habilitar respuestas de voz (Altavoz)
-                </label>
-            </div>
+            Object.keys(NOMBRES_MSG).forEach(key => {
+                const titulo = NOMBRES_MSG[key];
+                const frases = App.State.mensajes[key] || [];
+                
+                const html = `
+                    <div style="margin-bottom: 15px;">
+                        <label style="color: var(--primary); font-weight:bold;">${titulo}</label>
+                        <textarea id="msg_${key}" rows="3" placeholder="Escribe un mensaje por línea">${frases.join('\n')}</textarea>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+            App.switchView('view-messages');
+        },
+        save: function() {
+            Object.keys(NOMBRES_MSG).forEach(key => {
+                const text = document.getElementById(`msg_${key}`).value;
+                const frases = text.split('\n').map(f => f.trim()).filter(f => f !== "");
+                App.State.mensajes[key] = frases;
+            });
+            App.saveMessages();
+            alert("Mensajes guardados con éxito.");
+            App.switchView('view-menu');
+        },
+        resetDefault: function() {
+            if(confirm("¿Restaurar los mensajes a sus valores originales?")) {
+                App.State.mensajes = JSON.parse(JSON.stringify(DEFAULT_MSG));
+                App.saveMessages();
+                this.open();
+            }
+        }
+    },
 
-            <!-- Opciones para variables de usuario -->
-            <div class="setting-item">
-                <label>Tu Nombre (Para mensajes personalizados):</label>
-                <input type="text" id="user-name-input" placeholder="Ej: Jhon">
-            </div>
-        </div>
-    </template>
+    // --- SISTEMA CRUD MEJORADO ---
+    CRUD: {
+        openEditor: function(id = null) {
+            const self = App;
+            if (id && self.State.procesos[id]) {
+                const proc = self.State.procesos[id];
+                self.Draft.id = id;
+                self.Draft.nombre = proc.nombre;
+                self.Draft.tareas = [...proc.tareas];
+            } else {
+                self.Draft.id = 'proc_' + Date.now();
+                self.Draft.nombre = '';
+                self.Draft.tareas = [];
+            }
+            document.getElementById('editProcessName').value = self.Draft.nombre;
+            this.renderDraftTasks();
+            self.switchView('view-editor');
+        },
 
-    <!-- 5. Plantilla: Resultados y Estadísticas -->
-    <template id="tpl-stats">
-        <div class="view-container stats-view">
-            <h2>📊 Resultados del Proceso</h2>
-            <div class="charts-container">
-                <!-- Gráficos generados por JS -->
-            </div>
-            <button data-route="home" class="btn-primary">Volver al Inicio</button>
-        </div>
-    </template>
+        addTaskToDraft: function() {
+            const nameInput = document.getElementById('newTaskName');
+            const timeInput = document.getElementById('newTaskTime');
+            
+            if (!nameInput.value || !timeInput.value) return alert("Llena ambos campos");
+            App.Draft.tareas.push({
+                nombre: nameInput.value,
+                tiempoMin: parseInt(timeInput.value)
+            });
+            nameInput.value = '';
+            timeInput.value = '';
+            this.renderDraftTasks();
+        },
 
-    <!-- Se eliminó Howler.js y el iframe de Google Forms para mantenerlo nativo e IndexedDB -->
-    <script type="module" src="app.js"></script>
+        // Req 3: Mover tareas de lugar (Reordenamiento)
+        moveTask: function(index, direction) {
+            const arr = App.Draft.tareas;
+            if (index + direction < 0 || index + direction >= arr.length) return;
+            const temp = arr[index];
+            arr[index] = arr[index + direction];
+            arr[index + direction] = temp;
+            this.renderDraftTasks();
+        },
+
+        // Req 3: Editar tarea existente (Patch)
+        editTask: function(index) {
+            const t = App.Draft.tareas[index];
+            const nuevoNombre = prompt("Modifica el nombre de la tarea:", t.nombre);
+            if(nuevoNombre === null || nuevoNombre.trim() === '') return;
+            
+            const nuevoTiempo = prompt("Modifica el tiempo estimado (minutos):", t.tiempoMin);
+            if(nuevoTiempo === null || nuevoTiempo.trim() === '' || isNaN(nuevoTiempo)) return;
+
+            App.Draft.tareas[index] = {
+                nombre: nuevoNombre,
+                tiempoMin: parseInt(nuevoTiempo)
+            };
+            this.renderDraftTasks();
+        },
+
+        removeTaskFromDraft: function(index) {
+            App.Draft.tareas.splice(index, 1);
+            this.renderDraftTasks();
+        },
+
+        renderDraftTasks: function() {
+            const container = document.getElementById('draftTasksList');
+            container.innerHTML = '';
+            
+            // Req 3: Calcular y mostrar tiempo total
+            const totalMin = App.Draft.tareas.reduce((sum, t) => sum + t.tiempoMin, 0);
+            document.getElementById('draftTotalTime').innerText = `Total: ${totalMin} min`;
+
+            App.Draft.tareas.forEach((t, index) => {
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.innerHTML = `
+                    <div class="task-info">
+                        <strong>${index + 1}.</strong> ${t.nombre} <br><small>(${t.tiempoMin} min)</small>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${index}, -1)">↑</button>
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${index}, 1)">↓</button>
+                        <button class="btn-warning btn-icon" onclick="App.CRUD.editTask(${index})">✏️</button>
+                        <button class="btn-danger btn-icon" onclick="App.CRUD.removeTaskFromDraft(${index})">❌</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        saveProcess: function() {
+            const name = document.getElementById('editProcessName').value;
+            if (!name || App.Draft.tareas.length === 0) return alert("Por favor asigna un nombre y al menos una tarea.");
+            App.State.procesos[App.Draft.id] = { id: App.Draft.id, nombre: name, tareas: App.Draft.tareas };
+            App.saveData();
+            App.renderMenu();
+            App.switchView('view-menu');
+        }
+    },
+
+    // --- ESTADÍSTICAS DEL MENÚ PRINCIPAL ---
+    Stats: {
+        show: function() {
+            const container = document.getElementById('statsListContainer');
+            container.innerHTML = '';
+            if (!App.State.estadisticas || App.State.estadisticas.length === 0) {
+                container.innerHTML = '<p>No hay datos aún. Completa un proceso primero.</p>';
+            } else {
+                const reversed = [...App.State.estadisticas].reverse().slice(0, 10);
+                reversed.forEach(stat => {
+                    let timeAnalysisHTML = '';
+                    stat.tareas.forEach(t => {
+                        const realMin = (t.realMs / 60000).toFixed(1);
+                        const estMin = (t.estimadoMs / 60000).toFixed(1);
+                        const color = t.realMs > t.estimadoMs ? 'var(--danger)' : 'var(--success)';
+                        timeAnalysisHTML += `<div style="font-size: 0.9em; margin-left: 10px;">- ${t.nombre}: <span style="color:${color}">${realMin}m</span> (Est: ${estMin}m)</div>`;
+                    });
+
+                    const div = document.createElement('div');
+                    div.className = 'stats-item';
+                    div.innerHTML = `
+                        <strong>${stat.procesoNombre}</strong> <small style="float:right">${stat.fecha}</small>
+                        <div style="margin-top:10px;">${timeAnalysisHTML}</div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            App.switchView('view-stats');
+        }
+    },
+
+    addEventListeners: function() {
+        this.DOM.btnIniciar.addEventListener('click', () => this.iniciarProceso());
+        this.DOM.btnPausar.addEventListener('click', () => this.togglePausa());
+        this.DOM.btnFinalizar.addEventListener('click', () => this.finalizarTarea());
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
 </body>
 </html>
