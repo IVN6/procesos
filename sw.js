@@ -4,6 +4,8 @@ const CACHE_NAME = 'organizate-pwa-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './01.html',
+  
   './style.css',
   './app.js',
   './mia.html',
