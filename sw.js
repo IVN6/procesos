@@ -1,4 +1,4 @@
-const CACHE_NAME = 'organizate-pwa-v1';
+const CACHE_NAME = 'organizate-pwa-v01';
 
 // Solo guardamos los archivos críticos de ESTE proyecto
 const ASSETS_TO_CACHE = [
