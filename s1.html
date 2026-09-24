@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jev Matrix V2 - System One Engine</title>
+    <title>Jev Matrix V3 - Alto Rendimiento</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -23,6 +23,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
         .container { width: 100%; max-width: 700px; padding-bottom: 40px; }
+        
         .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         h1, h2, h3 { text-align: center; margin-bottom: 16px; color: #fff; }
         p { color: var(--text-muted); font-size: 0.95em; line-height: 1.5; }
@@ -31,32 +32,37 @@
         .flex-row { display: flex; gap: 10px; align-items: center; }
         .flex-col { display: flex; flex-direction: column; gap: 12px; }
 
-        /* Proceso Card Mejorada */
-        .process-card {
-            background: var(--bg-item); border: 1px solid var(--border); border-left: 4px solid var(--primary);
-            border-radius: 12px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
-        }
-        .process-card:hover { background: var(--bg-item-hover); }
+        /* Navegación Superior */
+        .navbar { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+        .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+        .nav-btn:hover { background: var(--bg-item); color: var(--primary); border-color: var(--primary); }
+        .nav-btn.active { background: var(--primary); color: #000; font-weight: bold; }
+
+        /* Proceso Card */
+        .process-card { background: var(--bg-item); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 12px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
         .process-info { flex: 1 1 200px; }
         .process-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-        /* Botones */
-        button {
-            font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 8px; border: 1px solid transparent; 
-            background-color: var(--border); color: var(--text-main); cursor: pointer; transition: all 0.2s ease;
-        }
+        /* Botones Generales */
+        button { font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;}
         button:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-primary { background-color: var(--primary); color: #0f172a; font-weight: 700; }
+        .btn-primary { background-color: var(--primary); color: #0f172a; }
         .btn-success { background-color: var(--success); color: #fff; }
         .btn-warning { background-color: var(--warning); color: #000; }
         .btn-danger { background-color: var(--danger); color: #fff; }
-        .btn-outline { border-color: var(--border); background: transparent; }
-        .btn-icon { padding: 8px 12px; }
+        .btn-outline { border-color: var(--border); background: transparent; color: var(--text-main); }
+        .btn-icon { padding: 6px 10px; }
 
         input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: #fff; font-size: 14px; margin-top: 4px; }
         input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
 
-        /* Timer y Progreso */
+        /* Contadores y Progreso */
+        .time-tracker { display: flex; justify-content: space-between; background: #0f172a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85em; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .time-col { display: flex; flex-direction: column; text-align: center; }
+        .time-col span:first-child { color: var(--text-muted); font-size: 0.85em; }
+        .time-col span:last-child { font-weight: bold; color: var(--primary); font-size: 1.1em; }
+
         .timer-display { font-size: 3em; font-weight: 800; text-align: center; color: var(--primary); font-family: monospace; margin: 10px 0; }
         .progress-container { width: 100%; height: 16px; background: #0f172a; border-radius: 999px; overflow: hidden; margin: 15px 0; border: 1px solid var(--border); }
         .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.4s ease; }
@@ -65,60 +71,78 @@
         .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
         .primitive-tag { display: inline-block; font-size: 0.75em; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: var(--primary); color: #000; margin-bottom: 8px; }
 
-        /* Mini barras para el resumen final */
+        /* Barras Finales */
         .summary-bar-bg { width: 100%; height: 8px; background: #0f172a; border-radius: 4px; margin-top: 4px; overflow: hidden;}
         .summary-bar-fill { height: 100%; background: var(--success); }
         .summary-bar-fill.over { background: var(--danger); }
         
         canvas { max-width: 100%; background: #0f172a; border-radius: 8px; padding: 10px; margin-top: 15px; }
+
+        /* Tareas Editor */
+        .task-edit-row { font-size: 0.9em; display: flex; justify-content: space-between; margin-bottom: 6px; background: var(--bg-item); padding: 8px; border-radius: 6px; align-items: center; border: 1px solid var(--border); }
+        .task-controls { display: flex; gap: 4px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin:0; font-size: 1.2em; color: var(--primary);">⚡ JEV MATRIX</h2>
-        <div class="flex-row">
-            <button id="btnAudioToggle" class="btn-outline" onclick="App.toggleAudio()">🔊 Voz</button>
+    
+    <!-- MENÚ HAMBURGUESA / NAVEGACIÓN SUPERIOR -->
+    <nav class="navbar">
+        <h2 style="margin:0; font-size: 1.1em; color: var(--primary);">⚡ JEV MATRIX</h2>
+        <div class="nav-links">
+            <button class="nav-btn active" id="nav-menu" onclick="App.navTo('view-menu')">🏠 Inicio</button>
+            <button class="nav-btn" id="nav-stats" onclick="App.navTo('view-stats')">📊 Stats</button>
+            <button class="nav-btn" id="nav-messages" onclick="App.navTo('view-messages')">💬 Mensajes</button>
+            <button class="btn-outline btn-icon" onclick="App.toggleAudio()" id="btnAudioToggle" title="Activar/Desactivar Voz">🔊</button>
         </div>
-    </div>
+    </nav>
 
     <!-- VISTA 1: MENÚ -->
     <div id="view-menu" class="card">
         <h1>Sistemas de Ejecución</h1>
         <div id="processList" class="flex-col"></div>
         <hr style="border-color: var(--border); margin: 20px 0;">
-        <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
-            <button class="btn-primary" onclick="App.CRUD.openEditor()">➕ Nuevo Proceso</button>
-            <button class="btn-outline" onclick="App.Stats.show()">📊 Rendimiento</button>
-        </div>
+        <button class="btn-primary" style="width: 100%;" onclick="App.CRUD.openEditor()">➕ Crear Nuevo Proceso</button>
     </div>
 
-    <!-- VISTA 2: TRIAJE (IF/ELSE ENERGÍA) -->
+    <!-- VISTA 2: TRIAJE (IF/ELSE) -->
     <div id="view-triage" class="card hidden">
-        <span class="primitive-tag">TRIAJE Y CONDICIONALES</span>
-        <h2 id="triageProcessTitle">Alineación de Entorno</h2>
+        <span class="primitive-tag">PRE-FLIGHT</span>
+        <h2 id="triageProcessTitle">Alineación</h2>
         
         <div class="jev-box">
-            <label style="font-weight: bold; display: block; margin-bottom: 12px;">Estado del Sistema (Define la ruta del algoritmo):</label>
+            <label style="font-weight: bold; display: block; margin-bottom: 12px;">Nivel de Energía:</label>
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
-                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Óptimo (Rutina Completa)</button>
-                <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Bajo (Solo Esenciales)</button>
+                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Óptimo (Completo)</button>
+                <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Bajo (Esenciales)</button>
             </div>
             <p id="triageEnergyText" style="margin-top: 10px; color: var(--warning); font-size: 0.85em;"></p>
         </div>
-
-        <button id="btnStartExecution" class="btn-primary" style="width: 100%; font-size: 1.1em;" onclick="App.startExecution()">▶️ Iniciar</button>
+        <button class="btn-primary" style="width: 100%; font-size: 1.1em;" onclick="App.startExecution()">▶️ Iniciar Ahora</button>
     </div>
 
     <!-- VISTA 3: EJECUCIÓN -->
     <div id="view-execution" class="card hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span id="execProcessName" style="color: var(--text-muted); font-size: 0.85em;">Proceso</span>
-            <span id="execEstimatedEnd" style="color: var(--warning); font-size: 0.85em;">Fin: --:--</span>
+        <h2 id="execProcessName" style="margin-bottom: 15px;">Proceso</h2>
+        
+        <!-- PROYECCIONES DINÁMICAS DE TIEMPO -->
+        <div class="time-tracker">
+            <div class="time-col">
+                <span>Inicio</span>
+                <span id="tt-start">--:--</span>
+            </div>
+            <div class="time-col">
+                <span>Est. Original</span>
+                <span id="tt-original">--:--</span>
+            </div>
+            <div class="time-col">
+                <span>Proyección Actual</span>
+                <span id="tt-projected" style="color: var(--warning);">--:--</span>
+            </div>
         </div>
 
-        <h2 id="execTaskTitle" style="margin-top: 10px; font-size: 1.4em; line-height: 1.2;">Tarea</h2>
+        <h3 id="execTaskTitle" style="font-size: 1.4em; color: #fff;">Tarea</h3>
         <div class="timer-display" id="execTimer">00:00</div>
         
         <div class="progress-container">
@@ -127,7 +151,7 @@
 
         <!-- CHOICE RÁPIDO (RETRASO) -->
         <div id="jevChoiceBox" class="jev-box hidden">
-            <span class="primitive-tag">CHOICE: RESOLUCIÓN RÁPIDA</span>
+            <span class="primitive-tag">RETRASO DETECTADO</span>
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap; margin-top: 10px;">
                 <button class="btn-warning" onclick="App.Jev.choiceAddExtra(2)">⏳ +2 Min</button>
                 <button class="btn-danger" onclick="App.Jev.choiceSkipTask()">⏭️ Omitir</button>
@@ -141,7 +165,7 @@
 
         <!-- SCORE OPCIONAL -->
         <div id="jevScoreBox" class="jev-box hidden">
-            <span class="primitive-tag">SCORE: FRICCIÓN (OPCIONAL)</span>
+            <span class="primitive-tag">FRICCIÓN (OPCIONAL)</span>
             <p style="margin-bottom: 8px;">Dificultad (1 = Fácil | 5 = Bloqueo):</p>
             <div class="flex-row" style="justify-content: center; margin-bottom: 12px;">
                 <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(1)">1</button>
@@ -154,29 +178,31 @@
         </div>
     </div>
 
-    <!-- VISTA 3.5: RESUMEN FINAL DE BARRAS -->
+    <!-- VISTA 3.5: RESUMEN FINAL -->
     <div id="view-summary" class="card hidden">
         <h2>Resumen de Ejecución</h2>
-        <div id="summaryBarsContainer" style="margin: 20px 0;"></div>
-        <button class="btn-primary" style="width: 100%;" onclick="App.closeSummary()">💾 Guardar y Volver</button>
+        <div id="summaryTotalTime" style="text-align: center; font-size: 1.1em; color: var(--primary); font-weight: bold; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px;">
+            <!-- Rellenado dinámicamente -->
+        </div>
+        <div id="summaryBarsContainer" style="margin: 20px 0; max-height: 300px; overflow-y: auto;"></div>
+        <button class="btn-primary" style="width: 100%;" onclick="App.closeSummary()">💾 Guardar y Volver al Inicio</button>
     </div>
 
-    <!-- VISTA 4: EDITOR (CRUD) -->
+    <!-- VISTA 4: EDITOR (CRUD AVANZADO) -->
     <div id="view-editor" class="card hidden">
-        <h2>Editor de Algoritmo</h2>
-        <input type="text" id="editProcName" placeholder="Nombre del Proceso">
-        
+        <h2>Editor de Proceso</h2>
+        <input type="text" id="editProcName" placeholder="Nombre de la Rutina">
         <select id="editProcLang" style="margin-top: 10px;">
-            <option value="es-US">Español (Latino)</option>
-            <option value="en-US">English (US)</option>
-            <option value="fr-FR">Français</option>
-            <option value="it-IT">Italiano</option>
-            <option value="pt-BR">Português</option>
+            <option value="es-US">Voz: Español (Latino)</option>
+            <option value="en-US">Voz: English (US)</option>
+            <option value="fr-FR">Voz: Français</option>
+            <option value="it-IT">Voz: Italiano</option>
+            <option value="pt-BR">Voz: Português</option>
         </select>
 
         <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-            <h3>Pasos del Proceso</h3>
-            <div class="flex-col">
+            <h3>Pasos</h3>
+            <div class="flex-col" style="background: var(--bg-card); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
                 <input type="text" id="newTaskName" placeholder="Descripción de la tarea">
                 <div class="flex-row">
                     <input type="number" id="newTaskTime" placeholder="Min" style="width: 80px;">
@@ -184,26 +210,33 @@
                         <input type="checkbox" id="newTaskEssential" checked> Esencial
                     </label>
                 </div>
-                <button class="btn-outline" onclick="App.CRUD.addTask()">+ Añadir</button>
+                <button class="btn-primary" id="btnAddTask" onclick="App.CRUD.addTask()">+ Añadir Paso</button>
             </div>
-            <div id="editTaskList" style="margin-top: 15px;"></div>
+            
+            <!-- Lista de Tareas con Controles -->
+            <div id="editTaskList"></div>
         </div>
 
         <div class="flex-row" style="justify-content: space-between;">
-            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar</button>
-            <button class="btn-outline" onclick="history.back()">❌ Cancelar</button>
+            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar Todo</button>
+            <button class="btn-outline" onclick="App.navTo('view-menu')">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- VISTA 5: ESTADÍSTICAS Y GRÁFICAS -->
+    <!-- VISTA 5: EDITOR DE MENSAJES -->
+    <div id="view-messages" class="card hidden">
+        <h2>Personalizar Frases de Voz</h2>
+        <p style="margin-bottom: 15px;">Escribe las frases (una por línea). El sistema escogerá una al azar.</p>
+        <div id="msgFieldsContainer" class="flex-col" style="margin: 15px 0; max-height: 350px; overflow-y: auto; padding-right: 5px;"></div>
+        <button class="btn-success" style="width: 100%;" onclick="App.Messages.save()">💾 Guardar Frases</button>
+    </div>
+
+    <!-- VISTA 6: ESTADÍSTICAS -->
     <div id="view-stats" class="card hidden">
-        <h2>Rendimiento Global</h2>
+        <h2>Rendimiento Histórico</h2>
         <select id="statProcessSelect" onchange="App.Stats.renderChart()"></select>
-        
         <canvas id="perfChart" width="400" height="250"></canvas>
-        
         <div id="statsList" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
-        <button class="btn-outline" style="margin-top:15px;" onclick="history.back()">⬅️ Volver</button>
     </div>
 
 </div>
@@ -211,157 +244,164 @@
 <script>
 const DEFAULT_DATA = {
     procesos: {
-        p1: {
-            id: 'p1', nombre: '🚀 Bloque Deep Work', lang: 'es-US',
-            tareas: [
-                { nombre: 'Definir objetivo único', tiempoMin: 2, esencial: true },
-                { nombre: 'Preparar café/agua', tiempoMin: 3, esencial: false },
-                { nombre: 'Bloque de ejecución pura', tiempoMin: 30, esencial: true },
-                { nombre: 'Revisión final', tiempoMin: 5, esencial: true }
-            ]
-        },
-        p2: {
-            id: 'p2', nombre: '🇬🇧 English Morning Routine', lang: 'en-US',
-            tareas: [
-                { nombre: 'Listen to 1 podcast episode', tiempoMin: 15, esencial: true },
-                { nombre: 'Write 3 sentences in journal', tiempoMin: 5, esencial: true },
-                { nombre: 'Review vocabulary cards', tiempoMin: 10, esencial: false }
-            ]
-        }
+        p1: { id: 'p1', nombre: '🚀 Bloque Deep Work', lang: 'es-US', tareas: [{ nombre: 'Definir objetivo', tiempoMin: 2, esencial: true }, { nombre: 'Bloque ejecución', tiempoMin: 25, esencial: true }] }
+    },
+    mensajes: {
+        INICIO: ['Proceso iniciado. Enfoque total.'],
+        PCT_25: ['Llevas el 25% del tiempo.'],
+        PCT_50: ['50% completado. Mantén el ritmo.'],
+        PCT_75: ['75% completado. Entrando en la recta final.'],
+        OVERTIME: ['Tiempo superado. Selecciona una acción en pantalla.'],
+        FINALIZADO: ['Proceso finalizado.']
     },
     historial: []
 };
 
 const App = {
     State: {
-        procesos: {}, historial: [], audioActive: true, activeProcId: null,
-        energyLevel: 'high', remainingTasks: [], currentTask: null, executionLog: [],
-        timerInterval: null, chartInstance: null
+        procesos: {}, mensajes: {}, historial: [],
+        audioActive: true, activeProcId: null, energyLevel: 'high',
+        remainingTasks: [], currentTask: null, executionLog: [],
+        timerInterval: null, chartInstance: null,
+        
+        // Tiempos
+        startTimeGlobal: null,
+        totalEstimatedMsGlobal: 0
     },
-    Draft: { id: null, nombre: '', lang: 'es-US', tareas: [] },
+    
+    Draft: { id: null, nombre: '', lang: 'es-US', tareas: [], editIndex: -1 },
 
     init: function() {
         this.loadStorage();
         this.renderMenu();
         
-        // Manejo del botón físico "Atrás" en móviles
+        // Navegación History API segura (Botón Atrás)
         window.addEventListener('popstate', (e) => {
-            if (e.state && e.state.view) {
-                this._switchViewDOM(e.state.view);
-            } else {
-                this._switchViewDOM('view-menu');
-            }
+            if (e.state && e.state.view) this._renderView(e.state.view);
+            else this._renderView('view-menu');
         });
-        
-        // Estado inicial de la historia
         history.replaceState({view: 'view-menu'}, '');
-        this._switchViewDOM('view-menu');
+        this._renderView('view-menu');
     },
 
-    // Navegación con History API
-    switchView: function(viewId) {
-        history.pushState({view: viewId}, '', '');
-        this._switchViewDOM(viewId);
+    // --- NAVEGACIÓN ---
+    navTo: function(viewId) {
+        history.pushState({view: viewId}, '');
+        this._renderView(viewId);
     },
     
-    _switchViewDOM: function(viewId) {
+    _renderView: function(viewId) {
+        // Limpiar estilos de navbar
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById(`nav-${viewId.split('-')[1]}`);
+        if(activeBtn) activeBtn.classList.add('active');
+
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById(viewId).classList.remove('hidden');
+
+        // Renderizados condicionales
+        if(viewId === 'view-menu') this.renderMenu();
+        if(viewId === 'view-messages') this.Messages.render();
+        if(viewId === 'view-stats') this.Stats.show();
     },
 
+    // --- HERRAMIENTAS GENERALES ---
     toggleAudio: function() {
         this.State.audioActive = !this.State.audioActive;
-        document.getElementById('btnAudioToggle').innerText = this.State.audioActive ? '🔊 Voz: ON' : '🔇 Voz: OFF';
+        document.getElementById('btnAudioToggle').innerText = this.State.audioActive ? '🔊' : '🔇';
     },
 
     speak: function(text) {
         if (!this.State.audioActive || !window.speechSynthesis) return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        
         const proc = this.State.procesos[this.State.activeProcId];
         msg.lang = (proc && proc.lang) ? proc.lang : 'es-US';
         window.speechSynthesis.speak(msg);
     },
 
-    loadStorage: function() {
-        try {
-            const p = localStorage.getItem('jev_procesos_v2');
-            this.State.procesos = p ? JSON.parse(p) : JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
-            const h = localStorage.getItem('jev_historial_v2');
-            this.State.historial = h ? JSON.parse(h) : [];
-        } catch (e) {
-            this.State.procesos = JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
-        }
-    },
-    saveAll: function() {
-        localStorage.setItem('jev_procesos_v2', JSON.stringify(this.State.procesos));
-        localStorage.setItem('jev_historial_v2', JSON.stringify(this.State.historial));
+    getMsg: function(key) {
+        const arr = this.State.mensajes[key] || [];
+        return arr[Math.floor(Math.random() * arr.length)] || '';
     },
 
+    formatTimeAMPM: function(date) {
+        return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    },
+
+    loadStorage: function() {
+        const p = localStorage.getItem('jev_procs_v3');
+        this.State.procesos = p ? JSON.parse(p) : JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
+        
+        const m = localStorage.getItem('jev_msgs_v3');
+        this.State.mensajes = m ? JSON.parse(m) : JSON.parse(JSON.stringify(DEFAULT_DATA.mensajes));
+        
+        const h = localStorage.getItem('jev_hist_v3');
+        this.State.historial = h ? JSON.parse(h) : [];
+    },
+    
+    saveAll: function() {
+        localStorage.setItem('jev_procs_v3', JSON.stringify(this.State.procesos));
+        localStorage.setItem('jev_msgs_v3', JSON.stringify(this.State.mensajes));
+        localStorage.setItem('jev_hist_v3', JSON.stringify(this.State.historial));
+    },
+
+    // --- MENÚ PRINCIPAL ---
     renderMenu: function() {
         const list = document.getElementById('processList');
         list.innerHTML = '';
         Object.values(this.State.procesos).forEach(proc => {
-            const tareas = proc.tareas || [];
-            const totalTime = tareas.reduce((a, t) => a + (Number(t.tiempoMin) || 0), 0);
-            const div = document.createElement('div');
-            div.className = 'process-card';
-            div.innerHTML = `
-                <div class="process-info">
-                    <strong style="font-size:1.1em; display:block;">${proc.nombre}</strong>
-                    <span style="font-size:0.85em; color:var(--text-muted);">${tareas.length} pasos | ~${totalTime}m | ${proc.lang}</span>
-                </div>
-                <div class="process-actions">
-                    <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️</button>
-                    <button class="btn-outline btn-icon" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
-                    <button class="btn-outline btn-icon" onclick="App.CRUD.deleteProcess('${proc.id}')">🗑️</button>
+            const time = proc.tareas.reduce((a, t) => a + (Number(t.tiempoMin) || 0), 0);
+            list.innerHTML += `
+                <div class="process-card">
+                    <div class="process-info">
+                        <strong style="font-size:1.1em; display:block;">${proc.nombre}</strong>
+                        <span style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos | ~${time}m | ${proc.lang}</span>
+                    </div>
+                    <div class="process-actions">
+                        <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.deleteProcess('${proc.id}')">🗑️</button>
+                    </div>
                 </div>
             `;
-            list.appendChild(div);
         });
     },
 
-    // TRIAJE (LÓGICA IF/ELSE)
+    // --- TRIAJE ---
     setupTriage: function(procId) {
         this.State.activeProcId = procId;
         document.getElementById('triageProcessTitle').innerText = this.State.procesos[procId].nombre;
         this.setEnergyLevel('high');
-        this.switchView('view-triage');
+        this.navTo('view-triage');
     },
 
     setEnergyLevel: function(level) {
         this.State.energyLevel = level;
-        const txt = document.getElementById('triageEnergyText');
-        if (level === 'high') {
-            txt.innerText = "Se ejecutarán todos los pasos programados.";
-        } else {
-            txt.innerText = "Modo Emergencia: Se omitirán las tareas no esenciales para garantizar ejecución mínima.";
-        }
+        document.getElementById('triageEnergyText').innerText = level === 'high' ? 
+            "Modo Completo: Se ejecutarán todos los pasos." : 
+            "Modo Emergencia: Se omitirán las tareas no esenciales.";
     },
 
+    // --- EJECUCIÓN Y TIEMPOS DINÁMICOS ---
     startExecution: function() {
         const proc = this.State.procesos[this.State.activeProcId];
         
-        // Filtro Lógico de tareas (El "IF" de energía)
-        this.State.remainingTasks = proc.tareas.filter(t => {
-            if (this.State.energyLevel === 'emergency' && !t.esencial) return false;
-            return true;
-        }).map(t => ({ ...t }));
-
-        if(this.State.remainingTasks.length === 0) {
-            alert("No hay tareas esenciales en este proceso.");
-            return history.back();
-        }
+        this.State.remainingTasks = proc.tareas.filter(t => this.State.energyLevel === 'high' || t.esencial).map(t => ({ ...t }));
+        if(this.State.remainingTasks.length === 0) return alert("No hay tareas esenciales.");
 
         this.State.executionLog = [];
-        const totalMin = this.State.remainingTasks.reduce((a, t) => a + t.tiempoMin, 0);
+        this.State.totalEstimatedMsGlobal = this.State.remainingTasks.reduce((a, t) => a + t.tiempoMin, 0) * 60000;
+        this.State.startTimeGlobal = new Date();
+        
+        const origEnd = new Date(this.State.startTimeGlobal.getTime() + this.State.totalEstimatedMsGlobal);
         
         document.getElementById('execProcessName').innerText = proc.nombre;
-        document.getElementById('execEstimatedEnd').innerText = `~${totalMin} min`;
+        document.getElementById('tt-start').innerText = this.formatTimeAMPM(this.State.startTimeGlobal);
+        document.getElementById('tt-original').innerText = this.formatTimeAMPM(origEnd);
 
-        this.switchView('view-execution');
-        this.speak("Iniciando algoritmo.");
+        this.navTo('view-execution');
+        this.speak(this.getMsg('INICIO'));
         this.nextTask();
         
         if (this.State.timerInterval) clearInterval(this.State.timerInterval);
@@ -373,15 +413,12 @@ const App = {
         document.getElementById('jevScoreBox').classList.add('hidden');
         document.getElementById('btnCompleteTask').classList.remove('hidden');
 
-        if (this.State.remainingTasks.length === 0) {
-            this.showSummaryBars();
-            return;
-        }
+        if (this.State.remainingTasks.length === 0) return this.showSummaryBars();
 
         const taskData = this.State.remainingTasks.shift();
         this.State.currentTask = {
             ...taskData,
-            totalMs: taskData.tiempoMin * 60 * 1000,
+            totalMs: taskData.tiempoMin * 60000,
             startMs: Date.now(),
             warnFlags: { 25: false, 50: false, 75: false, 100: false }
         };
@@ -392,32 +429,34 @@ const App = {
 
     updateTimerUI: function() {
         if (!this.State.currentTask) return;
-        const elapsed = Date.now() - this.State.currentTask.startMs;
+        const now = Date.now();
+        const elapsed = now - this.State.currentTask.startMs;
         const total = this.State.currentTask.totalMs;
         const pct = (elapsed / total) * 100;
 
+        // Proyección Dinámica
+        const remainingUnstartedMs = this.State.remainingTasks.reduce((a, t) => a + (t.tiempoMin * 60000), 0);
+        const currentRemainingMs = Math.max(0, total - elapsed);
+        const projectedEnd = new Date(now + currentRemainingMs + remainingUnstartedMs);
+        document.getElementById('tt-projected').innerText = this.formatTimeAMPM(projectedEnd);
+
+        // UI Reloj
         const sec = Math.floor(elapsed / 1000);
         document.getElementById('execTimer').innerText = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
         
         const bar = document.getElementById('execProgressBar');
         bar.style.width = `${Math.min(pct, 100)}%`;
 
-        // Alertas de Voz fraccionadas
-        if (pct >= 25 && pct < 50 && !this.State.currentTask.warnFlags[25]) {
-            this.State.currentTask.warnFlags[25] = true; this.speak("25%");
-        }
-        if (pct >= 50 && pct < 75 && !this.State.currentTask.warnFlags[50]) {
-            this.State.currentTask.warnFlags[50] = true; this.speak("50%");
-        }
-        if (pct >= 75 && pct < 100 && !this.State.currentTask.warnFlags[75]) {
-            this.State.currentTask.warnFlags[75] = true; this.speak("75%");
-        }
+        // Alertas de Voz por Porcentaje
+        if (pct >= 25 && pct < 50 && !this.State.currentTask.warnFlags[25]) { this.State.currentTask.warnFlags[25] = true; this.speak(this.getMsg('PCT_25')); }
+        if (pct >= 50 && pct < 75 && !this.State.currentTask.warnFlags[50]) { this.State.currentTask.warnFlags[50] = true; this.speak(this.getMsg('PCT_50')); }
+        if (pct >= 75 && pct < 100 && !this.State.currentTask.warnFlags[75]) { this.State.currentTask.warnFlags[75] = true; this.speak(this.getMsg('PCT_75')); }
 
         if (pct >= 100) {
             bar.classList.add('overtime');
             if (!this.State.currentTask.warnFlags[100]) {
                 this.State.currentTask.warnFlags[100] = true;
-                this.speak("Tiempo superado. Elige acción.");
+                this.speak(this.getMsg('OVERTIME'));
                 document.getElementById('jevChoiceBox').classList.remove('hidden');
             }
         } else {
@@ -448,14 +487,17 @@ const App = {
         }
     },
 
-    // RESUMEN FINAL CON BARRAS
+    // --- RESUMEN FINAL ---
     showSummaryBars: function() {
         clearInterval(this.State.timerInterval);
-        this.speak("Proceso completado.");
+        this.speak(this.getMsg('FINALIZADO'));
+        
+        let totalRealMs = 0, totalEstMs = 0;
         const cont = document.getElementById('summaryBarsContainer');
         cont.innerHTML = '';
 
         this.State.executionLog.forEach(log => {
+            totalRealMs += log.realMs; totalEstMs += log.estMs;
             const minReal = (log.realMs / 60000).toFixed(1);
             const minEst = (log.estMs / 60000).toFixed(1);
             const pct = Math.min((log.realMs / log.estMs) * 100, 100);
@@ -467,25 +509,29 @@ const App = {
                         <span>${log.omitido ? '⏭️ ' : ''}${log.nombre}</span>
                         <span style="color: ${isOver ? 'var(--danger)' : 'var(--text-muted)'}">${minReal}m / ${minEst}m</span>
                     </div>
-                    <div class="summary-bar-bg">
-                        <div class="summary-bar-fill ${isOver ? 'over' : ''}" style="width: ${pct}%;"></div>
-                    </div>
+                    <div class="summary-bar-bg"><div class="summary-bar-fill ${isOver ? 'over' : ''}" style="width: ${pct}%;"></div></div>
                 </div>
             `;
         });
-        this.switchView('view-summary');
+
+        // Totales Finales
+        const sumText = `Tiempo Total: ${(totalRealMs/60000).toFixed(1)}m Real vs ${(totalEstMs/60000).toFixed(1)}m Estimado`;
+        document.getElementById('summaryTotalTime').innerText = sumText;
+        document.getElementById('summaryTotalTime').style.color = (totalRealMs > totalEstMs) ? 'var(--warning)' : 'var(--success)';
+
+        this.navTo('view-summary');
     },
 
     closeSummary: function() {
         const proc = this.State.procesos[this.State.activeProcId];
-        this.State.historial.push({
-            procId: proc.id, procName: proc.nombre, fecha: new Date().toISOString(), log: [...this.State.executionLog]
-        });
+        this.State.historial.push({ procId: proc.id, procName: proc.nombre, fecha: new Date().toISOString(), log: [...this.State.executionLog] });
         this.saveAll();
-        history.back(); // Vuelve al menú
+        // Cierre limpio de navegación
+        history.pushState({view: 'view-menu'}, '');
+        this._renderView('view-menu'); 
     },
 
-    // CRUD
+    // --- EDITOR AVANZADO (CRUD, REORDENAR, EDITAR) ---
     CRUD: {
         openEditor: function(id = null) {
             if (id && App.State.procesos[id]) {
@@ -493,57 +539,117 @@ const App = {
             } else {
                 App.Draft = { id: 'proc_' + Date.now(), nombre: '', lang: 'es-US', tareas: [] };
             }
+            App.Draft.editIndex = -1;
             document.getElementById('editProcName').value = App.Draft.nombre;
             document.getElementById('editProcLang').value = App.Draft.lang || 'es-US';
+            this.clearInputs();
             this.renderLists();
-            App.switchView('view-editor');
+            App.navTo('view-editor');
+        },
+        clearInputs: function() {
+            document.getElementById('newTaskName').value = '';
+            document.getElementById('newTaskTime').value = '';
+            document.getElementById('newTaskEssential').checked = true;
+            document.getElementById('btnAddTask').innerText = "+ Añadir Paso";
+            App.Draft.editIndex = -1;
         },
         addTask: function() {
-            const n = document.getElementById('newTaskName');
-            const t = document.getElementById('newTaskTime');
-            const e = document.getElementById('newTaskEssential');
-            if (!n.value.trim() || !t.value) return;
-            App.Draft.tareas.push({ nombre: n.value.trim(), tiempoMin: parseInt(t.value), esencial: e.checked });
-            n.value = ''; t.value = ''; e.checked = true;
+            const n = document.getElementById('newTaskName').value.trim();
+            const t = parseInt(document.getElementById('newTaskTime').value);
+            const e = document.getElementById('newTaskEssential').checked;
+            if (!n || !t) return;
+
+            if (App.Draft.editIndex > -1) {
+                App.Draft.tareas[App.Draft.editIndex] = { nombre: n, tiempoMin: t, esencial: e };
+            } else {
+                App.Draft.tareas.push({ nombre: n, tiempoMin: t, esencial: e });
+            }
+            this.clearInputs();
+            this.renderLists();
+        },
+        loadTaskToEdit: function(i) {
+            const t = App.Draft.tareas[i];
+            document.getElementById('newTaskName').value = t.nombre;
+            document.getElementById('newTaskTime').value = t.tiempoMin;
+            document.getElementById('newTaskEssential').checked = t.esencial;
+            document.getElementById('btnAddTask').innerText = "💾 Actualizar Paso";
+            App.Draft.editIndex = i;
+        },
+        moveTask: function(i, dir) {
+            const arr = App.Draft.tareas;
+            if (dir === -1 && i > 0) {
+                [arr[i-1], arr[i]] = [arr[i], arr[i-1]];
+            } else if (dir === 1 && i < arr.length - 1) {
+                [arr[i+1], arr[i]] = [arr[i], arr[i+1]];
+            }
+            this.renderLists();
+        },
+        deleteTask: function(i) {
+            App.Draft.tareas.splice(i, 1);
+            this.clearInputs();
             this.renderLists();
         },
         renderLists: function() {
             document.getElementById('editTaskList').innerHTML = App.Draft.tareas.map((tk, i) => `
-                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px; background:#1e293b; padding:8px 10px; border-radius:6px; align-items:center;">
-                    <span>${i+1}. ${tk.nombre} (${tk.tiempoMin}m) ${tk.esencial ? '⭐' : ''}</span>
-                    <button class="btn-danger btn-icon" onclick="App.Draft.tareas.splice(${i},1); App.CRUD.renderLists();">X</button>
+                <div class="task-edit-row">
+                    <span style="flex:1;">${i+1}. ${tk.nombre} <strong>(${tk.tiempoMin}m)</strong> ${tk.esencial ? '⭐' : ''}</span>
+                    <div class="task-controls">
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${i}, -1)" ${i===0?'disabled':''}>↑</button>
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${i}, 1)" ${i===App.Draft.tareas.length-1?'disabled':''}>↓</button>
+                        <button class="btn-outline btn-icon" style="color:var(--primary);" onclick="App.CRUD.loadTaskToEdit(${i})">✏️</button>
+                        <button class="btn-danger btn-icon" onclick="App.CRUD.deleteTask(${i})">X</button>
+                    </div>
                 </div>
             `).join('');
         },
         saveProcess: function() {
-            App.Draft.nombre = document.getElementById('editProcName').value.trim() || 'Proceso sin nombre';
+            App.Draft.nombre = document.getElementById('editProcName').value.trim() || 'Sin Nombre';
             App.Draft.lang = document.getElementById('editProcLang').value;
-            if (App.Draft.tareas.length === 0) return alert("Añade al menos 1 tarea.");
+            if (App.Draft.tareas.length === 0) return alert("Añade al menos 1 paso.");
+            delete App.Draft.editIndex;
             App.State.procesos[App.Draft.id] = App.Draft;
             App.saveAll();
-            App.renderMenu();
-            history.back();
-        },
-        deleteProcess: function(id) {
-            if (confirm("¿Eliminar proceso?")) { delete App.State.procesos[id]; App.saveAll(); App.renderMenu(); }
+            App.navTo('view-menu');
         }
     },
 
-    // ANALÍTICA (CHART.JS)
+    // --- EDITOR DE MENSAJES ---
+    Messages: {
+        render: function() {
+            const cont = document.getElementById('msgFieldsContainer');
+            cont.innerHTML = '';
+            Object.keys(App.State.mensajes).forEach(k => {
+                cont.innerHTML += `
+                    <div style="margin-bottom:10px;">
+                        <label style="font-weight:bold; font-size:0.85em; color:var(--primary); display:block; margin-bottom:4px;">Disparador: ${k}</label>
+                        <textarea id="msg_${k}" rows="2">${App.State.mensajes[k].join('\n')}</textarea>
+                    </div>
+                `;
+            });
+        },
+        save: function() {
+            Object.keys(App.State.mensajes).forEach(k => {
+                const txt = document.getElementById(`msg_${k}`).value;
+                App.State.mensajes[k] = txt.split('\n').map(s => s.trim()).filter(Boolean);
+            });
+            App.saveAll();
+            alert("Frases actualizadas correctamente.");
+        }
+    },
+
+    // --- ESTADÍSTICAS ---
     Stats: {
         show: function() {
             const sel = document.getElementById('statProcessSelect');
             sel.innerHTML = Object.values(App.State.procesos).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
             if(sel.options.length > 0) this.renderChart();
-            App.switchView('view-stats');
         },
         renderChart: function() {
             const procId = document.getElementById('statProcessSelect').value;
-            const historyData = App.State.historial.filter(h => h.procId === procId);
-            
+            const histData = App.State.historial.filter(h => h.procId === procId);
             const list = document.getElementById('statsList');
-            if (historyData.length === 0) {
-                list.innerHTML = '<p>No hay datos para graficar.</p>';
+            if (histData.length === 0) {
+                list.innerHTML = '<p style="text-align:center;">No hay datos.</p>';
                 if(App.State.chartInstance) App.State.chartInstance.destroy();
                 return;
             }
@@ -551,34 +657,24 @@ const App = {
             const labels = []; const dataReal = []; const dataEst = [];
             list.innerHTML = '';
 
-            historyData.forEach((run, index) => {
-                const dateShort = new Date(run.fecha).toLocaleDateString();
-                labels.push(`Sesión ${index+1}`);
-                
-                let totalReal = 0, totalEst = 0;
-                run.log.forEach(l => { totalReal += l.realMs; totalEst += l.estMs; });
-                
-                dataReal.push((totalReal / 60000).toFixed(1));
-                dataEst.push((totalEst / 60000).toFixed(1));
+            histData.forEach((run, i) => {
+                labels.push(`S-${i+1}`);
+                let tr = 0, te = 0;
+                run.log.forEach(l => { tr += l.realMs; te += l.estMs; });
+                dataReal.push((tr / 60000).toFixed(1)); dataEst.push((te / 60000).toFixed(1));
 
                 list.innerHTML = `<div style="border-bottom:1px solid var(--border); padding:8px 0; font-size:0.85em;">
-                    <strong>${dateShort}</strong>: Real ${dataReal[dataReal.length-1]}m vs Teórico ${dataEst[dataEst.length-1]}m
-                </div>` + list.innerHTML; // Prepend
+                    <strong>${new Date(run.fecha).toLocaleDateString()}</strong>: Real ${dataReal[dataReal.length-1]}m / Teórico ${dataEst[dataEst.length-1]}m
+                </div>` + list.innerHTML;
             });
 
             const ctx = document.getElementById('perfChart').getContext('2d');
             if(App.State.chartInstance) App.State.chartInstance.destroy();
-            
             App.State.chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'T. Real (min)', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 },
-                        { label: 'T. Teórico (min)', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 }
-                    ]
-                },
-                options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+                type: 'line', data: { labels: labels, datasets: [
+                    { label: 'T. Real (min)', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 },
+                    { label: 'T. Estimado (min)', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 }
+                ]}, options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
             });
         }
     }
