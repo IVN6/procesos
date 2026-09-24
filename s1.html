@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jev Matrix - System One Execution Engine</title>
+    <title>Jev Matrix V2 - System One Engine</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-body: #090d16;
@@ -20,9 +21,9 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 680px; }
-        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 700px; padding-bottom: 40px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         h1, h2, h3 { text-align: center; margin-bottom: 16px; color: #fff; }
         p { color: var(--text-muted); font-size: 0.95em; line-height: 1.5; }
         
@@ -30,29 +31,19 @@
         .flex-row { display: flex; gap: 10px; align-items: center; }
         .flex-col { display: flex; flex-direction: column; gap: 12px; }
 
-        /* Tarjetas de Proceso */
+        /* Proceso Card Mejorada */
         .process-card {
-            background: var(--bg-item);
-            border: 1px solid var(--border);
-            border-left: 4px solid var(--primary);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            transition: transform 0.2s ease, background 0.2s ease;
+            background: var(--bg-item); border: 1px solid var(--border); border-left: 4px solid var(--primary);
+            border-radius: 12px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
         }
-        .process-card:hover {
-            background: var(--bg-item-hover);
-            transform: translateY(-2px);
-        }
+        .process-card:hover { background: var(--bg-item-hover); }
+        .process-info { flex: 1 1 200px; }
+        .process-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
         /* Botones */
         button {
-            font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px;
-            border: 1px solid transparent; background-color: var(--border); color: var(--text-main);
-            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 8px; border: 1px solid transparent; 
+            background-color: var(--border); color: var(--text-main); cursor: pointer; transition: all 0.2s ease;
         }
         button:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-primary { background-color: var(--primary); color: #0f172a; font-weight: 700; }
@@ -60,252 +51,220 @@
         .btn-warning { background-color: var(--warning); color: #000; }
         .btn-danger { background-color: var(--danger); color: #fff; }
         .btn-outline { border-color: var(--border); background: transparent; }
+        .btn-icon { padding: 8px 12px; }
 
-        input, textarea, select {
-            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
-            background: #0f172a; color: #fff; font-size: 14px; margin-top: 6px;
-        }
+        input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: #fff; font-size: 14px; margin-top: 4px; }
+        input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
 
         /* Timer y Progreso */
-        .timer-display { font-size: 2.8em; font-weight: 800; text-align: center; color: var(--primary); font-family: monospace; margin: 10px 0; }
+        .timer-display { font-size: 3em; font-weight: 800; text-align: center; color: var(--primary); font-family: monospace; margin: 10px 0; }
         .progress-container { width: 100%; height: 16px; background: #0f172a; border-radius: 999px; overflow: hidden; margin: 15px 0; border: 1px solid var(--border); }
-        .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.4s ease, background-color 0.4s ease; }
+        .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.4s ease; }
         .progress-bar.overtime { background: var(--danger); }
-
-        /* Primitivas JEV */
-        .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
-        .primitive-tag { display: inline-block; font-size: 0.75em; text-transform: uppercase; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: var(--primary); color: #000; margin-bottom: 8px; }
         
-        .score-selector { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
-        .score-btn { width: 40px; height: 40px; border-radius: 50%; padding: 0; font-weight: 700; }
+        .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
+        .primitive-tag { display: inline-block; font-size: 0.75em; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: var(--primary); color: #000; margin-bottom: 8px; }
 
-        /* Checklist Pre-flight */
-        .checklist-item { display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); }
-        .checklist-item input { width: auto; margin: 0; cursor: pointer; }
+        /* Mini barras para el resumen final */
+        .summary-bar-bg { width: 100%; height: 8px; background: #0f172a; border-radius: 4px; margin-top: 4px; overflow: hidden;}
+        .summary-bar-fill { height: 100%; background: var(--success); }
+        .summary-bar-fill.over { background: var(--danger); }
+        
+        canvas { max-width: 100%; background: #0f172a; border-radius: 8px; padding: 10px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-
-    <!-- CABECERA -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin:0; font-size: 1.2em; color: var(--primary);">⚡ JEV MATRIX</h2>
         <div class="flex-row">
-            <button id="btnAudioToggle" class="btn-outline" onclick="App.toggleAudio()">🔊 Voz: ON</button>
-            <button class="btn-outline" title="Restablecer Datos por Defecto" onclick="App.resetDefaults()">🔄 Restablecer</button>
+            <button id="btnAudioToggle" class="btn-outline" onclick="App.toggleAudio()">🔊 Voz</button>
         </div>
     </div>
 
-    <!-- VISTA 1: MENÚ PRINCIPAL -->
+    <!-- VISTA 1: MENÚ -->
     <div id="view-menu" class="card">
         <h1>Sistemas de Ejecución</h1>
-        <p style="text-align: center; margin-bottom: 20px;">Selecciona un algoritmo pre-compilado para arrancar en Sistema 1.</p>
-        
         <div id="processList" class="flex-col"></div>
-
         <hr style="border-color: var(--border); margin: 20px 0;">
         <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
-            <button class="btn-primary" onclick="App.CRUD.openEditor()">➕ Crear Proceso</button>
-            <button class="btn-outline" onclick="App.Messages.open()">💬 Editar Frases</button>
-            <button class="btn-outline" onclick="App.Stats.show()">📊 Historial</button>
+            <button class="btn-primary" onclick="App.CRUD.openEditor()">➕ Nuevo Proceso</button>
+            <button class="btn-outline" onclick="App.Stats.show()">📊 Rendimiento</button>
         </div>
     </div>
 
-    <!-- VISTA 2: TRIAJE Y PRE-FLIGHT (JEV PRE-CHECK) -->
+    <!-- VISTA 2: TRIAJE (IF/ELSE ENERGÍA) -->
     <div id="view-triage" class="card hidden">
-        <span class="primitive-tag">PRIMITIVA: TRIAJE & PRE-FLIGHT</span>
+        <span class="primitive-tag">TRIAJE Y CONDICIONALES</span>
         <h2 id="triageProcessTitle">Alineación de Entorno</h2>
-        <p>Ajusta el sistema a tu estado actual antes de activar el reloj.</p>
-
+        
         <div class="jev-box">
-            <label style="font-weight: bold; display: block; margin-bottom: 8px;">1. ¿Nivel de Energía Actual?</label>
+            <label style="font-weight: bold; display: block; margin-bottom: 12px;">Estado del Sistema (Define la ruta del algoritmo):</label>
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
-                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Alta (100% Tiempo)</button>
-                <button class="btn-outline" onclick="App.setEnergyLevel('medium')">🔋 Normal (90% Tiempo)</button>
-                <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Baja (-30% Tiempos)</button>
+                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Óptimo (Rutina Completa)</button>
+                <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Bajo (Solo Esenciales)</button>
             </div>
+            <p id="triageEnergyText" style="margin-top: 10px; color: var(--warning); font-size: 0.85em;"></p>
         </div>
 
-        <div style="margin: 20px 0;">
-            <label style="font-weight: bold; display: block; margin-bottom: 8px;">2. Verificación en Paralelo (Prerrequisitos):</label>
-            <div id="preflightChecklist"></div>
-        </div>
-
-        <button id="btnStartExecution" class="btn-primary" style="width: 100%; font-size: 1.1em;" disabled onclick="App.startExecution()">▶️ Confirmar y Ejecutar Proceso</button>
+        <button id="btnStartExecution" class="btn-primary" style="width: 100%; font-size: 1.1em;" onclick="App.startExecution()">▶️ Iniciar</button>
     </div>
 
-    <!-- VISTA 3: EJECUCIÓN CONTINUA -->
+    <!-- VISTA 3: EJECUCIÓN -->
     <div id="view-execution" class="card hidden">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span id="execProcessName" style="color: var(--text-muted); font-size: 0.85em;">Proceso</span>
             <span id="execEstimatedEnd" style="color: var(--warning); font-size: 0.85em;">Fin: --:--</span>
         </div>
 
-        <h2 id="execTaskTitle" style="margin-top: 10px; font-size: 1.5em;">Nombre de la Tarea</h2>
+        <h2 id="execTaskTitle" style="margin-top: 10px; font-size: 1.4em; line-height: 1.2;">Tarea</h2>
         <div class="timer-display" id="execTimer">00:00</div>
-
+        
         <div class="progress-container">
             <div id="execProgressBar" class="progress-bar"></div>
         </div>
 
-        <div id="execPromptBox" style="text-align: center; color: var(--primary); font-weight: 600; min-height: 30px;">
-            Iniciando instrucción...
-        </div>
-
-        <!-- PRIMITIVA JEV: CHOICE (ACCIONES ANTE RETRASO) -->
+        <!-- CHOICE RÁPIDO (RETRASO) -->
         <div id="jevChoiceBox" class="jev-box hidden">
-            <span class="primitive-tag">PRIMITIVA: CHOICE (OPCIONES RÁPIDAS)</span>
-            <p style="margin-bottom: 10px; color: #fff;">El tiempo ha expirado. Elige una acción de 1 clic sin pensar:</p>
-            <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
-                <button class="btn-warning" onclick="App.Jev.choiceAddExtra(2)">⏳ +2 Minutos</button>
-                <button class="btn-danger" onclick="App.Jev.choiceSkipTask()">⏭️ Omitir Paso</button>
-                <button class="btn-success" onclick="App.Jev.choiceCompleteNow()">✅ Finalizar Ya</button>
+            <span class="primitive-tag">CHOICE: RESOLUCIÓN RÁPIDA</span>
+            <div class="flex-row" style="justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+                <button class="btn-warning" onclick="App.Jev.choiceAddExtra(2)">⏳ +2 Min</button>
+                <button class="btn-danger" onclick="App.Jev.choiceSkipTask()">⏭️ Omitir</button>
+                <button class="btn-success" onclick="App.Jev.choiceCompleteNow()">✅ Completar</button>
             </div>
         </div>
 
-        <!-- CONTROLES PRINCIPALES -->
         <div class="flex-row" style="justify-content: center; margin-top: 20px;">
-            <button id="btnCompleteTask" class="btn-success" style="width: 80%; font-size: 1.1em;" onclick="App.showScorePrimitive()">✅ Tarea Completada</button>
-            <button id="btnAbandon" class="btn-outline" onclick="App.abandonExecution()">❌ Abandonar</button>
+            <button id="btnCompleteTask" class="btn-success" style="width: 100%; font-size: 1.1em;" onclick="App.showScorePrimitive()">✅ Tarea Completada</button>
         </div>
 
-        <!-- PRIMITIVA JEV: SCORE (CALIFICACIÓN DE FRICCIÓN) -->
+        <!-- SCORE OPCIONAL -->
         <div id="jevScoreBox" class="jev-box hidden">
-            <span class="primitive-tag">PRIMITIVA: SCORE (FRICCIÓN MENTAL)</span>
-            <p style="color: #fff;">¿Qué tan difícil fue completar este paso? (1 = Fluido | 5 = Bloqueo):</p>
-            <div class="score-selector">
-                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(1)">1</button>
-                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(2)">2</button>
-                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(3)">3</button>
-                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(4)">4</button>
-                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(5)">5</button>
+            <span class="primitive-tag">SCORE: FRICCIÓN (OPCIONAL)</span>
+            <p style="margin-bottom: 8px;">Dificultad (1 = Fácil | 5 = Bloqueo):</p>
+            <div class="flex-row" style="justify-content: center; margin-bottom: 12px;">
+                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(1)">1</button>
+                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(2)">2</button>
+                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(3)">3</button>
+                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(4)">4</button>
+                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(5)">5</button>
             </div>
+            <button class="btn-outline" style="font-size: 0.8em;" onclick="App.Jev.recordScore(0)">⏭️ Omitir Calificación</button>
         </div>
     </div>
 
-    <!-- VISTA 4: EDITOR DE PROCESOS (CRUD) -->
+    <!-- VISTA 3.5: RESUMEN FINAL DE BARRAS -->
+    <div id="view-summary" class="card hidden">
+        <h2>Resumen de Ejecución</h2>
+        <div id="summaryBarsContainer" style="margin: 20px 0;"></div>
+        <button class="btn-primary" style="width: 100%;" onclick="App.closeSummary()">💾 Guardar y Volver</button>
+    </div>
+
+    <!-- VISTA 4: EDITOR (CRUD) -->
     <div id="view-editor" class="card hidden">
-        <h2 id="editorTitle">Crear / Modificar Algoritmo</h2>
-        <input type="text" id="editProcName" placeholder="Nombre del Proceso (ej. Sesión de Enfoque)">
+        <h2>Editor de Algoritmo</h2>
+        <input type="text" id="editProcName" placeholder="Nombre del Proceso">
         
-        <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-            <h3>Prerrequisitos de Entorno (Pre-flight)</h3>
-            <input type="text" id="newPreReqInput" placeholder="Añadir condición requerida (ej. Teléfono silenciado)">
-            <button class="btn-outline" style="margin-top: 8px;" onclick="App.CRUD.addPreReq()">+ Añadir Prerrequisito</button>
-            <div id="editPreReqList" style="margin-top: 10px;"></div>
-        </div>
+        <select id="editProcLang" style="margin-top: 10px;">
+            <option value="es-US">Español (Latino)</option>
+            <option value="en-US">English (US)</option>
+            <option value="fr-FR">Français</option>
+            <option value="it-IT">Italiano</option>
+            <option value="pt-BR">Português</option>
+        </select>
 
         <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
             <h3>Pasos del Proceso</h3>
-            <div class="flex-row">
-                <input type="text" id="newTaskName" placeholder="Descripción de la tarea" style="flex:2;">
-                <input type="number" id="newTaskTime" placeholder="Minutos" min="1" style="flex:1;">
+            <div class="flex-col">
+                <input type="text" id="newTaskName" placeholder="Descripción de la tarea">
+                <div class="flex-row">
+                    <input type="number" id="newTaskTime" placeholder="Min" style="width: 80px;">
+                    <label style="font-size: 0.9em; display:flex; align-items:center;">
+                        <input type="checkbox" id="newTaskEssential" checked> Esencial
+                    </label>
+                </div>
+                <button class="btn-outline" onclick="App.CRUD.addTask()">+ Añadir</button>
             </div>
-            <button class="btn-primary" style="margin-top: 8px; width:100%;" onclick="App.CRUD.addTask()">+ Insertar Tarea</button>
-            <div id="editTaskList" style="margin-top: 10px;"></div>
+            <div id="editTaskList" style="margin-top: 15px;"></div>
         </div>
 
-        <div class="flex-row" style="justify-content: space-between; margin-top: 20px;">
-            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar Proceso</button>
-            <button class="btn-outline" onclick="App.switchView('view-menu')">❌ Cancelar</button>
-        </div>
-    </div>
-
-    <!-- VISTA 5: EDITAR FRASES -->
-    <div id="view-messages" class="card hidden">
-        <h2>Personalizar Síntesis de Voz</h2>
-        <p style="margin-bottom: 15px;">Ajusta los prompts que el sintetizador dirá en momentos clave.</p>
-        <div id="msgFieldsContainer" class="flex-col" style="margin: 15px 0;"></div>
-        <div class="flex-row">
-            <button class="btn-success" onclick="App.Messages.save()">💾 Guardar Cambios</button>
-            <button class="btn-outline" onclick="App.switchView('view-menu')">⬅️ Volver</button>
+        <div class="flex-row" style="justify-content: space-between;">
+            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar</button>
+            <button class="btn-outline" onclick="history.back()">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- VISTA 6: HISTORIAL -->
+    <!-- VISTA 5: ESTADÍSTICAS Y GRÁFICAS -->
     <div id="view-stats" class="card hidden">
-        <h2>Historial de Ejecuciones</h2>
-        <p style="margin-bottom: 15px;">Registro de duraciones y fricción percibida.</p>
-        <div id="statsList" style="margin: 15px 0;"></div>
-        <button class="btn-outline" onclick="App.switchView('view-menu')">⬅️ Volver al Menú</button>
+        <h2>Rendimiento Global</h2>
+        <select id="statProcessSelect" onchange="App.Stats.renderChart()"></select>
+        
+        <canvas id="perfChart" width="400" height="250"></canvas>
+        
+        <div id="statsList" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
+        <button class="btn-outline" style="margin-top:15px;" onclick="history.back()">⬅️ Volver</button>
     </div>
 
 </div>
 
 <script>
-/**
- * VALORES POR DEFECTO DEFENSIVOS
- */
 const DEFAULT_DATA = {
     procesos: {
-        deepwork: {
-            id: 'deepwork',
-            nombre: '🚀 Bloque de Trabajo Enfocado (Deep Work)',
-            prerrequisitos: [
-                'Celular en modo No Molestar',
-                'Agua / Café listo en el escritorio',
-                'Unico objetivo clave escrito en papel'
-            ],
+        p1: {
+            id: 'p1', nombre: '🚀 Bloque Deep Work', lang: 'es-US',
             tareas: [
-                { nombre: 'Definir el objetivo exacto del bloque', tiempoMin: 3 },
-                { nombre: 'Cerrar pestañas y chats innecesarios', tiempoMin: 2 },
-                { nombre: 'Bloque Principal de Ejecución', tiempoMin: 25 },
-                { nombre: 'Pausa activa y estiramiento ligero', tiempoMin: 5 },
-                { nombre: 'Revisión final y cierre del entregable', tiempoMin: 10 }
+                { nombre: 'Definir objetivo único', tiempoMin: 2, esencial: true },
+                { nombre: 'Preparar café/agua', tiempoMin: 3, esencial: false },
+                { nombre: 'Bloque de ejecución pura', tiempoMin: 30, esencial: true },
+                { nombre: 'Revisión final', tiempoMin: 5, esencial: true }
             ]
         },
-        rutina_rapida: {
-            id: 'rutina_rapida',
-            nombre: '⚡ Orden y Reorganización de Espacio',
-            prerrequisitos: [
-                'Cesto o bolsa de basura a la mano'
-            ],
+        p2: {
+            id: 'p2', nombre: '🇬🇧 English Morning Routine', lang: 'en-US',
             tareas: [
-                { nombre: 'Despejar platos / tazas del escritorio', tiempoMin: 3 },
-                { nombre: 'Organizar cables y elementos sueltos', tiempoMin: 4 },
-                { nombre: 'Barrer o limpiar superficie principal', tiempoMin: 5 }
+                { nombre: 'Listen to 1 podcast episode', tiempoMin: 15, esencial: true },
+                { nombre: 'Write 3 sentences in journal', tiempoMin: 5, esencial: true },
+                { nombre: 'Review vocabulary cards', tiempoMin: 10, esencial: false }
             ]
         }
-    },
-    mensajes: {
-        INICIO: ['¡Algoritmo iniciado! Enfoque total en Sistema Uno.', 'Proceso activado. Cero distracciones.'],
-        PCT_50: ['Llegas al 50% del tiempo estimado.', 'Mitad de tiempo transcurrido.'],
-        OVERTIME: ['Tiempo agotado. Elige una acción rápida en pantalla.', 'Límite alcanzado. Selecciona el siguiente paso.'],
-        FINALIZADO: ['¡Proceso completado con éxito!', 'Bloque finalizado. Excelente ejecución.']
     },
     historial: []
 };
 
 const App = {
     State: {
-        procesos: {},
-        mensajes: {},
-        historial: [],
-        audioActive: true,
-        
-        activeProcId: null,
-        energyLevel: 'high',
-        preflightDone: false,
-        
-        remainingTasks: [],
-        currentTask: null,
-        executionLog: [],
-        
-        timerInterval: null,
-        startTimeGlobal: null,
-        estimatedEndTime: null
+        procesos: {}, historial: [], audioActive: true, activeProcId: null,
+        energyLevel: 'high', remainingTasks: [], currentTask: null, executionLog: [],
+        timerInterval: null, chartInstance: null
     },
-
-    Draft: { id: null, nombre: '', prerrequisitos: [], tareas: [] },
+    Draft: { id: null, nombre: '', lang: 'es-US', tareas: [] },
 
     init: function() {
         this.loadStorage();
         this.renderMenu();
-        this.switchView('view-menu');
+        
+        // Manejo del botón físico "Atrás" en móviles
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.view) {
+                this._switchViewDOM(e.state.view);
+            } else {
+                this._switchViewDOM('view-menu');
+            }
+        });
+        
+        // Estado inicial de la historia
+        history.replaceState({view: 'view-menu'}, '');
+        this._switchViewDOM('view-menu');
     },
 
+    // Navegación con History API
     switchView: function(viewId) {
+        history.pushState({view: viewId}, '', '');
+        this._switchViewDOM(viewId);
+    },
+    
+    _switchViewDOM: function(viewId) {
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById(viewId).classList.remove('hidden');
     },
@@ -319,167 +278,92 @@ const App = {
         if (!this.State.audioActive || !window.speechSynthesis) return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = 'es-ES';
+        
+        const proc = this.State.procesos[this.State.activeProcId];
+        msg.lang = (proc && proc.lang) ? proc.lang : 'es-US';
         window.speechSynthesis.speak(msg);
     },
 
-    getMsg: function(key) {
-        const arr = this.State.mensajes[key] || [];
-        return arr[Math.floor(Math.random() * arr.length)] || '';
-    },
-
-    // CARGA DE DATOS ROBUSTA
     loadStorage: function() {
         try {
-            const p = localStorage.getItem('jev_procesos');
-            this.State.procesos = p ? JSON.parse(p) : null;
-            if (!this.State.procesos || Object.keys(this.State.procesos).length === 0) {
-                this.State.procesos = JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
-            }
+            const p = localStorage.getItem('jev_procesos_v2');
+            this.State.procesos = p ? JSON.parse(p) : JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
+            const h = localStorage.getItem('jev_historial_v2');
+            this.State.historial = h ? JSON.parse(h) : [];
         } catch (e) {
             this.State.procesos = JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
         }
-
-        try {
-            const m = localStorage.getItem('jev_mensajes');
-            this.State.mensajes = m ? JSON.parse(m) : null;
-            if (!this.State.mensajes || Object.keys(this.State.mensajes).length === 0) {
-                this.State.mensajes = JSON.parse(JSON.stringify(DEFAULT_DATA.mensajes));
-            }
-        } catch (e) {
-            this.State.mensajes = JSON.parse(JSON.stringify(DEFAULT_DATA.mensajes));
-        }
-
-        try {
-            const h = localStorage.getItem('jev_historial');
-            this.State.historial = h ? JSON.parse(h) : [];
-        } catch (e) {
-            this.State.historial = [];
-        }
     },
-
     saveAll: function() {
-        localStorage.setItem('jev_procesos', JSON.stringify(this.State.procesos));
-        localStorage.setItem('jev_mensajes', JSON.stringify(this.State.mensajes));
-        localStorage.setItem('jev_historial', JSON.stringify(this.State.historial));
+        localStorage.setItem('jev_procesos_v2', JSON.stringify(this.State.procesos));
+        localStorage.setItem('jev_historial_v2', JSON.stringify(this.State.historial));
     },
 
-    resetDefaults: function() {
-        if (confirm("¿Restablecer procesos por defecto? Se borrarán las personalizaciones actuales.")) {
-            localStorage.removeItem('jev_procesos');
-            localStorage.removeItem('jev_mensajes');
-            this.loadStorage();
-            this.renderMenu();
-            alert("✅ Datos restablecidos correctamente.");
-        }
-    },
-
-    // RENDERIZADO DEL MENÚ
     renderMenu: function() {
         const list = document.getElementById('processList');
         list.innerHTML = '';
-
-        const procs = Object.values(this.State.procesos || {});
-        if (procs.length === 0) {
-            list.innerHTML = '<p style="text-align:center; padding: 15px;">No hay procesos. Haz clic en "+ Crear Proceso" o "🔄 Restablecer".</p>';
-            return;
-        }
-
-        procs.forEach(proc => {
-            const tareas = Array.isArray(proc.tareas) ? proc.tareas : [];
+        Object.values(this.State.procesos).forEach(proc => {
+            const tareas = proc.tareas || [];
             const totalTime = tareas.reduce((a, t) => a + (Number(t.tiempoMin) || 0), 0);
-
             const div = document.createElement('div');
             div.className = 'process-card';
             div.innerHTML = `
-                <div>
-                    <strong style="font-size:1.05em; color:#fff; display:block; margin-bottom:4px;">${proc.nombre || 'Sin nombre'}</strong>
-                    <span style="font-size:0.85em; color:var(--text-muted);">${tareas.length} pasos • ~${totalTime} min</span>
+                <div class="process-info">
+                    <strong style="font-size:1.1em; display:block;">${proc.nombre}</strong>
+                    <span style="font-size:0.85em; color:var(--text-muted);">${tareas.length} pasos | ~${totalTime}m | ${proc.lang}</span>
                 </div>
-                <div class="flex-row">
-                    <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
-                    <button class="btn-outline" title="Editar" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
-                    <button class="btn-outline" title="Eliminar" onclick="App.CRUD.deleteProcess('${proc.id}')">🗑️</button>
+                <div class="process-actions">
+                    <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️</button>
+                    <button class="btn-outline btn-icon" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
+                    <button class="btn-outline btn-icon" onclick="App.CRUD.deleteProcess('${proc.id}')">🗑️</button>
                 </div>
             `;
             list.appendChild(div);
         });
     },
 
-    // TRIAJE Y PRE-FLIGHT
+    // TRIAJE (LÓGICA IF/ELSE)
     setupTriage: function(procId) {
         this.State.activeProcId = procId;
-        const proc = this.State.procesos[procId];
-        document.getElementById('triageProcessTitle').innerText = proc.nombre;
-        
-        const checkContainer = document.getElementById('preflightChecklist');
-        checkContainer.innerHTML = '';
-        
-        const prereqs = Array.isArray(proc.prerrequisitos) ? proc.prerrequisitos : [];
-        if (prereqs.length === 0) {
-            checkContainer.innerHTML = '<p style="font-size:0.85em;">Sin prerrequisitos definidos.</p>';
-            this.State.preflightDone = true;
-            document.getElementById('btnStartExecution').disabled = false;
-        } else {
-            this.State.preflightDone = false;
-            document.getElementById('btnStartExecution').disabled = true;
-
-            prereqs.forEach((item, idx) => {
-                const div = document.createElement('div');
-                div.className = 'checklist-item';
-                div.innerHTML = `
-                    <input type="checkbox" id="chk_${idx}" onchange="App.checkPreflightReady()">
-                    <label for="chk_${idx}" style="font-size:0.9em; cursor:pointer;">${item}</label>
-                `;
-                checkContainer.appendChild(div);
-            });
-        }
-
+        document.getElementById('triageProcessTitle').innerText = this.State.procesos[procId].nombre;
+        this.setEnergyLevel('high');
         this.switchView('view-triage');
     },
 
     setEnergyLevel: function(level) {
         this.State.energyLevel = level;
-        this.speak(`Nivel de energía: ${level}`);
+        const txt = document.getElementById('triageEnergyText');
+        if (level === 'high') {
+            txt.innerText = "Se ejecutarán todos los pasos programados.";
+        } else {
+            txt.innerText = "Modo Emergencia: Se omitirán las tareas no esenciales para garantizar ejecución mínima.";
+        }
     },
 
-    checkPreflightReady: function() {
-        const proc = this.State.procesos[this.State.activeProcId];
-        const prereqs = Array.isArray(proc.prerrequisitos) ? proc.prerrequisitos : [];
-        const allChecked = prereqs.every((_, idx) => {
-            const chk = document.getElementById(`chk_${idx}`);
-            return chk && chk.checked;
-        });
-        this.State.preflightDone = allChecked;
-        document.getElementById('btnStartExecution').disabled = !allChecked;
-    },
-
-    // EJECUCIÓN
     startExecution: function() {
         const proc = this.State.procesos[this.State.activeProcId];
         
-        let factor = 1.0;
-        if (this.State.energyLevel === 'medium') factor = 0.9;
-        if (this.State.energyLevel === 'emergency') factor = 0.7;
+        // Filtro Lógico de tareas (El "IF" de energía)
+        this.State.remainingTasks = proc.tareas.filter(t => {
+            if (this.State.energyLevel === 'emergency' && !t.esencial) return false;
+            return true;
+        }).map(t => ({ ...t }));
 
-        this.State.remainingTasks = proc.tareas.map(t => ({
-            ...t,
-            tiempoMinCalculado: Math.max(1, Math.round(t.tiempoMin * factor))
-        }));
+        if(this.State.remainingTasks.length === 0) {
+            alert("No hay tareas esenciales en este proceso.");
+            return history.back();
+        }
 
         this.State.executionLog = [];
-        this.State.startTimeGlobal = Date.now();
+        const totalMin = this.State.remainingTasks.reduce((a, t) => a + t.tiempoMin, 0);
         
-        const totalMin = this.State.remainingTasks.reduce((a, t) => a + t.tiempoMinCalculado, 0);
-        this.State.estimatedEndTime = Date.now() + (totalMin * 60000);
-
         document.getElementById('execProcessName').innerText = proc.nombre;
-        document.getElementById('execEstimatedEnd').innerText = `Fin: ${new Date(this.State.estimatedEndTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+        document.getElementById('execEstimatedEnd').innerText = `~${totalMin} min`;
 
         this.switchView('view-execution');
-        this.speak(this.getMsg('INICIO'));
+        this.speak("Iniciando algoritmo.");
         this.nextTask();
-
+        
         if (this.State.timerInterval) clearInterval(this.State.timerInterval);
         this.State.timerInterval = setInterval(() => this.updateTimerUI(), 1000);
     },
@@ -490,49 +374,50 @@ const App = {
         document.getElementById('btnCompleteTask').classList.remove('hidden');
 
         if (this.State.remainingTasks.length === 0) {
-            this.finishFullProcess();
+            this.showSummaryBars();
             return;
         }
 
         const taskData = this.State.remainingTasks.shift();
         this.State.currentTask = {
             ...taskData,
-            totalMs: taskData.tiempoMinCalculado * 60 * 1000,
+            totalMs: taskData.tiempoMin * 60 * 1000,
             startMs: Date.now(),
-            warned50: false,
-            warnedOver: false
+            warnFlags: { 25: false, 50: false, 75: false, 100: false }
         };
 
         document.getElementById('execTaskTitle').innerText = this.State.currentTask.nombre;
-        document.getElementById('execPromptBox').innerText = `Paso actual (${taskData.tiempoMinCalculado} min estimado)`;
-        this.speak(`Paso: ${this.State.currentTask.nombre}`);
+        this.speak(this.State.currentTask.nombre);
     },
 
     updateTimerUI: function() {
         if (!this.State.currentTask) return;
-
         const elapsed = Date.now() - this.State.currentTask.startMs;
         const total = this.State.currentTask.totalMs;
         const pct = (elapsed / total) * 100;
 
-        const secSec = Math.floor(elapsed / 1000);
-        const m = Math.floor(secSec / 60);
-        const s = secSec % 60;
-        document.getElementById('execTimer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
+        const sec = Math.floor(elapsed / 1000);
+        document.getElementById('execTimer').innerText = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+        
         const bar = document.getElementById('execProgressBar');
         bar.style.width = `${Math.min(pct, 100)}%`;
 
-        if (pct >= 50 && !this.State.currentTask.warned50 && pct < 100) {
-            this.State.currentTask.warned50 = true;
-            this.speak(this.getMsg('PCT_50'));
+        // Alertas de Voz fraccionadas
+        if (pct >= 25 && pct < 50 && !this.State.currentTask.warnFlags[25]) {
+            this.State.currentTask.warnFlags[25] = true; this.speak("25%");
+        }
+        if (pct >= 50 && pct < 75 && !this.State.currentTask.warnFlags[50]) {
+            this.State.currentTask.warnFlags[50] = true; this.speak("50%");
+        }
+        if (pct >= 75 && pct < 100 && !this.State.currentTask.warnFlags[75]) {
+            this.State.currentTask.warnFlags[75] = true; this.speak("75%");
         }
 
         if (pct >= 100) {
             bar.classList.add('overtime');
-            if (!this.State.currentTask.warnedOver) {
-                this.State.currentTask.warnedOver = true;
-                this.speak(this.getMsg('OVERTIME'));
+            if (!this.State.currentTask.warnFlags[100]) {
+                this.State.currentTask.warnFlags[100] = true;
+                this.speak("Tiempo superado. Elige acción.");
                 document.getElementById('jevChoiceBox').classList.remove('hidden');
             }
         } else {
@@ -547,171 +432,154 @@ const App = {
     },
 
     Jev: {
-        choiceAddExtra: function(minutos) {
-            App.State.currentTask.totalMs += (minutos * 60000);
-            App.State.currentTask.warnedOver = false;
+        choiceAddExtra: function(min) {
+            App.State.currentTask.totalMs += (min * 60000);
+            App.State.currentTask.warnFlags[100] = false;
             document.getElementById('jevChoiceBox').classList.add('hidden');
-            App.speak(`Añadidos ${minutos} minutos.`);
         },
         choiceSkipTask: function() {
-            App.State.executionLog.push({
-                nombre: App.State.currentTask.nombre + ' (OMITIDO)',
-                realMs: Date.now() - App.State.currentTask.startMs,
-                frictionScore: 5
-            });
+            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: true, score: 0 });
             App.nextTask();
         },
-        choiceCompleteNow: function() {
-            App.showScorePrimitive();
-        },
-        recordScoreAndNext: function(score) {
-            App.State.executionLog.push({
-                nombre: App.State.currentTask.nombre,
-                realMs: Date.now() - App.State.currentTask.startMs,
-                frictionScore: score
-            });
+        choiceCompleteNow: function() { App.showScorePrimitive(); },
+        recordScore: function(score) {
+            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: false, score: score });
             App.nextTask();
         }
     },
 
-    finishFullProcess: function() {
+    // RESUMEN FINAL CON BARRAS
+    showSummaryBars: function() {
         clearInterval(this.State.timerInterval);
-        this.speak(this.getMsg('FINALIZADO'));
+        this.speak("Proceso completado.");
+        const cont = document.getElementById('summaryBarsContainer');
+        cont.innerHTML = '';
 
+        this.State.executionLog.forEach(log => {
+            const minReal = (log.realMs / 60000).toFixed(1);
+            const minEst = (log.estMs / 60000).toFixed(1);
+            const pct = Math.min((log.realMs / log.estMs) * 100, 100);
+            const isOver = log.realMs > log.estMs;
+            
+            cont.innerHTML += `
+                <div style="margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85em;">
+                        <span>${log.omitido ? '⏭️ ' : ''}${log.nombre}</span>
+                        <span style="color: ${isOver ? 'var(--danger)' : 'var(--text-muted)'}">${minReal}m / ${minEst}m</span>
+                    </div>
+                    <div class="summary-bar-bg">
+                        <div class="summary-bar-fill ${isOver ? 'over' : ''}" style="width: ${pct}%;"></div>
+                    </div>
+                </div>
+            `;
+        });
+        this.switchView('view-summary');
+    },
+
+    closeSummary: function() {
         const proc = this.State.procesos[this.State.activeProcId];
         this.State.historial.push({
-            proceso: proc ? proc.nombre : 'Proceso',
-            fecha: new Date().toLocaleString(),
-            log: [...this.State.executionLog]
+            procId: proc.id, procName: proc.nombre, fecha: new Date().toISOString(), log: [...this.State.executionLog]
         });
         this.saveAll();
-
-        alert("🎉 Proceso finalizado. Registros guardados.");
-        this.switchView('view-menu');
+        history.back(); // Vuelve al menú
     },
 
-    abandonExecution: function() {
-        if (confirm("¿Abandonar la ejecución en curso?")) {
-            clearInterval(this.State.timerInterval);
-            this.switchView('view-menu');
-        }
-    },
-
-    // CRUD DE PROCESOS
+    // CRUD
     CRUD: {
         openEditor: function(id = null) {
             if (id && App.State.procesos[id]) {
                 App.Draft = JSON.parse(JSON.stringify(App.State.procesos[id]));
             } else {
-                App.Draft = {
-                    id: 'proc_' + Date.now(),
-                    nombre: '',
-                    prerrequisitos: [],
-                    tareas: []
-                };
+                App.Draft = { id: 'proc_' + Date.now(), nombre: '', lang: 'es-US', tareas: [] };
             }
             document.getElementById('editProcName').value = App.Draft.nombre;
+            document.getElementById('editProcLang').value = App.Draft.lang || 'es-US';
             this.renderLists();
             App.switchView('view-editor');
-        },
-        addPreReq: function() {
-            const inp = document.getElementById('newPreReqInput');
-            if (!inp.value.trim()) return;
-            App.Draft.prerrequisitos.push(inp.value.trim());
-            inp.value = '';
-            this.renderLists();
         },
         addTask: function() {
             const n = document.getElementById('newTaskName');
             const t = document.getElementById('newTaskTime');
+            const e = document.getElementById('newTaskEssential');
             if (!n.value.trim() || !t.value) return;
-            App.Draft.tareas.push({ nombre: n.value.trim(), tiempoMin: parseInt(t.value) });
-            n.value = ''; t.value = '';
+            App.Draft.tareas.push({ nombre: n.value.trim(), tiempoMin: parseInt(t.value), esencial: e.checked });
+            n.value = ''; t.value = ''; e.checked = true;
             this.renderLists();
         },
         renderLists: function() {
-            const preDiv = document.getElementById('editPreReqList');
-            preDiv.innerHTML = App.Draft.prerrequisitos.map((pr, i) => `
-                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px; background:#1e293b; padding:6px 10px; border-radius:6px;">
-                    <span>• ${pr}</span>
-                    <button style="padding:2px 6px;" class="btn-danger" onclick="App.Draft.prerrequisitos.splice(${i},1); App.CRUD.renderLists();">x</button>
-                </div>
-            `).join('');
-
-            const taskDiv = document.getElementById('editTaskList');
-            taskDiv.innerHTML = App.Draft.tareas.map((tk, i) => `
-                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px; background:#1e293b; padding:6px 10px; border-radius:6px;">
-                    <span>${i+1}. ${tk.nombre} (${tk.tiempoMin}m)</span>
-                    <button style="padding:2px 6px;" class="btn-danger" onclick="App.Draft.tareas.splice(${i},1); App.CRUD.renderLists();">x</button>
+            document.getElementById('editTaskList').innerHTML = App.Draft.tareas.map((tk, i) => `
+                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px; background:#1e293b; padding:8px 10px; border-radius:6px; align-items:center;">
+                    <span>${i+1}. ${tk.nombre} (${tk.tiempoMin}m) ${tk.esencial ? '⭐' : ''}</span>
+                    <button class="btn-danger btn-icon" onclick="App.Draft.tareas.splice(${i},1); App.CRUD.renderLists();">X</button>
                 </div>
             `).join('');
         },
         saveProcess: function() {
-            const name = document.getElementById('editProcName').value.trim();
-            if (!name || App.Draft.tareas.length === 0) return alert("Ingresa un nombre y al menos 1 tarea.");
-            App.Draft.nombre = name;
+            App.Draft.nombre = document.getElementById('editProcName').value.trim() || 'Proceso sin nombre';
+            App.Draft.lang = document.getElementById('editProcLang').value;
+            if (App.Draft.tareas.length === 0) return alert("Añade al menos 1 tarea.");
             App.State.procesos[App.Draft.id] = App.Draft;
             App.saveAll();
             App.renderMenu();
-            App.switchView('view-menu');
+            history.back();
         },
         deleteProcess: function(id) {
-            if (confirm("¿Eliminar este proceso?")) {
-                delete App.State.procesos[id];
-                App.saveAll();
-                App.renderMenu();
-            }
+            if (confirm("¿Eliminar proceso?")) { delete App.State.procesos[id]; App.saveAll(); App.renderMenu(); }
         }
     },
 
-    // MENSAJES Y HISTORIAL
-    Messages: {
-        open: function() {
-            const cont = document.getElementById('msgFieldsContainer');
-            cont.innerHTML = '';
-            Object.keys(App.State.mensajes).forEach(k => {
-                cont.innerHTML += `
-                    <div>
-                        <label style="font-weight:bold; font-size:0.85em; color:var(--primary);">${k}</label>
-                        <textarea id="msg_${k}" rows="2">${App.State.mensajes[k].join('\n')}</textarea>
-                    </div>
-                `;
-            });
-            App.switchView('view-messages');
-        },
-        save: function() {
-            Object.keys(App.State.mensajes).forEach(k => {
-                const txt = document.getElementById(`msg_${k}`).value;
-                App.State.mensajes[k] = txt.split('\n').map(s => s.trim()).filter(Boolean);
-            });
-            App.saveAll();
-            alert("Prompts guardados.");
-            App.switchView('view-menu');
-        }
-    },
-
+    // ANALÍTICA (CHART.JS)
     Stats: {
         show: function() {
-            const list = document.getElementById('statsList');
-            list.innerHTML = '';
-            if (App.State.historial.length === 0) {
-                list.innerHTML = '<p style="text-align:center;">No hay ejecuciones registradas aún.</p>';
-            } else {
-                [...App.State.historial].reverse().forEach(h => {
-                    let tasksHtml = (h.log || []).map(l => `
-                        <div style="font-size:0.85em; margin-left:10px; border-bottom: 1px solid var(--border); padding: 4px 0;">
-                            • ${l.nombre}: ${(l.realMs/60000).toFixed(1)}m | Fricción: <strong>${l.frictionScore || 'N/A'}/5</strong>
-                        </div>
-                    `).join('');
-                    list.innerHTML += `
-                        <div class="card" style="padding:12px; margin-bottom:10px;">
-                            <strong>${h.proceso}</strong> <small style="float:right; color:var(--text-muted);">${h.fecha}</small>
-                            <div style="margin-top:8px;">${tasksHtml}</div>
-                        </div>
-                    `;
-                });
-            }
+            const sel = document.getElementById('statProcessSelect');
+            sel.innerHTML = Object.values(App.State.procesos).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            if(sel.options.length > 0) this.renderChart();
             App.switchView('view-stats');
+        },
+        renderChart: function() {
+            const procId = document.getElementById('statProcessSelect').value;
+            const historyData = App.State.historial.filter(h => h.procId === procId);
+            
+            const list = document.getElementById('statsList');
+            if (historyData.length === 0) {
+                list.innerHTML = '<p>No hay datos para graficar.</p>';
+                if(App.State.chartInstance) App.State.chartInstance.destroy();
+                return;
+            }
+
+            const labels = []; const dataReal = []; const dataEst = [];
+            list.innerHTML = '';
+
+            historyData.forEach((run, index) => {
+                const dateShort = new Date(run.fecha).toLocaleDateString();
+                labels.push(`Sesión ${index+1}`);
+                
+                let totalReal = 0, totalEst = 0;
+                run.log.forEach(l => { totalReal += l.realMs; totalEst += l.estMs; });
+                
+                dataReal.push((totalReal / 60000).toFixed(1));
+                dataEst.push((totalEst / 60000).toFixed(1));
+
+                list.innerHTML = `<div style="border-bottom:1px solid var(--border); padding:8px 0; font-size:0.85em;">
+                    <strong>${dateShort}</strong>: Real ${dataReal[dataReal.length-1]}m vs Teórico ${dataEst[dataEst.length-1]}m
+                </div>` + list.innerHTML; // Prepend
+            });
+
+            const ctx = document.getElementById('perfChart').getContext('2d');
+            if(App.State.chartInstance) App.State.chartInstance.destroy();
+            
+            App.State.chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'T. Real (min)', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 },
+                        { label: 'T. Teórico (min)', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 }
+                    ]
+                },
+                options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+            });
         }
     }
 };
