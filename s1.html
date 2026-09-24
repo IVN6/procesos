@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System One Execution Engine</title>
+    <title>Jev Matrix - System One Execution Engine</title>
     <style>
         :root {
             --bg-body: #090d16;
             --bg-card: #131b2e;
-            --bg-card-hover: #1c2742;
+            --bg-item: #1e293b;
+            --bg-item-hover: #334155;
             --primary: #38bdf8;
             --success: #22c55e;
             --warning: #f59e0b;
             --danger: #ef4444;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --border: #1e293b;
+            --border: #334155;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 640px; }
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 680px; }
         .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         h1, h2, h3 { text-align: center; margin-bottom: 16px; color: #fff; }
         p { color: var(--text-muted); font-size: 0.95em; line-height: 1.5; }
@@ -29,15 +30,32 @@
         .flex-row { display: flex; gap: 10px; align-items: center; }
         .flex-col { display: flex; flex-direction: column; gap: 12px; }
 
-        /* Botones y UI */
-        button {
-            font-size: 14px; font-weight: 600; padding: 12px 18px; border-radius: 10px;
-            border: 1px solid transparent; background-color: var(--border); color: var(--text-main);
-            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        /* Tarjetas de Proceso */
+        .process-card {
+            background: var(--bg-item);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s ease, background 0.2s ease;
         }
-        button:hover { background-color: var(--bg-card-hover); transform: translateY(-1px); }
+        .process-card:hover {
+            background: var(--bg-item-hover);
+            transform: translateY(-2px);
+        }
+
+        /* Botones */
+        button {
+            font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px;
+            border: 1px solid transparent; background-color: var(--border); color: var(--text-main);
+            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-primary { background-color: var(--primary); color: #0f172a; font-weight: 700; }
-        .btn-primary:hover { background-color: #0284c7; color: #fff; }
         .btn-success { background-color: var(--success); color: #fff; }
         .btn-warning { background-color: var(--warning); color: #000; }
         .btn-danger { background-color: var(--danger); color: #fff; }
@@ -48,48 +66,53 @@
             background: #0f172a; color: #fff; font-size: 14px; margin-top: 6px;
         }
 
-        /* Barra de Progreso y Timer */
-        .timer-display { font-size: 2.5em; font-weight: 800; text-align: center; color: var(--primary); font-family: monospace; }
+        /* Timer y Progreso */
+        .timer-display { font-size: 2.8em; font-weight: 800; text-align: center; color: var(--primary); font-family: monospace; margin: 10px 0; }
         .progress-container { width: 100%; height: 16px; background: #0f172a; border-radius: 999px; overflow: hidden; margin: 15px 0; border: 1px solid var(--border); }
         .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.4s ease, background-color 0.4s ease; }
         .progress-bar.overtime { background: var(--danger); }
 
         /* Primitivas JEV */
-        .jev-box { background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
+        .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
         .primitive-tag { display: inline-block; font-size: 0.75em; text-transform: uppercase; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: var(--primary); color: #000; margin-bottom: 8px; }
         
         .score-selector { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
         .score-btn { width: 40px; height: 40px; border-radius: 50%; padding: 0; font-weight: 700; }
 
         /* Checklist Pre-flight */
-        .checklist-item { display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; }
-        .checklist-item input { width: auto; margin: 0; }
+        .checklist-item { display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); }
+        .checklist-item input { width: auto; margin: 0; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
 
-    <!-- CABECERA PRINCIPAL -->
+    <!-- CABECERA -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin:0; font-size: 1.2em; color: var(--primary);">⚡ JEV MATRIX</h2>
-        <button id="btnAudioToggle" class="btn-outline" onclick="App.toggleAudio()">🔊 Voz: ON</button>
+        <div class="flex-row">
+            <button id="btnAudioToggle" class="btn-outline" onclick="App.toggleAudio()">🔊 Voz: ON</button>
+            <button class="btn-outline" title="Restablecer Datos por Defecto" onclick="App.resetDefaults()">🔄 Restablecer</button>
+        </div>
     </div>
 
-    <!-- VISTA: MENÚ PRINCIPAL -->
+    <!-- VISTA 1: MENÚ PRINCIPAL -->
     <div id="view-menu" class="card">
         <h1>Sistemas de Ejecución</h1>
         <p style="text-align: center; margin-bottom: 20px;">Selecciona un algoritmo pre-compilado para arrancar en Sistema 1.</p>
+        
         <div id="processList" class="flex-col"></div>
+
         <hr style="border-color: var(--border); margin: 20px 0;">
         <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
             <button class="btn-primary" onclick="App.CRUD.openEditor()">➕ Crear Proceso</button>
             <button class="btn-outline" onclick="App.Messages.open()">💬 Editar Frases</button>
-            <button class="btn-outline" onclick="App.Stats.show()">📊 Analítica y Recalibración</button>
+            <button class="btn-outline" onclick="App.Stats.show()">📊 Historial</button>
         </div>
     </div>
 
-    <!-- VISTA: TRIAJE Y PRE-FLIGHT (JEV PRE-CHECK) -->
+    <!-- VISTA 2: TRIAJE Y PRE-FLIGHT (JEV PRE-CHECK) -->
     <div id="view-triage" class="card hidden">
         <span class="primitive-tag">PRIMITIVA: TRIAJE & PRE-FLIGHT</span>
         <h2 id="triageProcessTitle">Alineación de Entorno</h2>
@@ -97,7 +120,7 @@
 
         <div class="jev-box">
             <label style="font-weight: bold; display: block; margin-bottom: 8px;">1. ¿Nivel de Energía Actual?</label>
-            <div class="flex-row" style="justify-content: center;">
+            <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
                 <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Alta (100% Tiempo)</button>
                 <button class="btn-outline" onclick="App.setEnergyLevel('medium')">🔋 Normal (90% Tiempo)</button>
                 <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Baja (-30% Tiempos)</button>
@@ -109,10 +132,10 @@
             <div id="preflightChecklist"></div>
         </div>
 
-        <button id="btnStartExecution" class="btn-primary" style="width: 100%;" disabled onclick="App.startExecution()">▶️ Confirmar y Ejecutar Proceso</button>
+        <button id="btnStartExecution" class="btn-primary" style="width: 100%; font-size: 1.1em;" disabled onclick="App.startExecution()">▶️ Confirmar y Ejecutar Proceso</button>
     </div>
 
-    <!-- VISTA: EJECUCIÓN CONTINUA -->
+    <!-- VISTA 3: EJECUCIÓN CONTINUA -->
     <div id="view-execution" class="card hidden">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span id="execProcessName" style="color: var(--text-muted); font-size: 0.85em;">Proceso</span>
@@ -130,27 +153,27 @@
             Iniciando instrucción...
         </div>
 
-        <!-- PRIMITIVA JEV: CHOICE (OPCIONES RÁPIDAS ANTE RETRASO O PAUSA) -->
+        <!-- PRIMITIVA JEV: CHOICE (ACCIONES ANTE RETRASO) -->
         <div id="jevChoiceBox" class="jev-box hidden">
-            <span class="primitive-tag">PRIMITIVA: CHOICE (RESOLUCIÓN DE RETRASO)</span>
+            <span class="primitive-tag">PRIMITIVA: CHOICE (OPCIONES RÁPIDAS)</span>
             <p style="margin-bottom: 10px; color: #fff;">El tiempo ha expirado. Elige una acción de 1 clic sin pensar:</p>
-            <div class="flex-row" style="justify-content: center;">
+            <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
                 <button class="btn-warning" onclick="App.Jev.choiceAddExtra(2)">⏳ +2 Minutos</button>
                 <button class="btn-danger" onclick="App.Jev.choiceSkipTask()">⏭️ Omitir Paso</button>
                 <button class="btn-success" onclick="App.Jev.choiceCompleteNow()">✅ Finalizar Ya</button>
             </div>
         </div>
 
-        <!-- CONTROLES ESTÁNDAR -->
+        <!-- CONTROLES PRINCIPALES -->
         <div class="flex-row" style="justify-content: center; margin-top: 20px;">
             <button id="btnCompleteTask" class="btn-success" style="width: 80%; font-size: 1.1em;" onclick="App.showScorePrimitive()">✅ Tarea Completada</button>
             <button id="btnAbandon" class="btn-outline" onclick="App.abandonExecution()">❌ Abandonar</button>
         </div>
 
-        <!-- PRIMITIVA JEV: SCORE (CALIFICACIÓN DE FRICCIÓN COGNITIVA AL COMPLETAR) -->
+        <!-- PRIMITIVA JEV: SCORE (CALIFICACIÓN DE FRICCIÓN) -->
         <div id="jevScoreBox" class="jev-box hidden">
             <span class="primitive-tag">PRIMITIVA: SCORE (FRICCIÓN MENTAL)</span>
-            <p style="color: #fff;">¿Qué tan difícil fue completar este paso? (1 = Mínimo | 5 = Bloqueo):</p>
+            <p style="color: #fff;">¿Qué tan difícil fue completar este paso? (1 = Fluido | 5 = Bloqueo):</p>
             <div class="score-selector">
                 <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(1)">1</button>
                 <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(2)">2</button>
@@ -161,19 +184,19 @@
         </div>
     </div>
 
-    <!-- VISTA: EDITOR DE PROCESOS (CRUD) -->
+    <!-- VISTA 4: EDITOR DE PROCESOS (CRUD) -->
     <div id="view-editor" class="card hidden">
         <h2 id="editorTitle">Crear / Modificar Algoritmo</h2>
         <input type="text" id="editProcName" placeholder="Nombre del Proceso (ej. Sesión de Enfoque)">
         
-        <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px;">
+        <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
             <h3>Prerrequisitos de Entorno (Pre-flight)</h3>
             <input type="text" id="newPreReqInput" placeholder="Añadir condición requerida (ej. Teléfono silenciado)">
             <button class="btn-outline" style="margin-top: 8px;" onclick="App.CRUD.addPreReq()">+ Añadir Prerrequisito</button>
             <div id="editPreReqList" style="margin-top: 10px;"></div>
         </div>
 
-        <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px;">
+        <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
             <h3>Pasos del Proceso</h3>
             <div class="flex-row">
                 <input type="text" id="newTaskName" placeholder="Descripción de la tarea" style="flex:2;">
@@ -189,10 +212,10 @@
         </div>
     </div>
 
-    <!-- VISTA: PERSONALIZACIÓN DE MENSAJES -->
+    <!-- VISTA 5: EDITAR FRASES -->
     <div id="view-messages" class="card hidden">
         <h2>Personalizar Síntesis de Voz</h2>
-        <p>Ajusta los prompts que el sintetizador dirá en momentos críticos.</p>
+        <p style="margin-bottom: 15px;">Ajusta los prompts que el sintetizador dirá en momentos clave.</p>
         <div id="msgFieldsContainer" class="flex-col" style="margin: 15px 0;"></div>
         <div class="flex-row">
             <button class="btn-success" onclick="App.Messages.save()">💾 Guardar Cambios</button>
@@ -200,10 +223,10 @@
         </div>
     </div>
 
-    <!-- VISTA: ANALÍTICA & RECALIBRACIÓN AUTO -->
+    <!-- VISTA 6: HISTORIAL -->
     <div id="view-stats" class="card hidden">
-        <h2>Historial y Motor de Recalibración</h2>
-        <p>Los tiempos estimados se pueden auto-calibrar según la fricción real registrada.</p>
+        <h2>Historial de Ejecuciones</h2>
+        <p style="margin-bottom: 15px;">Registro de duraciones y fricción percibida.</p>
         <div id="statsList" style="margin: 15px 0;"></div>
         <button class="btn-outline" onclick="App.switchView('view-menu')">⬅️ Volver al Menú</button>
     </div>
@@ -212,32 +235,44 @@
 
 <script>
 /**
- * BASE DE DATOS Y ESTADO DE APLICACIÓN
+ * VALORES POR DEFECTO DEFENSIVOS
  */
 const DEFAULT_DATA = {
     procesos: {
         deepwork: {
             id: 'deepwork',
-            nombre: '🚀 Bloque de Trabajo Enfocado (Deep Work 45m)',
+            nombre: '🚀 Bloque de Trabajo Enfocado (Deep Work)',
             prerrequisitos: [
                 'Celular en modo No Molestar',
-                'Vaso de agua o café listo',
-                'Entregable único escrito en papel'
+                'Agua / Café listo en el escritorio',
+                'Unico objetivo clave escrito en papel'
             ],
             tareas: [
                 { nombre: 'Definir el objetivo exacto del bloque', tiempoMin: 3 },
                 { nombre: 'Cerrar pestañas y chats innecesarios', tiempoMin: 2 },
-                { nombre: 'Bloque A: Trabajo de alta concentración', tiempoMin: 20 },
-                { nombre: 'Pausa activa de visión lejana y estiramiento', tiempoMin: 5 },
-                { nombre: 'Bloque B: Pulir y cerrar entregable', tiempoMin: 15 }
+                { nombre: 'Bloque Principal de Ejecución', tiempoMin: 25 },
+                { nombre: 'Pausa activa y estiramiento ligero', tiempoMin: 5 },
+                { nombre: 'Revisión final y cierre del entregable', tiempoMin: 10 }
+            ]
+        },
+        rutina_rapida: {
+            id: 'rutina_rapida',
+            nombre: '⚡ Orden y Reorganización de Espacio',
+            prerrequisitos: [
+                'Cesto o bolsa de basura a la mano'
+            ],
+            tareas: [
+                { nombre: 'Despejar platos / tazas del escritorio', tiempoMin: 3 },
+                { nombre: 'Organizar cables y elementos sueltos', tiempoMin: 4 },
+                { nombre: 'Barrer o limpiar superficie principal', tiempoMin: 5 }
             ]
         }
     },
     mensajes: {
-        INICIO: ['¡Algoritmo iniciado! Enfoque total.', 'Arrancamos. Cero distracciones.'],
-        PCT_50: ['50% del tiempo transcurrido. Mantén el ritmo.', 'Llegas a la mitad.'],
-        OVERTIME: ['Tiempo agotado. Selecciona una acción de desvío.', 'Límite alcanzado. Decide rápida en pantalla.'],
-        FINALIZADO: ['¡Proceso completado con éxito!', 'Bloque terminado. Excelente ejecución.']
+        INICIO: ['¡Algoritmo iniciado! Enfoque total en Sistema Uno.', 'Proceso activado. Cero distracciones.'],
+        PCT_50: ['Llegas al 50% del tiempo estimado.', 'Mitad de tiempo transcurrido.'],
+        OVERTIME: ['Tiempo agotado. Elige una acción rápida en pantalla.', 'Límite alcanzado. Selecciona el siguiente paso.'],
+        FINALIZADO: ['¡Proceso completado con éxito!', 'Bloque finalizado. Excelente ejecución.']
     },
     historial: []
 };
@@ -249,9 +284,8 @@ const App = {
         historial: [],
         audioActive: true,
         
-        // Estado de ejecución
         activeProcId: null,
-        energyLevel: 'high', // high, medium, emergency
+        energyLevel: 'high',
         preflightDone: false,
         
         remainingTasks: [],
@@ -294,14 +328,34 @@ const App = {
         return arr[Math.floor(Math.random() * arr.length)] || '';
     },
 
-    // --- CARGA Y GUARDADO ---
+    // CARGA DE DATOS ROBUSTA
     loadStorage: function() {
-        const p = localStorage.getItem('jev_procesos');
-        this.State.procesos = p ? JSON.parse(p) : { ...DEFAULT_DATA.procesos };
-        const m = localStorage.getItem('jev_mensajes');
-        this.State.mensajes = m ? JSON.parse(m) : { ...DEFAULT_DATA.mensajes };
-        const h = localStorage.getItem('jev_historial');
-        this.State.historial = h ? JSON.parse(h) : [];
+        try {
+            const p = localStorage.getItem('jev_procesos');
+            this.State.procesos = p ? JSON.parse(p) : null;
+            if (!this.State.procesos || Object.keys(this.State.procesos).length === 0) {
+                this.State.procesos = JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
+            }
+        } catch (e) {
+            this.State.procesos = JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
+        }
+
+        try {
+            const m = localStorage.getItem('jev_mensajes');
+            this.State.mensajes = m ? JSON.parse(m) : null;
+            if (!this.State.mensajes || Object.keys(this.State.mensajes).length === 0) {
+                this.State.mensajes = JSON.parse(JSON.stringify(DEFAULT_DATA.mensajes));
+            }
+        } catch (e) {
+            this.State.mensajes = JSON.parse(JSON.stringify(DEFAULT_DATA.mensajes));
+        }
+
+        try {
+            const h = localStorage.getItem('jev_historial');
+            this.State.historial = h ? JSON.parse(h) : [];
+        } catch (e) {
+            this.State.historial = [];
+        }
     },
 
     saveAll: function() {
@@ -310,44 +364,59 @@ const App = {
         localStorage.setItem('jev_historial', JSON.stringify(this.State.historial));
     },
 
-    // --- RENDER MENÚ PRINCIPAL ---
+    resetDefaults: function() {
+        if (confirm("¿Restablecer procesos por defecto? Se borrarán las personalizaciones actuales.")) {
+            localStorage.removeItem('jev_procesos');
+            localStorage.removeItem('jev_mensajes');
+            this.loadStorage();
+            this.renderMenu();
+            alert("✅ Datos restablecidos correctamente.");
+        }
+    },
+
+    // RENDERIZADO DEL MENÚ
     renderMenu: function() {
         const list = document.getElementById('processList');
         list.innerHTML = '';
 
-        Object.values(this.State.procesos).forEach(proc => {
-            const totalTime = proc.tareas.reduce((a, t) => a + t.tiempoMin, 0);
+        const procs = Object.values(this.State.procesos || {});
+        if (procs.length === 0) {
+            list.innerHTML = '<p style="text-align:center; padding: 15px;">No hay procesos. Haz clic en "+ Crear Proceso" o "🔄 Restablecer".</p>';
+            return;
+        }
+
+        procs.forEach(proc => {
+            const tareas = Array.isArray(proc.tareas) ? proc.tareas : [];
+            const totalTime = tareas.reduce((a, t) => a + (Number(t.tiempoMin) || 0), 0);
+
             const div = document.createElement('div');
-            div.className = 'card';
-            div.style.padding = '15px';
-            div.style.margin = '0';
+            div.className = 'process-card';
             div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong style="font-size:1.1em;">${proc.nombre}</strong>
-                        <div style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos | ~${totalTime} min</div>
-                    </div>
-                    <div class="flex-row">
-                        <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
-                        <button class="btn-outline" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
-                    </div>
+                <div>
+                    <strong style="font-size:1.05em; color:#fff; display:block; margin-bottom:4px;">${proc.nombre || 'Sin nombre'}</strong>
+                    <span style="font-size:0.85em; color:var(--text-muted);">${tareas.length} pasos • ~${totalTime} min</span>
+                </div>
+                <div class="flex-row">
+                    <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
+                    <button class="btn-outline" title="Editar" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
+                    <button class="btn-outline" title="Eliminar" onclick="App.CRUD.deleteProcess('${proc.id}')">🗑️</button>
                 </div>
             `;
             list.appendChild(div);
         });
     },
 
-    // --- VISTA 2: TRIAJE Y PRE-FLIGHT (JEV) ---
+    // TRIAJE Y PRE-FLIGHT
     setupTriage: function(procId) {
         this.State.activeProcId = procId;
         const proc = this.State.procesos[procId];
         document.getElementById('triageProcessTitle').innerText = proc.nombre;
         
-        // Render Checklist
         const checkContainer = document.getElementById('preflightChecklist');
         checkContainer.innerHTML = '';
         
-        if (!proc.prerrequisitos || proc.prerrequisitos.length === 0) {
+        const prereqs = Array.isArray(proc.prerrequisitos) ? proc.prerrequisitos : [];
+        if (prereqs.length === 0) {
             checkContainer.innerHTML = '<p style="font-size:0.85em;">Sin prerrequisitos definidos.</p>';
             this.State.preflightDone = true;
             document.getElementById('btnStartExecution').disabled = false;
@@ -355,7 +424,7 @@ const App = {
             this.State.preflightDone = false;
             document.getElementById('btnStartExecution').disabled = true;
 
-            proc.prerrequisitos.forEach((item, idx) => {
+            prereqs.forEach((item, idx) => {
                 const div = document.createElement('div');
                 div.className = 'checklist-item';
                 div.innerHTML = `
@@ -371,12 +440,13 @@ const App = {
 
     setEnergyLevel: function(level) {
         this.State.energyLevel = level;
-        this.speak(`Nivel de energía configurado a ${level}`);
+        this.speak(`Nivel de energía: ${level}`);
     },
 
     checkPreflightReady: function() {
         const proc = this.State.procesos[this.State.activeProcId];
-        const allChecked = proc.prerrequisitos.every((_, idx) => {
+        const prereqs = Array.isArray(proc.prerrequisitos) ? proc.prerrequisitos : [];
+        const allChecked = prereqs.every((_, idx) => {
             const chk = document.getElementById(`chk_${idx}`);
             return chk && chk.checked;
         });
@@ -384,11 +454,10 @@ const App = {
         document.getElementById('btnStartExecution').disabled = !allChecked;
     },
 
-    // --- VISTA 3: EJECUCIÓN CON PRIMITIVAS JEV ---
+    // EJECUCIÓN
     startExecution: function() {
         const proc = this.State.procesos[this.State.activeProcId];
         
-        // Ajustar tiempos según energía (Triaje)
         let factor = 1.0;
         if (this.State.energyLevel === 'medium') factor = 0.9;
         if (this.State.energyLevel === 'emergency') factor = 0.7;
@@ -411,6 +480,7 @@ const App = {
         this.speak(this.getMsg('INICIO'));
         this.nextTask();
 
+        if (this.State.timerInterval) clearInterval(this.State.timerInterval);
         this.State.timerInterval = setInterval(() => this.updateTimerUI(), 1000);
     },
 
@@ -435,7 +505,7 @@ const App = {
 
         document.getElementById('execTaskTitle').innerText = this.State.currentTask.nombre;
         document.getElementById('execPromptBox').innerText = `Paso actual (${taskData.tiempoMinCalculado} min estimado)`;
-        this.speak(`Tarea: ${this.State.currentTask.nombre}`);
+        this.speak(`Paso: ${this.State.currentTask.nombre}`);
     },
 
     updateTimerUI: function() {
@@ -445,13 +515,11 @@ const App = {
         const total = this.State.currentTask.totalMs;
         const pct = (elapsed / total) * 100;
 
-        // Formato MM:SS
         const secSec = Math.floor(elapsed / 1000);
         const m = Math.floor(secSec / 60);
         const s = secSec % 60;
         document.getElementById('execTimer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 
-        // Barra de progreso
         const bar = document.getElementById('execProgressBar');
         bar.style.width = `${Math.min(pct, 100)}%`;
 
@@ -460,13 +528,11 @@ const App = {
             this.speak(this.getMsg('PCT_50'));
         }
 
-        // PRIMITIVA JEV: CHOICE ACTIVADA POR EXCESO DE TIEMPO
         if (pct >= 100) {
             bar.classList.add('overtime');
             if (!this.State.currentTask.warnedOver) {
                 this.State.currentTask.warnedOver = true;
                 this.speak(this.getMsg('OVERTIME'));
-                // Mostrar caja de decisiones de 1 clic (JEV Choice)
                 document.getElementById('jevChoiceBox').classList.remove('hidden');
             }
         } else {
@@ -474,20 +540,18 @@ const App = {
         }
     },
 
-    // PRIMITIVA SCORE
     showScorePrimitive: function() {
         document.getElementById('jevChoiceBox').classList.add('hidden');
         document.getElementById('btnCompleteTask').classList.add('hidden');
         document.getElementById('jevScoreBox').classList.remove('hidden');
     },
 
-    // METODOS JEV (PRIMITIVAS)
     Jev: {
         choiceAddExtra: function(minutos) {
             App.State.currentTask.totalMs += (minutos * 60000);
             App.State.currentTask.warnedOver = false;
             document.getElementById('jevChoiceBox').classList.add('hidden');
-            App.speak(`Tiempo ampliado ${minutos} minutos.`);
+            App.speak(`Añadidos ${minutos} minutos.`);
         },
         choiceSkipTask: function() {
             App.State.executionLog.push({
@@ -514,16 +578,15 @@ const App = {
         clearInterval(this.State.timerInterval);
         this.speak(this.getMsg('FINALIZADO'));
 
-        // Guardar stats
         const proc = this.State.procesos[this.State.activeProcId];
         this.State.historial.push({
-            proceso: proc.nombre,
+            proceso: proc ? proc.nombre : 'Proceso',
             fecha: new Date().toLocaleString(),
             log: [...this.State.executionLog]
         });
         this.saveAll();
 
-        alert("🎉 Bloque finalizado con éxito. Datos de fricción guardados.");
+        alert("🎉 Proceso finalizado. Registros guardados.");
         this.switchView('view-menu');
     },
 
@@ -534,24 +597,22 @@ const App = {
         }
     },
 
-    // --- CRUD DE PROCESOS ---
+    // CRUD DE PROCESOS
     CRUD: {
         openEditor: function(id = null) {
-            const self = App;
-            if (id && self.State.procesos[id]) {
-                const p = self.State.procesos[id];
-                self.Draft = JSON.parse(JSON.stringify(p));
+            if (id && App.State.procesos[id]) {
+                App.Draft = JSON.parse(JSON.stringify(App.State.procesos[id]));
             } else {
-                self.Draft = {
+                App.Draft = {
                     id: 'proc_' + Date.now(),
                     nombre: '',
                     prerrequisitos: [],
                     tareas: []
                 };
             }
-            document.getElementById('editProcName').value = self.Draft.nombre;
+            document.getElementById('editProcName').value = App.Draft.nombre;
             this.renderLists();
-            self.switchView('view-editor');
+            App.switchView('view-editor');
         },
         addPreReq: function() {
             const inp = document.getElementById('newPreReqInput');
@@ -571,32 +632,39 @@ const App = {
         renderLists: function() {
             const preDiv = document.getElementById('editPreReqList');
             preDiv.innerHTML = App.Draft.prerrequisitos.map((pr, i) => `
-                <div style="font-size:0.85em; display:flex; justify-size:space-between; margin-bottom:4px;">
+                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px; background:#1e293b; padding:6px 10px; border-radius:6px;">
                     <span>• ${pr}</span>
-                    <button style="padding:2px 6px;" onclick="App.Draft.prerrequisitos.splice(${i},1); App.CRUD.renderLists();">x</button>
+                    <button style="padding:2px 6px;" class="btn-danger" onclick="App.Draft.prerrequisitos.splice(${i},1); App.CRUD.renderLists();">x</button>
                 </div>
             `).join('');
 
             const taskDiv = document.getElementById('editTaskList');
             taskDiv.innerHTML = App.Draft.tareas.map((tk, i) => `
-                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px;">
+                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px; background:#1e293b; padding:6px 10px; border-radius:6px;">
                     <span>${i+1}. ${tk.nombre} (${tk.tiempoMin}m)</span>
-                    <button style="padding:2px 6px;" onclick="App.Draft.tareas.splice(${i},1); App.CRUD.renderLists();">x</button>
+                    <button style="padding:2px 6px;" class="btn-danger" onclick="App.Draft.tareas.splice(${i},1); App.CRUD.renderLists();">x</button>
                 </div>
             `).join('');
         },
         saveProcess: function() {
             const name = document.getElementById('editProcName').value.trim();
-            if (!name || App.Draft.tareas.length === 0) return alert("Completa el nombre y al menos 1 tarea.");
+            if (!name || App.Draft.tareas.length === 0) return alert("Ingresa un nombre y al menos 1 tarea.");
             App.Draft.nombre = name;
             App.State.procesos[App.Draft.id] = App.Draft;
             App.saveAll();
             App.renderMenu();
             App.switchView('view-menu');
+        },
+        deleteProcess: function(id) {
+            if (confirm("¿Eliminar este proceso?")) {
+                delete App.State.procesos[id];
+                App.saveAll();
+                App.renderMenu();
+            }
         }
     },
 
-    // --- MENSAJES Y STATS ---
+    // MENSAJES Y HISTORIAL
     Messages: {
         open: function() {
             const cont = document.getElementById('msgFieldsContainer');
@@ -604,7 +672,7 @@ const App = {
             Object.keys(App.State.mensajes).forEach(k => {
                 cont.innerHTML += `
                     <div>
-                        <label style="font-weight:bold; font-size:0.85em;">${k}</label>
+                        <label style="font-weight:bold; font-size:0.85em; color:var(--primary);">${k}</label>
                         <textarea id="msg_${k}" rows="2">${App.State.mensajes[k].join('\n')}</textarea>
                     </div>
                 `;
@@ -627,18 +695,18 @@ const App = {
             const list = document.getElementById('statsList');
             list.innerHTML = '';
             if (App.State.historial.length === 0) {
-                list.innerHTML = '<p>No hay ejecuciones registradas.</p>';
+                list.innerHTML = '<p style="text-align:center;">No hay ejecuciones registradas aún.</p>';
             } else {
                 [...App.State.historial].reverse().forEach(h => {
-                    let tasksHtml = h.log.map(l => `
-                        <div style="font-size:0.85em; margin-left:10px;">
+                    let tasksHtml = (h.log || []).map(l => `
+                        <div style="font-size:0.85em; margin-left:10px; border-bottom: 1px solid var(--border); padding: 4px 0;">
                             • ${l.nombre}: ${(l.realMs/60000).toFixed(1)}m | Fricción: <strong>${l.frictionScore || 'N/A'}/5</strong>
                         </div>
                     `).join('');
                     list.innerHTML += `
                         <div class="card" style="padding:12px; margin-bottom:10px;">
-                            <strong>${h.proceso}</strong> <small style="float:right">${h.fecha}</small>
-                            ${tasksHtml}
+                            <strong>${h.proceso}</strong> <small style="float:right; color:var(--text-muted);">${h.fecha}</small>
+                            <div style="margin-top:8px;">${tasksHtml}</div>
                         </div>
                     `;
                 });
