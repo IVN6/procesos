@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System One Execution Engine</title>
+    <style>
+        :root {
+            --bg-body: #090d16;
+            --bg-card: #131b2e;
+            --bg-card-hover: #1c2742;
+            --primary: #38bdf8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 640px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1, h2, h3 { text-align: center; margin-bottom: 16px; color: #fff; }
+        p { color: var(--text-muted); font-size: 0.95em; line-height: 1.5; }
+        
+        .hidden { display: none !important; }
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+        .flex-col { display: flex; flex-direction: column; gap: 12px; }
+
+        /* Botones y UI */
+        button {
+            font-size: 14px; font-weight: 600; padding: 12px 18px; border-radius: 10px;
+            border: 1px solid transparent; background-color: var(--border); color: var(--text-main);
+            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        button:hover { background-color: var(--bg-card-hover); transform: translateY(-1px); }
+        .btn-primary { background-color: var(--primary); color: #0f172a; font-weight: 700; }
+        .btn-primary:hover { background-color: #0284c7; color: #fff; }
+        .btn-success { background-color: var(--success); color: #fff; }
+        .btn-warning { background-color: var(--warning); color: #000; }
+        .btn-danger { background-color: var(--danger); color: #fff; }
+        .btn-outline { border-color: var(--border); background: transparent; }
+
+        input, textarea, select {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+            background: #0f172a; color: #fff; font-size: 14px; margin-top: 6px;
+        }
+
+        /* Barra de Progreso y Timer */
+        .timer-display { font-size: 2.5em; font-weight: 800; text-align: center; color: var(--primary); font-family: monospace; }
+        .progress-container { width: 100%; height: 16px; background: #0f172a; border-radius: 999px; overflow: hidden; margin: 15px 0; border: 1px solid var(--border); }
+        .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.4s ease, background-color 0.4s ease; }
+        .progress-bar.overtime { background: var(--danger); }
+
+        /* Primitivas JEV */
+        .jev-box { background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
+        .primitive-tag { display: inline-block; font-size: 0.75em; text-transform: uppercase; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: var(--primary); color: #000; margin-bottom: 8px; }
+        
+        .score-selector { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+        .score-btn { width: 40px; height: 40px; border-radius: 50%; padding: 0; font-weight: 700; }
+
+        /* Checklist Pre-flight */
+        .checklist-item { display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; }
+        .checklist-item input { width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- CABECERA PRINCIPAL -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin:0; font-size: 1.2em; color: var(--primary);">⚡ JEV MATRIX</h2>
+        <button id="btnAudioToggle" class="btn-outline" onclick="App.toggleAudio()">🔊 Voz: ON</button>
+    </div>
+
+    <!-- VISTA: MENÚ PRINCIPAL -->
+    <div id="view-menu" class="card">
+        <h1>Sistemas de Ejecución</h1>
+        <p style="text-align: center; margin-bottom: 20px;">Selecciona un algoritmo pre-compilado para arrancar en Sistema 1.</p>
+        <div id="processList" class="flex-col"></div>
+        <hr style="border-color: var(--border); margin: 20px 0;">
+        <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
+            <button class="btn-primary" onclick="App.CRUD.openEditor()">➕ Crear Proceso</button>
+            <button class="btn-outline" onclick="App.Messages.open()">💬 Editar Frases</button>
+            <button class="btn-outline" onclick="App.Stats.show()">📊 Analítica y Recalibración</button>
+        </div>
+    </div>
+
+    <!-- VISTA: TRIAJE Y PRE-FLIGHT (JEV PRE-CHECK) -->
+    <div id="view-triage" class="card hidden">
+        <span class="primitive-tag">PRIMITIVA: TRIAJE & PRE-FLIGHT</span>
+        <h2 id="triageProcessTitle">Alineación de Entorno</h2>
+        <p>Ajusta el sistema a tu estado actual antes de activar el reloj.</p>
+
+        <div class="jev-box">
+            <label style="font-weight: bold; display: block; margin-bottom: 8px;">1. ¿Nivel de Energía Actual?</label>
+            <div class="flex-row" style="justify-content: center;">
+                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Alta (100% Tiempo)</button>
+                <button class="btn-outline" onclick="App.setEnergyLevel('medium')">🔋 Normal (90% Tiempo)</button>
+                <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Baja (-30% Tiempos)</button>
+            </div>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <label style="font-weight: bold; display: block; margin-bottom: 8px;">2. Verificación en Paralelo (Prerrequisitos):</label>
+            <div id="preflightChecklist"></div>
+        </div>
+
+        <button id="btnStartExecution" class="btn-primary" style="width: 100%;" disabled onclick="App.startExecution()">▶️ Confirmar y Ejecutar Proceso</button>
+    </div>
+
+    <!-- VISTA: EJECUCIÓN CONTINUA -->
+    <div id="view-execution" class="card hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="execProcessName" style="color: var(--text-muted); font-size: 0.85em;">Proceso</span>
+            <span id="execEstimatedEnd" style="color: var(--warning); font-size: 0.85em;">Fin: --:--</span>
+        </div>
+
+        <h2 id="execTaskTitle" style="margin-top: 10px; font-size: 1.5em;">Nombre de la Tarea</h2>
+        <div class="timer-display" id="execTimer">00:00</div>
+
+        <div class="progress-container">
+            <div id="execProgressBar" class="progress-bar"></div>
+        </div>
+
+        <div id="execPromptBox" style="text-align: center; color: var(--primary); font-weight: 600; min-height: 30px;">
+            Iniciando instrucción...
+        </div>
+
+        <!-- PRIMITIVA JEV: CHOICE (OPCIONES RÁPIDAS ANTE RETRASO O PAUSA) -->
+        <div id="jevChoiceBox" class="jev-box hidden">
+            <span class="primitive-tag">PRIMITIVA: CHOICE (RESOLUCIÓN DE RETRASO)</span>
+            <p style="margin-bottom: 10px; color: #fff;">El tiempo ha expirado. Elige una acción de 1 clic sin pensar:</p>
+            <div class="flex-row" style="justify-content: center;">
+                <button class="btn-warning" onclick="App.Jev.choiceAddExtra(2)">⏳ +2 Minutos</button>
+                <button class="btn-danger" onclick="App.Jev.choiceSkipTask()">⏭️ Omitir Paso</button>
+                <button class="btn-success" onclick="App.Jev.choiceCompleteNow()">✅ Finalizar Ya</button>
+            </div>
+        </div>
+
+        <!-- CONTROLES ESTÁNDAR -->
+        <div class="flex-row" style="justify-content: center; margin-top: 20px;">
+            <button id="btnCompleteTask" class="btn-success" style="width: 80%; font-size: 1.1em;" onclick="App.showScorePrimitive()">✅ Tarea Completada</button>
+            <button id="btnAbandon" class="btn-outline" onclick="App.abandonExecution()">❌ Abandonar</button>
+        </div>
+
+        <!-- PRIMITIVA JEV: SCORE (CALIFICACIÓN DE FRICCIÓN COGNITIVA AL COMPLETAR) -->
+        <div id="jevScoreBox" class="jev-box hidden">
+            <span class="primitive-tag">PRIMITIVA: SCORE (FRICCIÓN MENTAL)</span>
+            <p style="color: #fff;">¿Qué tan difícil fue completar este paso? (1 = Mínimo | 5 = Bloqueo):</p>
+            <div class="score-selector">
+                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(1)">1</button>
+                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(2)">2</button>
+                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(3)">3</button>
+                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(4)">4</button>
+                <button class="btn-outline score-btn" onclick="App.Jev.recordScoreAndNext(5)">5</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA: EDITOR DE PROCESOS (CRUD) -->
+    <div id="view-editor" class="card hidden">
+        <h2 id="editorTitle">Crear / Modificar Algoritmo</h2>
+        <input type="text" id="editProcName" placeholder="Nombre del Proceso (ej. Sesión de Enfoque)">
+        
+        <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px;">
+            <h3>Prerrequisitos de Entorno (Pre-flight)</h3>
+            <input type="text" id="newPreReqInput" placeholder="Añadir condición requerida (ej. Teléfono silenciado)">
+            <button class="btn-outline" style="margin-top: 8px;" onclick="App.CRUD.addPreReq()">+ Añadir Prerrequisito</button>
+            <div id="editPreReqList" style="margin-top: 10px;"></div>
+        </div>
+
+        <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px;">
+            <h3>Pasos del Proceso</h3>
+            <div class="flex-row">
+                <input type="text" id="newTaskName" placeholder="Descripción de la tarea" style="flex:2;">
+                <input type="number" id="newTaskTime" placeholder="Minutos" min="1" style="flex:1;">
+            </div>
+            <button class="btn-primary" style="margin-top: 8px; width:100%;" onclick="App.CRUD.addTask()">+ Insertar Tarea</button>
+            <div id="editTaskList" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="flex-row" style="justify-content: space-between; margin-top: 20px;">
+            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar Proceso</button>
+            <button class="btn-outline" onclick="App.switchView('view-menu')">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- VISTA: PERSONALIZACIÓN DE MENSAJES -->
+    <div id="view-messages" class="card hidden">
+        <h2>Personalizar Síntesis de Voz</h2>
+        <p>Ajusta los prompts que el sintetizador dirá en momentos críticos.</p>
+        <div id="msgFieldsContainer" class="flex-col" style="margin: 15px 0;"></div>
+        <div class="flex-row">
+            <button class="btn-success" onclick="App.Messages.save()">💾 Guardar Cambios</button>
+            <button class="btn-outline" onclick="App.switchView('view-menu')">⬅️ Volver</button>
+        </div>
+    </div>
+
+    <!-- VISTA: ANALÍTICA & RECALIBRACIÓN AUTO -->
+    <div id="view-stats" class="card hidden">
+        <h2>Historial y Motor de Recalibración</h2>
+        <p>Los tiempos estimados se pueden auto-calibrar según la fricción real registrada.</p>
+        <div id="statsList" style="margin: 15px 0;"></div>
+        <button class="btn-outline" onclick="App.switchView('view-menu')">⬅️ Volver al Menú</button>
+    </div>
+
+</div>
+
+<script>
+/**
+ * BASE DE DATOS Y ESTADO DE APLICACIÓN
+ */
+const DEFAULT_DATA = {
+    procesos: {
+        deepwork: {
+            id: 'deepwork',
+            nombre: '🚀 Bloque de Trabajo Enfocado (Deep Work 45m)',
+            prerrequisitos: [
+                'Celular en modo No Molestar',
+                'Vaso de agua o café listo',
+                'Entregable único escrito en papel'
+            ],
+            tareas: [
+                { nombre: 'Definir el objetivo exacto del bloque', tiempoMin: 3 },
+                { nombre: 'Cerrar pestañas y chats innecesarios', tiempoMin: 2 },
+                { nombre: 'Bloque A: Trabajo de alta concentración', tiempoMin: 20 },
+                { nombre: 'Pausa activa de visión lejana y estiramiento', tiempoMin: 5 },
+                { nombre: 'Bloque B: Pulir y cerrar entregable', tiempoMin: 15 }
+            ]
+        }
+    },
+    mensajes: {
+        INICIO: ['¡Algoritmo iniciado! Enfoque total.', 'Arrancamos. Cero distracciones.'],
+        PCT_50: ['50% del tiempo transcurrido. Mantén el ritmo.', 'Llegas a la mitad.'],
+        OVERTIME: ['Tiempo agotado. Selecciona una acción de desvío.', 'Límite alcanzado. Decide rápida en pantalla.'],
+        FINALIZADO: ['¡Proceso completado con éxito!', 'Bloque terminado. Excelente ejecución.']
+    },
+    historial: []
+};
+
+const App = {
+    State: {
+        procesos: {},
+        mensajes: {},
+        historial: [],
+        audioActive: true,
+        
+        // Estado de ejecución
+        activeProcId: null,
+        energyLevel: 'high', // high, medium, emergency
+        preflightDone: false,
+        
+        remainingTasks: [],
+        currentTask: null,
+        executionLog: [],
+        
+        timerInterval: null,
+        startTimeGlobal: null,
+        estimatedEndTime: null
+    },
+
+    Draft: { id: null, nombre: '', prerrequisitos: [], tareas: [] },
+
+    init: function() {
+        this.loadStorage();
+        this.renderMenu();
+        this.switchView('view-menu');
+    },
+
+    switchView: function(viewId) {
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById(viewId).classList.remove('hidden');
+    },
+
+    toggleAudio: function() {
+        this.State.audioActive = !this.State.audioActive;
+        document.getElementById('btnAudioToggle').innerText = this.State.audioActive ? '🔊 Voz: ON' : '🔇 Voz: OFF';
+    },
+
+    speak: function(text) {
+        if (!this.State.audioActive || !window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'es-ES';
+        window.speechSynthesis.speak(msg);
+    },
+
+    getMsg: function(key) {
+        const arr = this.State.mensajes[key] || [];
+        return arr[Math.floor(Math.random() * arr.length)] || '';
+    },
+
+    // --- CARGA Y GUARDADO ---
+    loadStorage: function() {
+        const p = localStorage.getItem('jev_procesos');
+        this.State.procesos = p ? JSON.parse(p) : { ...DEFAULT_DATA.procesos };
+        const m = localStorage.getItem('jev_mensajes');
+        this.State.mensajes = m ? JSON.parse(m) : { ...DEFAULT_DATA.mensajes };
+        const h = localStorage.getItem('jev_historial');
+        this.State.historial = h ? JSON.parse(h) : [];
+    },
+
+    saveAll: function() {
+        localStorage.setItem('jev_procesos', JSON.stringify(this.State.procesos));
+        localStorage.setItem('jev_mensajes', JSON.stringify(this.State.mensajes));
+        localStorage.setItem('jev_historial', JSON.stringify(this.State.historial));
+    },
+
+    // --- RENDER MENÚ PRINCIPAL ---
+    renderMenu: function() {
+        const list = document.getElementById('processList');
+        list.innerHTML = '';
+
+        Object.values(this.State.procesos).forEach(proc => {
+            const totalTime = proc.tareas.reduce((a, t) => a + t.tiempoMin, 0);
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.style.padding = '15px';
+            div.style.margin = '0';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="font-size:1.1em;">${proc.nombre}</strong>
+                        <div style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos | ~${totalTime} min</div>
+                    </div>
+                    <div class="flex-row">
+                        <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
+                        <button class="btn-outline" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
+                    </div>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    },
+
+    // --- VISTA 2: TRIAJE Y PRE-FLIGHT (JEV) ---
+    setupTriage: function(procId) {
+        this.State.activeProcId = procId;
+        const proc = this.State.procesos[procId];
+        document.getElementById('triageProcessTitle').innerText = proc.nombre;
+        
+        // Render Checklist
+        const checkContainer = document.getElementById('preflightChecklist');
+        checkContainer.innerHTML = '';
+        
+        if (!proc.prerrequisitos || proc.prerrequisitos.length === 0) {
+            checkContainer.innerHTML = '<p style="font-size:0.85em;">Sin prerrequisitos definidos.</p>';
+            this.State.preflightDone = true;
+            document.getElementById('btnStartExecution').disabled = false;
+        } else {
+            this.State.preflightDone = false;
+            document.getElementById('btnStartExecution').disabled = true;
+
+            proc.prerrequisitos.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'checklist-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="chk_${idx}" onchange="App.checkPreflightReady()">
+                    <label for="chk_${idx}" style="font-size:0.9em; cursor:pointer;">${item}</label>
+                `;
+                checkContainer.appendChild(div);
+            });
+        }
+
+        this.switchView('view-triage');
+    },
+
+    setEnergyLevel: function(level) {
+        this.State.energyLevel = level;
+        this.speak(`Nivel de energía configurado a ${level}`);
+    },
+
+    checkPreflightReady: function() {
+        const proc = this.State.procesos[this.State.activeProcId];
+        const allChecked = proc.prerrequisitos.every((_, idx) => {
+            const chk = document.getElementById(`chk_${idx}`);
+            return chk && chk.checked;
+        });
+        this.State.preflightDone = allChecked;
+        document.getElementById('btnStartExecution').disabled = !allChecked;
+    },
+
+    // --- VISTA 3: EJECUCIÓN CON PRIMITIVAS JEV ---
+    startExecution: function() {
+        const proc = this.State.procesos[this.State.activeProcId];
+        
+        // Ajustar tiempos según energía (Triaje)
+        let factor = 1.0;
+        if (this.State.energyLevel === 'medium') factor = 0.9;
+        if (this.State.energyLevel === 'emergency') factor = 0.7;
+
+        this.State.remainingTasks = proc.tareas.map(t => ({
+            ...t,
+            tiempoMinCalculado: Math.max(1, Math.round(t.tiempoMin * factor))
+        }));
+
+        this.State.executionLog = [];
+        this.State.startTimeGlobal = Date.now();
+        
+        const totalMin = this.State.remainingTasks.reduce((a, t) => a + t.tiempoMinCalculado, 0);
+        this.State.estimatedEndTime = Date.now() + (totalMin * 60000);
+
+        document.getElementById('execProcessName').innerText = proc.nombre;
+        document.getElementById('execEstimatedEnd').innerText = `Fin: ${new Date(this.State.estimatedEndTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+
+        this.switchView('view-execution');
+        this.speak(this.getMsg('INICIO'));
+        this.nextTask();
+
+        this.State.timerInterval = setInterval(() => this.updateTimerUI(), 1000);
+    },
+
+    nextTask: function() {
+        document.getElementById('jevChoiceBox').classList.add('hidden');
+        document.getElementById('jevScoreBox').classList.add('hidden');
+        document.getElementById('btnCompleteTask').classList.remove('hidden');
+
+        if (this.State.remainingTasks.length === 0) {
+            this.finishFullProcess();
+            return;
+        }
+
+        const taskData = this.State.remainingTasks.shift();
+        this.State.currentTask = {
+            ...taskData,
+            totalMs: taskData.tiempoMinCalculado * 60 * 1000,
+            startMs: Date.now(),
+            warned50: false,
+            warnedOver: false
+        };
+
+        document.getElementById('execTaskTitle').innerText = this.State.currentTask.nombre;
+        document.getElementById('execPromptBox').innerText = `Paso actual (${taskData.tiempoMinCalculado} min estimado)`;
+        this.speak(`Tarea: ${this.State.currentTask.nombre}`);
+    },
+
+    updateTimerUI: function() {
+        if (!this.State.currentTask) return;
+
+        const elapsed = Date.now() - this.State.currentTask.startMs;
+        const total = this.State.currentTask.totalMs;
+        const pct = (elapsed / total) * 100;
+
+        // Formato MM:SS
+        const secSec = Math.floor(elapsed / 1000);
+        const m = Math.floor(secSec / 60);
+        const s = secSec % 60;
+        document.getElementById('execTimer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+        // Barra de progreso
+        const bar = document.getElementById('execProgressBar');
+        bar.style.width = `${Math.min(pct, 100)}%`;
+
+        if (pct >= 50 && !this.State.currentTask.warned50 && pct < 100) {
+            this.State.currentTask.warned50 = true;
+            this.speak(this.getMsg('PCT_50'));
+        }
+
+        // PRIMITIVA JEV: CHOICE ACTIVADA POR EXCESO DE TIEMPO
+        if (pct >= 100) {
+            bar.classList.add('overtime');
+            if (!this.State.currentTask.warnedOver) {
+                this.State.currentTask.warnedOver = true;
+                this.speak(this.getMsg('OVERTIME'));
+                // Mostrar caja de decisiones de 1 clic (JEV Choice)
+                document.getElementById('jevChoiceBox').classList.remove('hidden');
+            }
+        } else {
+            bar.classList.remove('overtime');
+        }
+    },
+
+    // PRIMITIVA SCORE
+    showScorePrimitive: function() {
+        document.getElementById('jevChoiceBox').classList.add('hidden');
+        document.getElementById('btnCompleteTask').classList.add('hidden');
+        document.getElementById('jevScoreBox').classList.remove('hidden');
+    },
+
+    // METODOS JEV (PRIMITIVAS)
+    Jev: {
+        choiceAddExtra: function(minutos) {
+            App.State.currentTask.totalMs += (minutos * 60000);
+            App.State.currentTask.warnedOver = false;
+            document.getElementById('jevChoiceBox').classList.add('hidden');
+            App.speak(`Tiempo ampliado ${minutos} minutos.`);
+        },
+        choiceSkipTask: function() {
+            App.State.executionLog.push({
+                nombre: App.State.currentTask.nombre + ' (OMITIDO)',
+                realMs: Date.now() - App.State.currentTask.startMs,
+                frictionScore: 5
+            });
+            App.nextTask();
+        },
+        choiceCompleteNow: function() {
+            App.showScorePrimitive();
+        },
+        recordScoreAndNext: function(score) {
+            App.State.executionLog.push({
+                nombre: App.State.currentTask.nombre,
+                realMs: Date.now() - App.State.currentTask.startMs,
+                frictionScore: score
+            });
+            App.nextTask();
+        }
+    },
+
+    finishFullProcess: function() {
+        clearInterval(this.State.timerInterval);
+        this.speak(this.getMsg('FINALIZADO'));
+
+        // Guardar stats
+        const proc = this.State.procesos[this.State.activeProcId];
+        this.State.historial.push({
+            proceso: proc.nombre,
+            fecha: new Date().toLocaleString(),
+            log: [...this.State.executionLog]
+        });
+        this.saveAll();
+
+        alert("🎉 Bloque finalizado con éxito. Datos de fricción guardados.");
+        this.switchView('view-menu');
+    },
+
+    abandonExecution: function() {
+        if (confirm("¿Abandonar la ejecución en curso?")) {
+            clearInterval(this.State.timerInterval);
+            this.switchView('view-menu');
+        }
+    },
+
+    // --- CRUD DE PROCESOS ---
+    CRUD: {
+        openEditor: function(id = null) {
+            const self = App;
+            if (id && self.State.procesos[id]) {
+                const p = self.State.procesos[id];
+                self.Draft = JSON.parse(JSON.stringify(p));
+            } else {
+                self.Draft = {
+                    id: 'proc_' + Date.now(),
+                    nombre: '',
+                    prerrequisitos: [],
+                    tareas: []
+                };
+            }
+            document.getElementById('editProcName').value = self.Draft.nombre;
+            this.renderLists();
+            self.switchView('view-editor');
+        },
+        addPreReq: function() {
+            const inp = document.getElementById('newPreReqInput');
+            if (!inp.value.trim()) return;
+            App.Draft.prerrequisitos.push(inp.value.trim());
+            inp.value = '';
+            this.renderLists();
+        },
+        addTask: function() {
+            const n = document.getElementById('newTaskName');
+            const t = document.getElementById('newTaskTime');
+            if (!n.value.trim() || !t.value) return;
+            App.Draft.tareas.push({ nombre: n.value.trim(), tiempoMin: parseInt(t.value) });
+            n.value = ''; t.value = '';
+            this.renderLists();
+        },
+        renderLists: function() {
+            const preDiv = document.getElementById('editPreReqList');
+            preDiv.innerHTML = App.Draft.prerrequisitos.map((pr, i) => `
+                <div style="font-size:0.85em; display:flex; justify-size:space-between; margin-bottom:4px;">
+                    <span>• ${pr}</span>
+                    <button style="padding:2px 6px;" onclick="App.Draft.prerrequisitos.splice(${i},1); App.CRUD.renderLists();">x</button>
+                </div>
+            `).join('');
+
+            const taskDiv = document.getElementById('editTaskList');
+            taskDiv.innerHTML = App.Draft.tareas.map((tk, i) => `
+                <div style="font-size:0.85em; display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span>${i+1}. ${tk.nombre} (${tk.tiempoMin}m)</span>
+                    <button style="padding:2px 6px;" onclick="App.Draft.tareas.splice(${i},1); App.CRUD.renderLists();">x</button>
+                </div>
+            `).join('');
+        },
+        saveProcess: function() {
+            const name = document.getElementById('editProcName').value.trim();
+            if (!name || App.Draft.tareas.length === 0) return alert("Completa el nombre y al menos 1 tarea.");
+            App.Draft.nombre = name;
+            App.State.procesos[App.Draft.id] = App.Draft;
+            App.saveAll();
+            App.renderMenu();
+            App.switchView('view-menu');
+        }
+    },
+
+    // --- MENSAJES Y STATS ---
+    Messages: {
+        open: function() {
+            const cont = document.getElementById('msgFieldsContainer');
+            cont.innerHTML = '';
+            Object.keys(App.State.mensajes).forEach(k => {
+                cont.innerHTML += `
+                    <div>
+                        <label style="font-weight:bold; font-size:0.85em;">${k}</label>
+                        <textarea id="msg_${k}" rows="2">${App.State.mensajes[k].join('\n')}</textarea>
+                    </div>
+                `;
+            });
+            App.switchView('view-messages');
+        },
+        save: function() {
+            Object.keys(App.State.mensajes).forEach(k => {
+                const txt = document.getElementById(`msg_${k}`).value;
+                App.State.mensajes[k] = txt.split('\n').map(s => s.trim()).filter(Boolean);
+            });
+            App.saveAll();
+            alert("Prompts guardados.");
+            App.switchView('view-menu');
+        }
+    },
+
+    Stats: {
+        show: function() {
+            const list = document.getElementById('statsList');
+            list.innerHTML = '';
+            if (App.State.historial.length === 0) {
+                list.innerHTML = '<p>No hay ejecuciones registradas.</p>';
+            } else {
+                [...App.State.historial].reverse().forEach(h => {
+                    let tasksHtml = h.log.map(l => `
+                        <div style="font-size:0.85em; margin-left:10px;">
+                            • ${l.nombre}: ${(l.realMs/60000).toFixed(1)}m | Fricción: <strong>${l.frictionScore || 'N/A'}/5</strong>
+                        </div>
+                    `).join('');
+                    list.innerHTML += `
+                        <div class="card" style="padding:12px; margin-bottom:10px;">
+                            <strong>${h.proceso}</strong> <small style="float:right">${h.fecha}</small>
+                            ${tasksHtml}
+                        </div>
+                    `;
+                });
+            }
+            App.switchView('view-stats');
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
