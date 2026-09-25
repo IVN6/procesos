@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jev Matrix V4 - Automatización y Flujo</title>
+    <title>Jev Matrix V5 - Automatización y Flujo</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -13,7 +13,7 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 700px; padding-bottom: 40px; }
+        .container { width: 100%; max-width: 700px; padding-bottom: 40px; position: relative; }
         
         .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         h1, h2, h3 { text-align: center; margin-bottom: 16px; color: #fff; }
@@ -24,10 +24,10 @@
         .navbar { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
         .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
-        .nav-btn:hover { background: var(--bg-item); color: var(--primary); border-color: var(--primary); }
-        .nav-btn.active { background: var(--primary); color: #000; font-weight: bold; }
+        .nav-btn:hover, .nav-btn.active { background: var(--primary); color: #000; font-weight: bold; border-color: var(--primary); }
 
-        .process-card { background: var(--bg-item); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 12px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+        .cat-title { font-size: 1.1em; color: var(--primary); margin: 20px 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .process-card { background: var(--bg-item); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 12px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
         
         button { font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;}
         button:hover { opacity: 0.9; transform: translateY(-1px); }
@@ -41,46 +41,70 @@
         input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: #fff; font-size: 14px; margin-top: 4px; }
         input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
 
-        .time-tracker { display: flex; justify-content: space-between; background: #0f172a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85em; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        .time-col { display: flex; flex-direction: column; text-align: center; }
-        .time-col span:first-child { color: var(--text-muted); font-size: 0.85em; }
-        .time-col span:last-child { font-weight: bold; color: var(--primary); font-size: 1.1em; }
-
         .timer-display { font-size: 3em; font-weight: 800; text-align: center; color: var(--primary); font-family: monospace; margin: 10px 0; }
         .progress-container { width: 100%; height: 16px; background: #0f172a; border-radius: 999px; overflow: hidden; margin: 15px 0; border: 1px solid var(--border); }
         .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.4s ease; }
         .progress-bar.overtime { background: var(--danger); }
         
-        .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
-        .summary-bar-bg { width: 100%; height: 8px; background: #0f172a; border-radius: 4px; margin-top: 4px; overflow: hidden;}
-        .summary-bar-fill { height: 100%; background: var(--success); }
-        .summary-bar-fill.over { background: var(--danger); }
-        canvas { max-width: 100%; background: #0f172a; border-radius: 8px; padding: 10px; margin-top: 15px; }
+        .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; }
         
-        .badge-streak { background: var(--warning); color: #000; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-bottom: 10px; display: inline-block;}
+        /* Modal Custom */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
+        .modal-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+        
+        .persistent-note { background: #0f172a; border-left: 3px solid var(--warning); padding: 10px; font-size: 0.9em; margin-bottom: 15px; border-radius: 4px; word-break: break-word;}
+        .persistent-note a { color: var(--primary); text-decoration: underline; }
+        .req-badge { font-size: 0.8em; background: var(--bg-item); padding: 4px 8px; border-radius: 12px; color: var(--warning); display: inline-block; margin-bottom: 10px; border: 1px solid var(--border);}
+        
+        canvas { max-width: 100%; background: #0f172a; border-radius: 8px; padding: 10px; margin-top: 15px; }
+        .top-stats { display: flex; justify-content: space-around; background: var(--bg-item); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <nav class="navbar">
-        <h2 style="margin:0; font-size: 1.1em; color: var(--primary);">⚡ JEV MATRIX V4</h2>
+        <h2 style="margin:0; font-size: 1.1em; color: var(--primary);">⚡ JEV MATRIX V5</h2>
         <div class="nav-links">
             <button class="nav-btn active" id="nav-menu" onclick="App.navTo('view-menu')">🏠 Inicio</button>
             <button class="nav-btn" id="nav-stats" onclick="App.navTo('view-stats')">📊 Stats</button>
             <button class="nav-btn" id="nav-messages" onclick="App.navTo('view-messages')">💬 Mensajes</button>
+            <button class="nav-btn" id="nav-data" onclick="App.navTo('view-data')">💾 Datos</button>
             <button class="btn-outline btn-icon" onclick="App.toggleAudio()" id="btnAudioToggle">🔊</button>
         </div>
     </nav>
 
     <!-- VISTA 1: MENÚ -->
     <div id="view-menu" class="card">
-        <h1>Sistemas de Ejecución</h1>
+        <h1>Tus Rutinas</h1>
         <div id="processList" class="flex-col"></div>
         <hr style="border-color: var(--border); margin: 20px 0;">
         <div class="flex-row">
-            <button class="btn-primary" style="flex: 1;" onclick="App.CRUD.openEditor()">➕ Crear Proceso</button>
-            <button class="btn-outline" onclick="App.CRUD.importAI()">📥 Importar IA</button>
+            <button class="btn-primary" style="flex: 1;" onclick="App.CRUD.openEditor()">➕ Crear Manual</button>
+            <button class="btn-warning" style="flex: 1;" onclick="App.navTo('view-ai')">🤖 Crear con IA</button>
+        </div>
+    </div>
+
+    <!-- VISTA: GENERADOR IA -->
+    <div id="view-ai" class="card hidden">
+        <h2>Generador de Prompt IA</h2>
+        <p style="font-size:0.9em; color:var(--text-muted); margin-bottom:15px; text-align:center;">Dile a la IA qué necesitas y te devolverá el código listo para importar.</p>
+        <div class="jev-box" style="text-align: left;">
+            <label>1. ¿Sobre qué es el proceso?</label>
+            <input type="text" id="aiTopic" placeholder="Ej: Rutina de mañana, Limpiar PC, Estudiar Inglés...">
+            <label style="display:block; margin-top:10px;">2. Nivel de detalle</label>
+            <select id="aiDetail">
+                <option value="pasos simples y directos para principiantes">Básico / Principiante</option>
+                <option value="pasos detallados, técnicos y progresivos">Avanzado / Técnico</option>
+            </select>
+            <button class="btn-primary" style="width:100%; margin-top:15px;" onclick="App.AI.generatePrompt()">1️⃣ Generar y Copiar Prompt</button>
+        </div>
+        
+        <div class="jev-box" style="text-align: left; background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.3);">
+            <label>2. Pega aquí el código que te dio la IA:</label>
+            <textarea id="aiInputCode" rows="4" placeholder='{"id": "proc_1", "nombre": "...", "tareas": [...]}'></textarea>
+            <button class="btn-success" style="width:100%; margin-top:10px;" onclick="App.AI.importProcess()">2️⃣ Importar a Matrix</button>
         </div>
     </div>
 
@@ -90,30 +114,31 @@
         <div class="jev-box">
             <label style="font-weight: bold; display: block; margin-bottom: 12px;">Nivel de Energía:</label>
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
-                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Óptimo (Completo)</button>
+                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Óptimo (Todas)</button>
                 <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Bajo (Esenciales)</button>
             </div>
-            <p id="triageEnergyText" style="margin-top: 10px; color: var(--warning); font-size: 0.85em;"></p>
+            <p id="triageEnergyText" style="margin-top: 10px; color: var(--warning); font-size: 0.85em; text-align:center;"></p>
         </div>
         <button class="btn-primary" style="width: 100%; font-size: 1.1em;" onclick="App.startExecution()">▶️ Iniciar Ahora</button>
     </div>
 
     <!-- VISTA 3: EJECUCIÓN -->
     <div id="view-execution" class="card hidden">
-        <h2 id="execProcessName" style="margin-bottom: 15px;">Proceso</h2>
-        
-        <div class="time-tracker">
-            <div class="time-col"><span>Inicio</span><span id="tt-start">--:--</span></div>
-            <div class="time-col"><span>Est. Original</span><span id="tt-original">--:--</span></div>
-            <div class="time-col"><span>Proyección</span><span id="tt-projected" style="color: var(--warning);">--:--</span></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size:0.85em;">
+            <span id="execProcessName" style="color:var(--text-muted);">Proceso</span>
+            <span id="execProgressCount">Paso 1/X</span>
         </div>
+        <h3 id="execTaskTitle" style="font-size: 1.4em; color: #fff; margin-bottom: 5px;">Tarea</h3>
+        <div id="execTaskReq" class="req-badge hidden"></div>
 
-        <h3 id="execTaskTitle" style="font-size: 1.4em; color: #fff;">Tarea</h3>
         <div class="timer-display" id="execTimer">00:00</div>
         
         <div class="progress-container">
             <div id="execProgressBar" class="progress-bar"></div>
         </div>
+        
+        <!-- Nota Persistente de la vez anterior -->
+        <div id="execPersistentNote" class="persistent-note hidden"></div>
 
         <div id="jevChoiceBox" class="jev-box hidden">
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap; margin-top: 10px;">
@@ -128,7 +153,8 @@
         </div>
 
         <div id="jevScoreBox" class="jev-box hidden">
-            <input type="text" id="taskNoteInput" placeholder="Añadir nota o reflexión rápida... (Opcional)" style="margin-bottom: 12px;">
+            <label style="font-size:0.85em; display:block; text-align:left; margin-bottom:4px;">Nota / Enlace (Quedará guardado para la próxima):</label>
+            <input type="text" id="taskNoteInput" placeholder="Ej: Revisar el filtro primero..." style="margin-bottom: 12px;">
             <div class="flex-row" style="justify-content: center; margin-bottom: 12px;">
                 <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(1)">1</button>
                 <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(2)">2</button>
@@ -136,7 +162,7 @@
                 <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(4)">4</button>
                 <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(5)">5</button>
             </div>
-            <button class="btn-outline" style="font-size: 0.8em;" onclick="App.Jev.recordScore(0)">⏭️ Omitir Calificación</button>
+            <button class="btn-outline" style="font-size: 0.8em;" onclick="App.Jev.recordScore(0)">⏭️ Solo Guardar y Seguir</button>
         </div>
     </div>
 
@@ -150,7 +176,6 @@
             <p style="margin-bottom: 10px; font-weight: bold; color: var(--success);">🎯 Siguiente paso recomendado:</p>
             <button id="btnNextProcess" class="btn-success" style="width: 100%;"></button>
         </div>
-
         <button class="btn-primary" style="width: 100%; margin-top: 15px;" onclick="App.closeSummary()">💾 Guardar y Volver al Inicio</button>
     </div>
 
@@ -158,11 +183,15 @@
     <div id="view-editor" class="card hidden">
         <h2>Editor de Proceso</h2>
         <input type="text" id="editProcName" placeholder="Nombre de la Rutina">
-        <select id="editProcLang" style="margin-top: 10px;">
-            <option value="es-US">Voz: Español (Latino)</option>
-            <option value="en-US">Voz: English (US)</option>
-            <option value="fr-FR">Voz: Français</option>
-        </select>
+        
+        <div class="flex-row" style="margin-top:10px;">
+            <input type="text" id="editProcCat" placeholder="Categoría (Ej: Casa, Trabajo)">
+            <select id="editProcLang">
+                <option value="es-US">Voz: Español</option>
+                <option value="en-US">Voz: Inglés</option>
+                <option value="fr-FR">Voz: Francés</option>
+            </select>
+        </div>
         
         <label style="display:block; margin-top:10px; font-size: 0.85em; color:var(--text-muted);">Sugerir al terminar (Opcional):</label>
         <select id="editNextProc"></select>
@@ -171,43 +200,113 @@
             <h3>Pasos</h3>
             <div class="flex-col" style="background: var(--bg-card); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
                 <input type="text" id="newTaskName" placeholder="Descripción de la tarea">
+                <input type="text" id="newTaskReq" placeholder="Requerimientos (Ej: Escoba, Link del doc) - Opcional">
                 <div class="flex-row">
                     <input type="number" id="newTaskTime" placeholder="Min" style="width: 80px;">
                     <label style="font-size: 0.9em; display:flex; align-items:center;"><input type="checkbox" id="newTaskEssential" checked> Esencial</label>
                 </div>
-                <button class="btn-primary" id="btnAddTask" onclick="App.CRUD.addTask()">+ Añadir Paso</button>
+                <button class="btn-primary" id="btnAddTask" onclick="App.CRUD.addTask()">+ Añadir / Actualizar Paso</button>
             </div>
-            <div id="editTaskList"></div>
+            <div id="editTaskList" class="flex-col" style="gap:6px;"></div>
         </div>
 
         <div class="flex-row" style="justify-content: space-between;">
-            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar</button>
+            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar Todo</button>
             <button class="btn-outline" onclick="App.navTo('view-menu')">❌ Cancelar</button>
         </div>
     </div>
 
     <!-- VISTA 5: MENSAJES -->
     <div id="view-messages" class="card hidden">
-        <h2>Frases de Voz</h2>
-        <p style="margin-bottom: 15px;">Si dejas en blanco los porcentajes, el sistema dirá automáticamente "25%", "50%", etc.</p>
-        <div id="msgFieldsContainer" class="flex-col" style="margin: 15px 0; max-height: 350px; overflow-y: auto;"></div>
-        <button class="btn-success" style="width: 100%;" onclick="App.Messages.save()">💾 Guardar</button>
+        <h2>Frases de Voz por Idioma</h2>
+        <select id="msgLangSelect" onchange="App.Messages.render()" style="margin-bottom:15px;">
+            <option value="es-US">Español</option>
+            <option value="en-US">Inglés</option>
+            <option value="fr-FR">Francés</option>
+        </select>
+        <div id="msgFieldsContainer" class="flex-col" style="margin-bottom: 15px; max-height: 350px; overflow-y: auto;"></div>
+        <button class="btn-success" style="width: 100%;" onclick="App.Messages.save()">💾 Guardar Frases</button>
     </div>
 
     <!-- VISTA 6: ESTADÍSTICAS -->
     <div id="view-stats" class="card hidden">
         <h2>Rendimiento</h2>
-        <div id="streakBadge" class="badge-streak hidden">🔥 Racha: 0 días</div>
+        <div id="streakBadge" class="req-badge hidden" style="color:var(--warning); border-color:var(--warning); text-align:center; display:block; width:fit-content; margin:0 auto 15px auto;">🔥 Racha: 0 días</div>
+        
+        <div class="top-stats">
+            <div><strong id="tsTotalExec">0</strong><br><span style="color:var(--text-muted);">Ejecuciones</span></div>
+            <div><strong id="tsTopProc">-</strong><br><span style="color:var(--text-muted);">Más Usado</span></div>
+        </div>
+
         <select id="statProcessSelect" onchange="App.Stats.renderChart()"></select>
         <canvas id="perfChart" width="400" height="250"></canvas>
         <div id="statsList" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
     </div>
+
+    <!-- VISTA 7: GESTIÓN DE DATOS -->
+    <div id="view-data" class="card hidden">
+        <h2>Copia de Seguridad</h2>
+        <p style="font-size:0.9em; color:var(--text-muted); margin-bottom:15px; text-align:center;">Exporta todos tus procesos, historiales y frases en un solo archivo para no perder nada.</p>
+        
+        <div class="jev-box" style="text-align:center;">
+            <h3 style="font-size:1.1em;">Exportar (Descargar)</h3>
+            <button class="btn-primary" style="width:100%;" onclick="App.Data.exportAll()">⬇️ Descargar Datos.json</button>
+        </div>
+
+        <div class="jev-box" style="text-align:center; margin-top:20px;">
+            <h3 style="font-size:1.1em;">Importar (Restaurar)</h3>
+            <input type="file" id="importFile" accept=".json" style="margin-bottom:10px;">
+            <button class="btn-warning" style="width:100%;" onclick="App.Data.importAll()">⬆️ Restaurar desde archivo</button>
+        </div>
+        
+        <button class="btn-danger" style="width: 100%; margin-top: 20px;" onclick="App.Data.nuke()">☢️ Borrar Todo (Reset)</button>
+    </div>
+</div>
+
+<!-- Modal Overlay -->
+<div id="customModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 id="modalTitle" style="color:var(--primary); margin-bottom:10px;">Título</h3>
+        <p id="modalBody" style="font-size:0.95em; margin-bottom:20px;"></p>
+        <div class="modal-buttons" id="modalButtons"></div>
+    </div>
 </div>
 
 <script>
+const Utils = {
+    generateId: () => 'id_' + Math.random().toString(36).substr(2, 9),
+    linkify: (text) => {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, url => `<a href="${url}" target="_blank">🔗 Enlace</a>`);
+    }
+};
+
+const UI = {
+    Modal: {
+        _show: (title, body, buttonsHtml) => {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerHTML = body;
+            document.getElementById('modalButtons').innerHTML = buttonsHtml;
+            document.getElementById('customModal').classList.remove('hidden');
+        },
+        close: () => document.getElementById('customModal').classList.add('hidden'),
+        alert: (title, msg) => UI.Modal._show(title, msg, `<button class="btn-primary" onclick="UI.Modal.close()">OK</button>`),
+        confirm: (title, msg, onConfirm) => {
+            window._tempConfirm = () => { UI.Modal.close(); onConfirm(); };
+            UI.Modal._show(title, msg, `<button class="btn-outline" onclick="UI.Modal.close()">Cancelar</button><button class="btn-success" onclick="window._tempConfirm()">Confirmar</button>`);
+        }
+    }
+};
+
 const App = {
-    State: { procesos: {}, mensajes: {}, historial: [], audioActive: true, activeProcId: null, energyLevel: 'high', remainingTasks: [], currentTask: null, executionLog: [], timerInterval: null, chartInstance: null, startTimeGlobal: null, totalEstimatedMsGlobal: 0 },
-    Draft: { id: null, nombre: '', lang: 'es-US', siguienteProcId: '', tareas: [], editIndex: -1 },
+    State: { procesos: {}, mensajes: {}, historial: [], audioActive: true, activeProcId: null, energyLevel: 'high', remainingTasks: [], currentTaskIndexOriginal: 0, currentTask: null, executionLog: [], timerInterval: null, chartInstance: null },
+    Draft: { id: null, nombre: '', categoria: '', lang: 'es-US', siguienteProcId: '', tareas: [], editIndex: -1 },
+    
+    DefaultMsgs: {
+        'es-US': { INICIO:['Iniciando'], PCT_25:['25 por ciento'], PCT_50:['50 por ciento'], PCT_75:['75 por ciento'], OVERTIME:['Tiempo excedido'], FINALIZADO:['Proceso completado'] },
+        'en-US': { INICIO:['Starting'], PCT_25:['25 percent'], PCT_50:['Halfway'], PCT_75:['75 percent'], OVERTIME:['Time is up'], FINALIZADO:['Process complete'] },
+        'fr-FR': { INICIO:['Commencer'], PCT_25:['25 pour cent'], PCT_50:['Moitié'], PCT_75:['75 pour cent'], OVERTIME:['Temps écoulé'], FINALIZADO:['Terminé'] }
+    },
 
     init: function() {
         this.loadStorage();
@@ -224,7 +323,8 @@ const App = {
         const activeBtn = document.getElementById(`nav-${viewId.split('-')[1]}`);
         if(activeBtn) activeBtn.classList.add('active');
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-        document.getElementById(viewId).classList.remove('hidden');
+        const target = document.getElementById(viewId);
+        if(target) target.classList.remove('hidden');
         
         if(viewId === 'view-menu') this.renderMenu();
         if(viewId === 'view-messages') this.Messages.render();
@@ -233,52 +333,67 @@ const App = {
 
     toggleAudio: function() { this.State.audioActive = !this.State.audioActive; document.getElementById('btnAudioToggle').innerText = this.State.audioActive ? '🔊' : '🔇'; },
 
-    speak: function(text, defaultText = '') {
+    getMsg: function(lang, key) {
+        if(!this.State.mensajes[lang]) this.State.mensajes[lang] = JSON.parse(JSON.stringify(this.DefaultMsgs[lang]));
+        const arr = this.State.mensajes[lang][key];
+        return (arr && arr.length > 0) ? arr[Math.floor(Math.random() * arr.length)] : this.DefaultMsgs[lang][key][0];
+    },
+
+    speak: function(lang, key) {
         if (!this.State.audioActive || !window.speechSynthesis) return;
         window.speechSynthesis.cancel();
-        const finalTxt = text || defaultText;
-        if(!finalTxt) return;
-        const msg = new SpeechSynthesisUtterance(finalTxt);
-        const proc = this.State.procesos[this.State.activeProcId];
-        msg.lang = (proc && proc.lang) ? proc.lang : 'es-US';
+        const msg = new SpeechSynthesisUtterance(this.getMsg(lang, key));
+        msg.lang = lang || 'es-US';
         window.speechSynthesis.speak(msg);
     },
 
-    getMsg: function(key) {
-        const arr = this.State.mensajes[key] || [];
-        return arr[Math.floor(Math.random() * arr.length)] || '';
+    speakDirect: function(text, lang) {
+        if (!this.State.audioActive || !window.speechSynthesis || !text) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = lang || 'es-US';
+        window.speechSynthesis.speak(msg);
     },
 
-    formatTimeAMPM: function(date) { return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); },
     loadStorage: function() {
-        this.State.procesos = JSON.parse(localStorage.getItem('jev_procs_v4')) || {};
-        this.State.mensajes = JSON.parse(localStorage.getItem('jev_msgs_v4')) || { PCT_25:[], PCT_50:[], PCT_75:[], OVERTIME:[], FINALIZADO:[] };
-        this.State.historial = JSON.parse(localStorage.getItem('jev_hist_v4')) || [];
+        this.State.procesos = JSON.parse(localStorage.getItem('jev_procs_v5')) || {};
+        this.State.mensajes = JSON.parse(localStorage.getItem('jev_msgs_v5')) || JSON.parse(JSON.stringify(this.DefaultMsgs));
+        this.State.historial = JSON.parse(localStorage.getItem('jev_hist_v5')) || [];
     },
     saveAll: function() {
-        localStorage.setItem('jev_procs_v4', JSON.stringify(this.State.procesos));
-        localStorage.setItem('jev_msgs_v4', JSON.stringify(this.State.mensajes));
-        localStorage.setItem('jev_hist_v4', JSON.stringify(this.State.historial));
+        localStorage.setItem('jev_procs_v5', JSON.stringify(this.State.procesos));
+        localStorage.setItem('jev_msgs_v5', JSON.stringify(this.State.mensajes));
+        localStorage.setItem('jev_hist_v5', JSON.stringify(this.State.historial));
     },
 
     renderMenu: function() {
         const list = document.getElementById('processList');
         list.innerHTML = '';
-        Object.values(this.State.procesos).forEach(proc => {
-            const time = proc.tareas.reduce((a, t) => a + (Number(t.tiempoMin) || 0), 0);
-            list.innerHTML += `
-                <div class="process-card">
-                    <div class="process-info">
-                        <strong style="font-size:1.1em; display:block;">${proc.nombre}</strong>
-                        <span style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos | ~${time}m</span>
-                    </div>
-                    <div class="process-actions">
-                        <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
-                        <button class="btn-outline btn-icon" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
-                        <button class="btn-outline btn-icon" onclick="App.CRUD.deleteProcess('${proc.id}')">🗑️</button>
-                    </div>
-                </div>`;
+        const grouped = {};
+        Object.values(this.State.procesos).forEach(p => {
+            const cat = p.categoria ? p.categoria.trim().toUpperCase() : 'GENERAL';
+            if(!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(p);
         });
+
+        for (const [cat, procs] of Object.entries(grouped)) {
+            list.innerHTML += `<div class="cat-title">📁 ${cat}</div>`;
+            procs.forEach(proc => {
+                const time = proc.tareas.reduce((a, t) => a + (Number(t.tiempoMin) || 0), 0);
+                list.innerHTML += `
+                    <div class="process-card">
+                        <div style="flex:1;">
+                            <strong style="font-size:1.1em; display:block;">${proc.nombre}</strong>
+                            <span style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos \vert{} ~${time}m</span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
+                            <button class="btn-outline btn-icon" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
+                        </div>
+                    </div>`;
+            });
+        }
+        if(Object.keys(grouped).length === 0) list.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay procesos. Crea uno o importa con IA.</p>';
     },
 
     setupTriage: function(procId) {
@@ -290,24 +405,22 @@ const App = {
 
     setEnergyLevel: function(level) {
         this.State.energyLevel = level;
-        document.getElementById('triageEnergyText').innerText = level === 'high' ? "Modo Completo: Todas las tareas." : "Modo Emergencia: Solo esenciales.";
+        document.getElementById('triageEnergyText').innerText = level === 'high' ? "Ejecutarás todas las tareas." : "Modo supervivencia: Solo tareas esenciales.";
     },
 
     startExecution: function() {
         const proc = this.State.procesos[this.State.activeProcId];
-        this.State.remainingTasks = proc.tareas.filter(t => this.State.energyLevel === 'high' || t.esencial).map(t => ({ ...t }));
-        if(this.State.remainingTasks.length === 0) return alert("No hay tareas.");
+        this.State.remainingTasks = proc.tareas
+            .map((t, index) => ({ ...t, _originalIndex: index }))
+            .filter(t => this.State.energyLevel === 'high' || t.esencial);
+            
+        if(this.State.remainingTasks.length === 0) return UI.Modal.alert("Aviso", "No hay tareas para este nivel de energía.");
 
         this.State.executionLog = [];
-        this.State.totalEstimatedMsGlobal = this.State.remainingTasks.reduce((a, t) => a + t.tiempoMin, 0) * 60000;
-        this.State.startTimeGlobal = new Date();
-        
         document.getElementById('execProcessName').innerText = proc.nombre;
-        document.getElementById('tt-start').innerText = this.formatTimeAMPM(this.State.startTimeGlobal);
-        document.getElementById('tt-original').innerText = this.formatTimeAMPM(new Date(this.State.startTimeGlobal.getTime() + this.State.totalEstimatedMsGlobal));
-
+        
         this.navTo('view-execution');
-        this.speak(this.getMsg('INICIO'), 'Iniciando');
+        this.speak(proc.lang, 'INICIO');
         this.nextTask();
         if (this.State.timerInterval) clearInterval(this.State.timerInterval);
         this.State.timerInterval = setInterval(() => this.updateTimerUI(), 1000);
@@ -323,8 +436,20 @@ const App = {
 
         const taskData = this.State.remainingTasks.shift();
         this.State.currentTask = { ...taskData, totalMs: taskData.tiempoMin * 60000, startMs: Date.now(), warnFlags: { 25: false, 50: false, 75: false, 100: false } };
+        
+        const proc = this.State.procesos[this.State.activeProcId];
+        document.getElementById('execProgressCount').innerText = `Faltan: ${this.State.remainingTasks.length}`;
         document.getElementById('execTaskTitle').innerText = this.State.currentTask.nombre;
-        this.speak(this.State.currentTask.nombre);
+        
+        const reqEl = document.getElementById('execTaskReq');
+        if(taskData.requerimientos) { reqEl.innerText = "🛠️ " + taskData.requerimientos; reqEl.classList.remove('hidden'); } 
+        else { reqEl.classList.add('hidden'); }
+
+        const noteEl = document.getElementById('execPersistentNote');
+        if(taskData.ultimaNota) { noteEl.innerHTML = "📝 <strong>Nota anterior:</strong> " + Utils.linkify(taskData.ultimaNota); noteEl.classList.remove('hidden'); }
+        else { noteEl.classList.add('hidden'); }
+
+        this.speakDirect(this.State.currentTask.nombre, proc.lang);
     },
 
     updateTimerUI: function() {
@@ -332,9 +457,7 @@ const App = {
         const now = Date.now();
         const elapsed = now - this.State.currentTask.startMs;
         const pct = (elapsed / this.State.currentTask.totalMs) * 100;
-
-        const remMs = Math.max(0, this.State.currentTask.totalMs - elapsed) + this.State.remainingTasks.reduce((a, t) => a + (t.tiempoMin * 60000), 0);
-        document.getElementById('tt-projected').innerText = this.formatTimeAMPM(new Date(now + remMs));
+        const procLang = this.State.procesos[this.State.activeProcId].lang;
 
         const sec = Math.floor(elapsed / 1000);
         document.getElementById('execTimer').innerText = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
@@ -342,20 +465,20 @@ const App = {
         const bar = document.getElementById('execProgressBar');
         bar.style.width = `${Math.min(pct, 100)}%`;
 
-        const checkWarn = (pt, key, def) => {
+        const checkWarn = (pt, key) => {
             if (pct >= pt && pct < (pt+25) && !this.State.currentTask.warnFlags[pt]) {
                 this.State.currentTask.warnFlags[pt] = true;
-                this.speak(this.getMsg(key), def);
+                this.speak(procLang, key);
             }
         };
-        checkWarn(25, 'PCT_25', '25 por ciento'); checkWarn(50, 'PCT_50', '50 por ciento'); checkWarn(75, 'PCT_75', '75 por ciento');
+        checkWarn(25, 'PCT_25'); checkWarn(50, 'PCT_50'); checkWarn(75, 'PCT_75');
 
         if (pct >= 100) {
             bar.classList.add('overtime');
             if (!this.State.currentTask.warnFlags[100]) {
                 this.State.currentTask.warnFlags[100] = true;
                 if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                this.speak(this.getMsg('OVERTIME'), 'Tiempo superado');
+                this.speak(procLang, 'OVERTIME');
                 document.getElementById('jevChoiceBox').classList.remove('hidden');
             }
         } else { bar.classList.remove('overtime'); }
@@ -374,14 +497,24 @@ const App = {
         choiceCompleteNow: function() { App.showScorePrimitive(); },
         recordScore: function(score) {
             const nota = document.getElementById('taskNoteInput').value.trim();
-            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: false, score: score, nota: nota });
+            const realMs = Date.now() - App.State.currentTask.startMs;
+            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: realMs, omitido: false, score: score, nota: nota });
+            
+            if(nota) {
+                const proc = App.State.procesos[App.State.activeProcId];
+                if(proc && proc.tareas[App.State.currentTask._originalIndex]) {
+                    proc.tareas[App.State.currentTask._originalIndex].ultimaNota = nota;
+                    App.saveAll();
+                }
+            }
             App.nextTask();
         }
     },
 
     showSummaryBars: function() {
         clearInterval(this.State.timerInterval);
-        this.speak(this.getMsg('FINALIZADO'), 'Proceso completado');
+        const proc = this.State.procesos[this.State.activeProcId];
+        this.speak(proc.lang, 'FINALIZADO');
         
         let totalRealMs = 0, totalEstMs = 0;
         const cont = document.getElementById('summaryBarsContainer');
@@ -390,21 +523,20 @@ const App = {
         this.State.executionLog.forEach(log => {
             totalRealMs += log.realMs; totalEstMs += log.estMs;
             const pct = Math.min((log.realMs / log.estMs) * 100, 100);
-            const notaHtml = log.nota ? `<div style="font-size:0.8em; color:var(--primary); margin-top:2px;">📝 ${log.nota}</div>` : '';
+            const notaHtml = log.nota ? `<div style="font-size:0.8em; color:var(--primary); margin-top:2px;">📝 ${Utils.linkify(log.nota)}</div>` : '';
             cont.innerHTML += `
                 <div style="margin-bottom: 10px;">
                     <div style="display:flex; justify-content:space-between; font-size:0.85em;">
                         <span>${log.omitido ? '⏭️ ' : ''}${log.nombre}</span>
                         <span>${(log.realMs/60000).toFixed(1)}m / ${(log.estMs/60000).toFixed(1)}m</span>
                     </div>
-                    <div class="summary-bar-bg"><div class="summary-bar-fill ${log.realMs>log.estMs ? 'over' : ''}" style="width: ${pct}%;"></div></div>
+                    <div style="width:100%; height:8px; background:#0f172a; border-radius:4px; overflow:hidden;"><div style="height:100%; width:${pct}\%; background:${log.realMs>log.estMs?'var(--danger)':'var(--success)'};"></div></div>
                     ${notaHtml}
                 </div>`;
         });
 
-        document.getElementById('summaryTotalTime').innerText = `Total: ${(totalRealMs/60000).toFixed(1)}m Real vs ${(totalEstMs/60000).toFixed(1)}m Estimado`;
+        document.getElementById('summaryTotalTime').innerText = `Total: ${(totalRealMs/60000).toFixed(1)}m Real vs${(totalEstMs/60000).toFixed(1)}m Estimado`;
         
-        const proc = this.State.procesos[this.State.activeProcId];
         const nextBox = document.getElementById('nextProcessSuggestion');
         if (proc.siguienteProcId && this.State.procesos[proc.siguienteProcId]) {
             const nextP = this.State.procesos[proc.siguienteProcId];
@@ -418,16 +550,17 @@ const App = {
 
     closeSummary: function(skipNav = false) {
         const proc = this.State.procesos[this.State.activeProcId];
-        this.State.historial.push({ id: Date.now().toString(), procId: proc.id, fecha: new Date().toISOString(), log: [...this.State.executionLog] });
+        this.State.historial.push({ id: Utils.generateId(), procId: proc.id, fecha: new Date().toISOString(), log: [...this.State.executionLog] });
         this.saveAll();
-        if(!skipNav) { history.pushState({view: 'view-menu'}, ''); this._renderView('view-menu'); }
+        if(!skipNav) { this.navTo('view-menu'); }
     },
 
     CRUD: {
         openEditor: function(id = null) {
-            App.Draft = id && App.State.procesos[id] ? JSON.parse(JSON.stringify(App.State.procesos[id])) : { id: 'proc_' + Date.now(), nombre: '', lang: 'es-US', siguienteProcId: '', tareas: [] };
+            App.Draft = id && App.State.procesos[id] ? JSON.parse(JSON.stringify(App.State.procesos[id])) : { id: Utils.generateId(), nombre: '', categoria: '', lang: 'es-US', siguienteProcId: '', tareas: [] };
             App.Draft.editIndex = -1;
             document.getElementById('editProcName').value = App.Draft.nombre;
+            document.getElementById('editProcCat').value = App.Draft.categoria || '';
             document.getElementById('editProcLang').value = App.Draft.lang || 'es-US';
             
             const selNext = document.getElementById('editNextProc');
@@ -436,32 +569,53 @@ const App = {
 
             this.clearInputs(); this.renderLists(); App.navTo('view-editor');
         },
-        importAI: function() {
-            const data = prompt("Pega aquí el código JSON generado por la IA:");
-            if(!data) return;
-            try {
-                const proc = JSON.parse(data);
-                if(!proc.id || !proc.tareas) throw new Error("Inválido");
-                App.State.procesos[proc.id] = proc;
-                App.saveAll(); App.renderMenu(); alert("¡Proceso importado!");
-            } catch(e) { alert("Error: Verifica que el formato JSON sea exacto."); }
+        clearInputs: function() { 
+            document.getElementById('newTaskName').value = ''; 
+            document.getElementById('newTaskTime').value = ''; 
+            document.getElementById('newTaskReq').value = ''; 
+            document.getElementById('btnAddTask').innerText = "+ Añadir Paso"; 
+            App.Draft.editIndex = -1; 
         },
-        clearInputs: function() { document.getElementById('newTaskName').value = ''; document.getElementById('newTaskTime').value = ''; document.getElementById('btnAddTask').innerText = "+ Añadir Paso"; App.Draft.editIndex = -1; },
         addTask: function() {
-            const n = document.getElementById('newTaskName').value.trim(); const t = parseInt(document.getElementById('newTaskTime').value);
-            if (!n || !t) return;
-            const tk = { nombre: n, tiempoMin: t, esencial: document.getElementById('newTaskEssential').checked };
-            App.Draft.editIndex > -1 ? App.Draft.tareas[App.Draft.editIndex] = tk : App.Draft.tareas.push(tk);
+            const n = document.getElementById('newTaskName').value.trim(); 
+            const req = document.getElementById('newTaskReq').value.trim(); 
+            const t = parseInt(document.getElementById('newTaskTime').value);
+            if (!n || !t) return UI.Modal.alert("Error", "Nombre y minutos son obligatorios.");
+            const tk = { nombre: n, tiempoMin: t, esencial: document.getElementById('newTaskEssential').checked, requerimientos: req };
+            App.Draft.editIndex > -1 ? App.Draft.tareas[App.Draft.editIndex] = { ...App.Draft.tareas[App.Draft.editIndex], ...tk } : App.Draft.tareas.push(tk);
             this.clearInputs(); this.renderLists();
         },
-        loadTaskToEdit: function(i) { const t = App.Draft.tareas[i]; document.getElementById('newTaskName').value = t.nombre; document.getElementById('newTaskTime').value = t.tiempoMin; document.getElementById('newTaskEssential').checked = t.esencial; document.getElementById('btnAddTask').innerText = "💾 Actualizar"; App.Draft.editIndex = i; },
+        loadTaskToEdit: function(i) { 
+            const t = App.Draft.tareas[i]; 
+            document.getElementById('newTaskName').value = t.nombre; 
+            document.getElementById('newTaskTime').value = t.tiempoMin; 
+            document.getElementById('newTaskReq').value = t.requerimientos || ''; 
+            document.getElementById('newTaskEssential').checked = t.esencial; 
+            document.getElementById('btnAddTask').innerText = "💾 Actualizar Paso"; 
+            App.Draft.editIndex = i; 
+        },
         deleteTask: function(i) { App.Draft.tareas.splice(i, 1); this.clearInputs(); this.renderLists(); },
-        deleteProcess: function(id) { if(confirm("¿Borrar proceso?")) { delete App.State.procesos[id]; App.saveAll(); App.renderMenu(); } },
+        moveTask: function(i, dir) {
+            if (i + dir < 0 || i + dir >= App.Draft.tareas.length) return;
+            const temp = App.Draft.tareas[i];
+            App.Draft.tareas[i] = App.Draft.tareas[i + dir];
+            App.Draft.tareas[i + dir] = temp;
+            this.renderLists();
+        },
+        deleteProcessPrompt: function(id) {
+            UI.Modal.confirm("Borrar Proceso", "¿Seguro que deseas borrar este proceso entero?", () => {
+                delete App.State.procesos[id]; App.saveAll(); App.renderMenu();
+            });
+        },
         renderLists: function() {
             document.getElementById('editTaskList').innerHTML = App.Draft.tareas.map((tk, i) => `
-                <div style="font-size:0.9em; display:flex; justify-content:space-between; margin-bottom:6px; background:var(--bg-item); padding:8px; border-radius:6px; border:1px solid var(--border);">
-                    <span>${i+1}. ${tk.nombre} <strong>(${tk.tiempoMin}m)</strong></span>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-item); padding:8px; border-radius:6px; border:1px solid var(--border);">
+                    <div style="flex:1; font-size:0.9em;">
+                        <strong>${i+1}.${tk.nombre} (${tk.tiempoMin}m)</strong><br>${tk.requerimientos ? `<span style="font-size:0.8em; color:var(--warning);">🛠️ ${tk.requerimientos}</span>` : ''}
+                    </div>
                     <div style="display:flex; gap:4px;">
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${i}, -1)">⬆️</button>
+                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${i}, 1)">⬇️</button>
                         <button class="btn-outline btn-icon" style="color:var(--primary);" onclick="App.CRUD.loadTaskToEdit(${i})">✏️</button>
                         <button class="btn-danger btn-icon" onclick="App.CRUD.deleteTask(${i})">X</button>
                     </div>
@@ -469,35 +623,86 @@ const App = {
         },
         saveProcess: function() {
             App.Draft.nombre = document.getElementById('editProcName').value.trim() || 'Sin Nombre';
+            App.Draft.categoria = document.getElementById('editProcCat').value.trim();
             App.Draft.lang = document.getElementById('editProcLang').value;
             App.Draft.siguienteProcId = document.getElementById('editNextProc').value;
-            if (App.Draft.tareas.length === 0) return alert("Añade al menos 1 paso.");
+            if (App.Draft.tareas.length === 0) return UI.Modal.alert("Error", "Añade al menos 1 paso.");
             App.State.procesos[App.Draft.id] = App.Draft; App.saveAll(); App.navTo('view-menu');
+        }
+    },
+
+    AI: {
+        generatePrompt: function() {
+            const topic = document.getElementById('aiTopic').value.trim() || 'Cualquier tarea';
+            const detail = document.getElementById('aiDetail').value;
+            const promptText = `Actúa como experto en productividad. Crea un proceso sobre: ${topic}.
+Reglas:
+1. Las tareas deben ser ${detail}.
+2. Dificultad progresiva.
+3. Devuelve ÚNICAMENTE un JSON válido (sin markdown \`\`\`), con esta estructura:
+{
+  "id": "proc_${Date.now()}",
+  "nombre": "Nombre del Proceso",
+  "categoria": "General",
+  "lang": "es-US",
+  "tareas": [
+    { "nombre": "Paso 1", "requerimientos": "Opcional, herramientas", "tiempoMin": 2, "esencial": true }
+  ]
+}`;
+            navigator.clipboard.writeText(promptText).then(() => {
+                UI.Modal.alert("¡Prompt Copiado!", "Ve a ChatGPT/Claude, pégalo y luego trae la respuesta aquí.");
+            });
+        },
+        importProcess: function() {
+            try {
+                let data = document.getElementById('aiInputCode').value.trim();
+                // Limpiar posibles bloques markdown si la IA los puso por error
+                if(data.startsWith('```json')) data = data.replace(/```json/g, '').replace(/```/g, '');
+                
+                const proc = JSON.parse(data);
+                if(!proc.id || !proc.tareas) throw new Error("Faltan datos clave");
+                
+                // Asegurar ID único
+                if(App.State.procesos[proc.id]) proc.id = proc.id + "_" + Utils.generateId();
+                
+                App.State.procesos[proc.id] = proc;
+                App.saveAll(); 
+                document.getElementById('aiInputCode').value = '';
+                UI.Modal.alert("Éxito", "Proceso importado correctamente.");
+                App.navTo('view-menu');
+            } catch(e) { 
+                UI.Modal.alert("Error de Formato", "El texto no es un JSON válido o la estructura es incorrecta.");
+            }
         }
     },
 
     Messages: {
         render: function() {
+            const lang = document.getElementById('msgLangSelect').value;
+            if(!App.State.mensajes[lang]) App.State.mensajes[lang] = JSON.parse(JSON.stringify(App.DefaultMsgs[lang]));
             const cont = document.getElementById('msgFieldsContainer'); cont.innerHTML = '';
-            ['PCT_25', 'PCT_50', 'PCT_75', 'OVERTIME', 'FINALIZADO'].forEach(k => {
-                const arr = App.State.mensajes[k] || [];
-                cont.innerHTML += `<div style="margin-bottom:10px;"><label style="font-weight:bold; font-size:0.85em; color:var(--primary);">${k}</label><textarea id="msg_${k}" rows="2">${arr.join('\n')}</textarea></div>`;
+            ['INICIO', 'PCT_25', 'PCT_50', 'PCT_75', 'OVERTIME', 'FINALIZADO'].forEach(k => {
+                const arr = App.State.mensajes[lang][k] || [];
+                cont.innerHTML += `<div style="margin-bottom:10px;"><label style="font-weight:bold; font-size:0.85em; color:var(--primary);">${k}</label><textarea id="msg_${lang}_${k}" rows="2">${arr.join('\n')}</textarea></div>`;
             });
         },
         save: function() {
-            ['PCT_25', 'PCT_50', 'PCT_75', 'OVERTIME', 'FINALIZADO'].forEach(k => {
-                App.State.mensajes[k] = document.getElementById(`msg_${k}`).value.split('\n').map(s => s.trim()).filter(Boolean);
+            const lang = document.getElementById('msgLangSelect').value;
+            ['INICIO', 'PCT_25', 'PCT_50', 'PCT_75', 'OVERTIME', 'FINALIZADO'].forEach(k => {
+                App.State.mensajes[lang][k] = document.getElementById(`msg_${lang}_${k}`).value.split('\n').map(s => s.trim()).filter(Boolean);
             });
-            App.saveAll(); alert("Frases actualizadas.");
+            App.saveAll(); 
+            UI.Modal.alert("Guardado", `Frases actualizadas para ${lang}`);
         }
     },
 
     Stats: {
         show: function() {
             const sel = document.getElementById('statProcessSelect');
-            sel.innerHTML = Object.values(App.State.procesos).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            sel.innerHTML = '<option value="ALL">📈 Todos los procesos</option>' + Object.values(App.State.procesos).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
             this.calcStreak();
-            if(sel.options.length > 0) this.renderChart();
+            this.updateTopStats();
+            this.renderChart();
         },
         calcStreak: function() {
             const dates = [...new Set(App.State.historial.map(h => new Date(h.fecha).toDateString()))].map(d => new Date(d)).sort((a,b)=>b-a);
@@ -512,14 +717,22 @@ const App = {
             b.innerText = `🔥 Racha de uso: ${streak} días`;
             b.classList.remove('hidden');
         },
+        updateTopStats: function() {
+            document.getElementById('tsTotalExec').innerText = App.State.historial.length;
+            if(App.State.historial.length === 0) return;
+            const counts = {}; let maxId = null; let maxV = 0;
+            App.State.historial.forEach(h => { counts[h.procId] = (counts[h.procId]||0)+1; if(counts[h.procId]>maxV){ maxV=counts[h.procId]; maxId=h.procId; }});
+            document.getElementById('tsTopProc').innerText = (App.State.procesos[maxId] ? App.State.procesos[maxId].nombre : 'Borrados') + ` (${maxV})`;
+        },
         deleteRecord: function(id) {
-            if(!confirm("¿Borrar este registro?")) return;
-            App.State.historial = App.State.historial.filter(h => h.id !== id);
-            App.saveAll(); App.Stats.renderChart(); App.Stats.calcStreak();
+            UI.Modal.confirm("Borrar Registro", "¿Eliminar este historial específico?", () => {
+                App.State.historial = App.State.historial.filter(h => h.id !== id);
+                App.saveAll(); App.Stats.show();
+            });
         },
         renderChart: function() {
             const procId = document.getElementById('statProcessSelect').value;
-            const histData = App.State.historial.filter(h => h.procId === procId);
+            const histData = procId === 'ALL' ? App.State.historial : App.State.historial.filter(h => h.procId === procId);
             const list = document.getElementById('statsList');
             if (histData.length === 0) { list.innerHTML = '<p style="text-align:center;">No hay datos.</p>'; if(App.State.chartInstance) App.State.chartInstance.destroy(); return; }
 
@@ -532,22 +745,71 @@ const App = {
                 totalHistRealMs += tr;
                 dataReal.push((tr / 60000).toFixed(1)); dataEst.push((te / 60000).toFixed(1));
                 
-                const notesHtml = run.log.filter(l=>l.nota).map(l=> `<div style="font-size:0.8em; color:var(--text-muted); margin-left:10px;">- ${l.nombre}: ${l.nota}</div>`).join('');
+                const pName = App.State.procesos[run.procId] ? App.State.procesos[run.procId].nombre : 'Desconocido';
+                const notesHtml = run.log.filter(l=>l.nota).map(l=> `<div style="font-size:0.8em; color:var(--text-muted); margin-left:10px;">- ${l.nombre}: ${Utils.linkify(l.nota)}</div>`).join('');
                 list.innerHTML = `<div style="border-bottom:1px solid var(--border); padding:8px 0; font-size:0.85em;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span><strong>${new Date(run.fecha).toLocaleDateString()}</strong>: Real ${dataReal[dataReal.length-1]}m / Teórico ${dataEst[dataEst.length-1]}m</span>
+                    <div style="display:flex; justify-content:space-between; color:var(--primary);">
+                        <strong>${pName}</strong>
+                        <span>${new Date(run.fecha).toLocaleDateString()}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                        <span>Real ${dataReal[dataReal.length-1]}m / Teórico ${dataEst[dataEst.length-1]}m</span>
                         <button class="btn-outline btn-icon" style="padding:2px 6px;" onclick="App.Stats.deleteRecord('${run.id}')">🗑️</button>
                     </div>
                     ${notesHtml}
                 </div>` + list.innerHTML;
             });
 
-            const avg = (totalHistRealMs / histData.length / 60000).toFixed(1);
-            list.innerHTML = `<div style="background:var(--bg-item); padding:10px; border-radius:8px; margin-bottom:10px; color:var(--primary); font-weight:bold;">Promedio Histórico Real: ${avg} min</div>` + list.innerHTML;
-
             const ctx = document.getElementById('perfChart').getContext('2d');
             if(App.State.chartInstance) App.State.chartInstance.destroy();
             App.State.chartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [ { label: 'T. Real', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 }, { label: 'T. Estimado', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 } ]}, options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } } });
+        }
+    },
+
+    Data: {
+        exportAll: function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(App.State));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "jev_matrix_backup.json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        },
+        importAll: function() {
+            const file = document.getElementById('importFile').files[0];
+            if (!file) return UI.Modal.alert("Error", "Selecciona un archivo JSON primero.");
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if(!imported.procesos || !imported.historial) throw new Error("Formato inválido");
+                    
+                    // Fusionar datos para no borrar lo que ya está en local si se desea, o sobreescribir. Optamos por sobreescribir/fusionar inteligentemente:
+                    App.State.procesos = { ...App.State.procesos, ...imported.procesos };
+                    App.State.mensajes = imported.mensajes || App.State.mensajes;
+                    
+                    // Evitar duplicados en historial por ID
+                    const histMap = new Map(App.State.historial.map(h => [h.id, h]));
+                    imported.historial.forEach(h => histMap.set(h.id, h));
+                    App.State.historial = Array.from(histMap.values());
+                    
+                    App.saveAll();
+                    UI.Modal.alert("Restauración Exitosa", "Se han cargado todos los datos.");
+                    App.navTo('view-menu');
+                } catch(err) {
+                    UI.Modal.alert("Error", "El archivo no es compatible o está corrupto.");
+                }
+            };
+            reader.readAsText(file);
+        },
+        nuke: function() {
+            UI.Modal.confirm("⚠️ PELIGRO", "Esto borrará TODOS tus procesos e historial. ¿Estás absolutamente seguro?", () => {
+                localStorage.removeItem('jev_procs_v5');
+                localStorage.removeItem('jev_msgs_v5');
+                localStorage.removeItem('jev_hist_v5');
+                location.reload();
+            });
         }
     }
 };
