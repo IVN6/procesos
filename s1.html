@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jev Matrix V5 - Automatización y Flujo</title>
+    <title>Jev Matrix V6 - Automatización y Flujo</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -48,28 +48,28 @@
         
         .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; }
         
-        /* Modal Custom */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
         .modal-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
         
-        .persistent-note { background: #0f172a; border-left: 3px solid var(--warning); padding: 10px; font-size: 0.9em; margin-bottom: 15px; border-radius: 4px; word-break: break-word;}
+        .persistent-note { background: #0f172a; border-left: 3px solid var(--warning); padding: 8px; font-size: 0.9em; margin-bottom: 8px; border-radius: 4px; word-break: break-word; display: flex; justify-content: space-between; align-items: center;}
         .persistent-note a { color: var(--primary); text-decoration: underline; }
         .req-badge { font-size: 0.8em; background: var(--bg-item); padding: 4px 8px; border-radius: 12px; color: var(--warning); display: inline-block; margin-bottom: 10px; border: 1px solid var(--border);}
         
         canvas { max-width: 100%; background: #0f172a; border-radius: 8px; padding: 10px; margin-top: 15px; }
         .top-stats { display: flex; justify-content: space-around; background: var(--bg-item); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 0.9em; }
+        .eta-banner { background: #0f172a; padding: 8px; text-align: center; border-radius: 8px; font-size: 0.85em; color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <nav class="navbar">
-        <h2 style="margin:0; font-size: 1.1em; color: var(--primary);">⚡ JEV MATRIX V5</h2>
+        <h2 style="margin:0; font-size: 1.1em; color: var(--primary);">⚡ JEV MATRIX V6</h2>
         <div class="nav-links">
             <button class="nav-btn active" id="nav-menu" onclick="App.navTo('view-menu')">🏠 Inicio</button>
             <button class="nav-btn" id="nav-stats" onclick="App.navTo('view-stats')">📊 Stats</button>
-            <button class="nav-btn" id="nav-messages" onclick="App.navTo('view-messages')">💬 Mensajes</button>
+            <button class="nav-btn" id="nav-messages" onclick="App.navTo('view-messages')">💬 Frases</button>
             <button class="nav-btn" id="nav-data" onclick="App.navTo('view-data')">💾 Datos</button>
             <button class="btn-outline btn-icon" onclick="App.toggleAudio()" id="btnAudioToggle">🔊</button>
         </div>
@@ -77,6 +77,15 @@
 
     <!-- VISTA 1: MENÚ -->
     <div id="view-menu" class="card">
+        <div id="activeExecutionBanner" class="jev-box hidden" style="border-color: var(--warning); background: rgba(245, 158, 11, 0.1); text-align:center;">
+            <h3 style="color: var(--warning); margin-bottom: 10px;">⚠️ Proceso en Curso</h3>
+            <p id="activeExecutionName" style="margin-bottom: 15px; font-weight: bold;"></p>
+            <div class="flex-row" style="justify-content: center;">
+                <button class="btn-warning" onclick="App.Execution.resume()">▶️ Reanudar</button>
+                <button class="btn-danger" onclick="App.Execution.cancel()">❌ Cancelar</button>
+            </div>
+        </div>
+
         <h1>Tus Rutinas</h1>
         <div id="processList" class="flex-col"></div>
         <hr style="border-color: var(--border); margin: 20px 0;">
@@ -89,20 +98,32 @@
     <!-- VISTA: GENERADOR IA -->
     <div id="view-ai" class="card hidden">
         <h2>Generador de Prompt IA</h2>
-        <p style="font-size:0.9em; color:var(--text-muted); margin-bottom:15px; text-align:center;">Dile a la IA qué necesitas y te devolverá el código listo para importar.</p>
         <div class="jev-box" style="text-align: left;">
             <label>1. ¿Sobre qué es el proceso?</label>
-            <input type="text" id="aiTopic" placeholder="Ej: Rutina de mañana, Limpiar PC, Estudiar Inglés...">
-            <label style="display:block; margin-top:10px;">2. Nivel de detalle</label>
-            <select id="aiDetail">
-                <option value="pasos simples y directos para principiantes">Básico / Principiante</option>
-                <option value="pasos detallados, técnicos y progresivos">Avanzado / Técnico</option>
-            </select>
+            <input type="text" id="aiTopic" placeholder="Ej: Rutina de mañana, Limpiar PC...">
+            
+            <div class="flex-row" style="margin-top:10px;">
+                <div style="flex:1;">
+                    <label>Nivel de detalle</label>
+                    <select id="aiDetail">
+                        <option value="básico para principiantes">Básico</option>
+                        <option value="técnico y avanzado">Avanzado</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label>Idioma</label>
+                    <select id="aiLang">
+                        <option value="es-US">Español</option>
+                        <option value="en-US">Inglés</option>
+                        <option value="fr-FR">Francés</option>
+                    </select>
+                </div>
+            </div>
             <button class="btn-primary" style="width:100%; margin-top:15px;" onclick="App.AI.generatePrompt()">1️⃣ Generar y Copiar Prompt</button>
         </div>
         
         <div class="jev-box" style="text-align: left; background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.3);">
-            <label>2. Pega aquí el código que te dio la IA:</label>
+            <label>2. Pega aquí el JSON de la IA:</label>
             <textarea id="aiInputCode" rows="4" placeholder='{"id": "proc_1", "nombre": "...", "tareas": [...]}'></textarea>
             <button class="btn-success" style="width:100%; margin-top:10px;" onclick="App.AI.importProcess()">2️⃣ Importar a Matrix</button>
         </div>
@@ -114,18 +135,20 @@
         <div class="jev-box">
             <label style="font-weight: bold; display: block; margin-bottom: 12px;">Nivel de Energía:</label>
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
-                <button class="btn-outline" onclick="App.setEnergyLevel('high')">⚡ Óptimo (Todas)</button>
-                <button class="btn-outline" onclick="App.setEnergyLevel('emergency')">🚨 Bajo (Esenciales)</button>
+                <button class="btn-outline" onclick="App.Execution.setEnergy('high')">⚡ Óptimo (Todas)</button>
+                <button class="btn-outline" onclick="App.Execution.setEnergy('emergency')">🚨 Bajo (Esenciales)</button>
             </div>
             <p id="triageEnergyText" style="margin-top: 10px; color: var(--warning); font-size: 0.85em; text-align:center;"></p>
         </div>
-        <button class="btn-primary" style="width: 100%; font-size: 1.1em;" onclick="App.startExecution()">▶️ Iniciar Ahora</button>
+        <button class="btn-primary" style="width: 100%; font-size: 1.1em;" onclick="App.Execution.start()">▶️ Iniciar Ahora</button>
     </div>
 
     <!-- VISTA 3: EJECUCIÓN -->
     <div id="view-execution" class="card hidden">
+        <div class="eta-banner" id="execEtaBanner">Estimado: -- | Fin aprox: --:--</div>
+        
         <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size:0.85em;">
-            <span id="execProcessName" style="color:var(--text-muted);">Proceso</span>
+            <span id="execProcessName" style="color:var(--primary); font-weight:bold;">Proceso</span>
             <span id="execProgressCount">Paso 1/X</span>
         </div>
         <h3 id="execTaskTitle" style="font-size: 1.4em; color: #fff; margin-bottom: 5px;">Tarea</h3>
@@ -137,32 +160,39 @@
             <div id="execProgressBar" class="progress-bar"></div>
         </div>
         
-        <!-- Nota Persistente de la vez anterior -->
-        <div id="execPersistentNote" class="persistent-note hidden"></div>
+        <!-- Historial de Notas de la Tarea -->
+        <div class="jev-box" style="padding: 10px; margin-top: 5px;">
+            <label style="font-size:0.85em; display:block; margin-bottom:8px; color:var(--text-muted);">📝 Notas de esta tarea:</label>
+            <div id="execNotesList"></div>
+            <div class="flex-row" style="margin-top: 10px;">
+                <input type="text" id="inlineNoteInput" placeholder="Añadir comentario...">
+                <button class="btn-outline" onclick="App.Execution.Notes.addInline()">Añadir</button>
+            </div>
+        </div>
 
         <div id="jevChoiceBox" class="jev-box hidden">
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap; margin-top: 10px;">
-                <button class="btn-warning" onclick="App.Jev.choiceAddExtra(2)">⏳ +2 Min</button>
-                <button class="btn-danger" onclick="App.Jev.choiceSkipTask()">⏭️ Omitir</button>
-                <button class="btn-success" onclick="App.Jev.choiceCompleteNow()">✅ Completar</button>
+                <button class="btn-warning" onclick="App.Execution.Jev.choiceAddExtra(2)">⏳ +2 Min</button>
+                <button class="btn-danger" onclick="App.Execution.Jev.choiceSkipTask()">⏭️ Omitir</button>
+                <button class="btn-success" onclick="App.Execution.Jev.choiceCompleteNow()">✅ Completar</button>
             </div>
         </div>
 
         <div class="flex-row" style="justify-content: center; margin-top: 20px;">
-            <button id="btnCompleteTask" class="btn-success" style="width: 100%; font-size: 1.1em;" onclick="App.showScorePrimitive()">✅ Tarea Completada</button>
+            <button id="btnCompleteTask" class="btn-success" style="width: 100%; font-size: 1.1em;" onclick="App.Execution.showScorePrimitive()">✅ Tarea Completada</button>
         </div>
 
-        <div id="jevScoreBox" class="jev-box hidden">
-            <label style="font-size:0.85em; display:block; text-align:left; margin-bottom:4px;">Nota / Enlace (Quedará guardado para la próxima):</label>
-            <input type="text" id="taskNoteInput" placeholder="Ej: Revisar el filtro primero..." style="margin-bottom: 12px;">
+        <div id="jevScoreBox" class="jev-box hidden" style="border-color: var(--primary);">
+            <label style="font-size:0.85em; display:block; text-align:center; margin-bottom:8px; color:var(--primary);">Evalúa la fricción (esfuerzo) de esta tarea:</label>
+            <p style="font-size:0.75em; text-align:center; color:var(--text-muted); margin-bottom:10px;">(1 = Muy Fácil / 5 = Muy Difícil)</p>
             <div class="flex-row" style="justify-content: center; margin-bottom: 12px;">
-                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(1)">1</button>
-                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(2)">2</button>
-                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(3)">3</button>
-                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(4)">4</button>
-                <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(5)">5</button>
+                <button class="btn-outline btn-icon" onclick="App.Execution.Jev.recordScore(1)">1</button>
+                <button class="btn-outline btn-icon" onclick="App.Execution.Jev.recordScore(2)">2</button>
+                <button class="btn-outline btn-icon" onclick="App.Execution.Jev.recordScore(3)">3</button>
+                <button class="btn-outline btn-icon" onclick="App.Execution.Jev.recordScore(4)">4</button>
+                <button class="btn-outline btn-icon" onclick="App.Execution.Jev.recordScore(5)">5</button>
             </div>
-            <button class="btn-outline" style="font-size: 0.8em;" onclick="App.Jev.recordScore(0)">⏭️ Solo Guardar y Seguir</button>
+            <button class="btn-outline" style="font-size: 0.8em; width:100%;" onclick="App.Execution.Jev.recordScore(0)">⏭️ Solo Seguir (Sin Evaluar)</button>
         </div>
     </div>
 
@@ -176,7 +206,7 @@
             <p style="margin-bottom: 10px; font-weight: bold; color: var(--success);">🎯 Siguiente paso recomendado:</p>
             <button id="btnNextProcess" class="btn-success" style="width: 100%;"></button>
         </div>
-        <button class="btn-primary" style="width: 100%; margin-top: 15px;" onclick="App.closeSummary()">💾 Guardar y Volver al Inicio</button>
+        <button class="btn-primary" style="width: 100%; margin-top: 15px;" onclick="App.Execution.closeSummary()">💾 Guardar y Volver al Inicio</button>
     </div>
 
     <!-- VISTA 4: EDITOR -->
@@ -185,7 +215,9 @@
         <input type="text" id="editProcName" placeholder="Nombre de la Rutina">
         
         <div class="flex-row" style="margin-top:10px;">
-            <input type="text" id="editProcCat" placeholder="Categoría (Ej: Casa, Trabajo)">
+            <input type="text" id="editProcCat" list="catDatalist" placeholder="Categoría (Ej: Casa, Trabajo)">
+            <datalist id="catDatalist"></datalist>
+            
             <select id="editProcLang">
                 <option value="es-US">Voz: Español</option>
                 <option value="en-US">Voz: Inglés</option>
@@ -200,7 +232,7 @@
             <h3>Pasos</h3>
             <div class="flex-col" style="background: var(--bg-card); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
                 <input type="text" id="newTaskName" placeholder="Descripción de la tarea">
-                <input type="text" id="newTaskReq" placeholder="Requerimientos (Ej: Escoba, Link del doc) - Opcional">
+                <input type="text" id="newTaskReq" placeholder="Requerimientos (Ej: Escoba) - Opcional">
                 <div class="flex-row">
                     <input type="number" id="newTaskTime" placeholder="Min" style="width: 80px;">
                     <label style="font-size: 0.9em; display:flex; align-items:center;"><input type="checkbox" id="newTaskEssential" checked> Esencial</label>
@@ -240,13 +272,13 @@
 
         <select id="statProcessSelect" onchange="App.Stats.renderChart()"></select>
         <canvas id="perfChart" width="400" height="250"></canvas>
-        <div id="statsList" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
+        <div id="statsList" style="margin-top: 20px; max-height: 300px; overflow-y: auto;"></div>
     </div>
 
     <!-- VISTA 7: GESTIÓN DE DATOS -->
     <div id="view-data" class="card hidden">
         <h2>Copia de Seguridad</h2>
-        <p style="font-size:0.9em; color:var(--text-muted); margin-bottom:15px; text-align:center;">Exporta todos tus procesos, historiales y frases en un solo archivo para no perder nada.</p>
+        <p style="font-size:0.9em; color:var(--text-muted); margin-bottom:15px; text-align:center;">Exporta todos tus procesos e historial. Si cambias de navegador, aquí puedes restaurarlos.</p>
         
         <div class="jev-box" style="text-align:center;">
             <h3 style="font-size:1.1em;">Exportar (Descargar)</h3>
@@ -263,7 +295,7 @@
     </div>
 </div>
 
-<!-- Modal Overlay -->
+<!-- Modal Custom -->
 <div id="customModal" class="modal-overlay hidden">
     <div class="modal-content">
         <h3 id="modalTitle" style="color:var(--primary); margin-bottom:10px;">Título</h3>
@@ -278,6 +310,10 @@ const Utils = {
     linkify: (text) => {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         return text.replace(urlRegex, url => `<a href="${url}" target="_blank">🔗 Enlace</a>`);
+    },
+    formatTime: (ms) => {
+        const d = new Date(Date.now() + ms);
+        return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
 };
 
@@ -299,7 +335,7 @@ const UI = {
 };
 
 const App = {
-    State: { procesos: {}, mensajes: {}, historial: [], audioActive: true, activeProcId: null, energyLevel: 'high', remainingTasks: [], currentTaskIndexOriginal: 0, currentTask: null, executionLog: [], timerInterval: null, chartInstance: null },
+    State: { procesos: {}, mensajes: {}, historial: [], audioActive: true, activeExecution: null },
     Draft: { id: null, nombre: '', categoria: '', lang: 'es-US', siguienteProcId: '', tareas: [], editIndex: -1 },
     
     DefaultMsgs: {
@@ -307,16 +343,31 @@ const App = {
         'en-US': { INICIO:['Starting'], PCT_25:['25 percent'], PCT_50:['Halfway'], PCT_75:['75 percent'], OVERTIME:['Time is up'], FINALIZADO:['Process complete'] },
         'fr-FR': { INICIO:['Commencer'], PCT_25:['25 pour cent'], PCT_50:['Moitié'], PCT_75:['75 pour cent'], OVERTIME:['Temps écoulé'], FINALIZADO:['Terminé'] }
     },
+    TimerInterval: null, ChartInstance: null,
 
     init: function() {
         this.loadStorage();
-        this.renderMenu();
-        window.addEventListener('popstate', (e) => { if (e.state && e.state.view) this._renderView(e.state.view); else this._renderView('view-menu'); });
+        window.addEventListener('popstate', (e) => { 
+            if(this.State.activeExecution && (!e.state || e.state.view !== 'view-execution')) return; 
+            if(e.state && e.state.view) this._renderView(e.state.view); else this._renderView('view-menu'); 
+        });
         history.replaceState({view: 'view-menu'}, '');
-        this._renderView('view-menu');
+        
+        if (this.State.activeExecution) {
+            this.navTo('view-execution');
+            this.Execution.resume();
+        } else {
+            this._renderView('view-menu');
+        }
     },
 
-    navTo: function(viewId) { history.pushState({view: viewId}, ''); this._renderView(viewId); },
+    navTo: function(viewId) { 
+        if (this.State.activeExecution && viewId !== 'view-execution' && viewId !== 'view-summary') {
+            return UI.Modal.alert("Acción denegada", "Tienes un proceso en curso. Termínalo o cancélalo desde el inicio.");
+        }
+        history.pushState({view: viewId}, ''); 
+        this._renderView(viewId); 
+    },
     
     _renderView: function(viewId) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -356,19 +407,31 @@ const App = {
     },
 
     loadStorage: function() {
-        this.State.procesos = JSON.parse(localStorage.getItem('jev_procs_v5')) || {};
-        this.State.mensajes = JSON.parse(localStorage.getItem('jev_msgs_v5')) || JSON.parse(JSON.stringify(this.DefaultMsgs));
-        this.State.historial = JSON.parse(localStorage.getItem('jev_hist_v5')) || [];
+        this.State.procesos = JSON.parse(localStorage.getItem('jev_procs_v6')) || {};
+        this.State.mensajes = JSON.parse(localStorage.getItem('jev_msgs_v6')) || JSON.parse(JSON.stringify(this.DefaultMsgs));
+        this.State.historial = JSON.parse(localStorage.getItem('jev_hist_v6')) || [];
+        this.State.activeExecution = JSON.parse(localStorage.getItem('jev_active_v6')) || null;
     },
     saveAll: function() {
-        localStorage.setItem('jev_procs_v5', JSON.stringify(this.State.procesos));
-        localStorage.setItem('jev_msgs_v5', JSON.stringify(this.State.mensajes));
-        localStorage.setItem('jev_hist_v5', JSON.stringify(this.State.historial));
+        localStorage.setItem('jev_procs_v6', JSON.stringify(this.State.procesos));
+        localStorage.setItem('jev_msgs_v6', JSON.stringify(this.State.mensajes));
+        localStorage.setItem('jev_hist_v6', JSON.stringify(this.State.historial));
+        if(this.State.activeExecution) localStorage.setItem('jev_active_v6', JSON.stringify(this.State.activeExecution));
+        else localStorage.removeItem('jev_active_v6');
     },
 
     renderMenu: function() {
         const list = document.getElementById('processList');
         list.innerHTML = '';
+        const banner = document.getElementById('activeExecutionBanner');
+        
+        if (this.State.activeExecution && this.State.procesos[this.State.activeExecution.procId]) {
+            document.getElementById('activeExecutionName').innerText = this.State.procesos[this.State.activeExecution.procId].nombre;
+            banner.classList.remove('hidden');
+        } else {
+            banner.classList.add('hidden');
+        }
+
         const grouped = {};
         Object.values(this.State.procesos).forEach(p => {
             const cat = p.categoria ? p.categoria.trim().toUpperCase() : 'GENERAL';
@@ -384,10 +447,10 @@ const App = {
                     <div class="process-card">
                         <div style="flex:1;">
                             <strong style="font-size:1.1em; display:block;">${proc.nombre}</strong>
-                            <span style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos \vert{} ~${time}m</span>
+                            <span style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos | ~${time} min</span>
                         </div>
                         <div style="display:flex; gap:6px;">
-                            <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
+                            <button class="btn-primary" onclick="App.Execution.setupTriage('${proc.id}')">▶️ Iniciar</button>
                             <button class="btn-outline btn-icon" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
                         </div>
                     </div>`;
@@ -396,163 +459,243 @@ const App = {
         if(Object.keys(grouped).length === 0) list.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay procesos. Crea uno o importa con IA.</p>';
     },
 
-    setupTriage: function(procId) {
-        this.State.activeProcId = procId;
-        document.getElementById('triageProcessTitle').innerText = this.State.procesos[procId].nombre;
-        this.setEnergyLevel('high');
-        this.navTo('view-triage');
-    },
+    Execution: {
+        tempProcId: null, tempEnergy: 'high',
+        
+        setupTriage: function(procId) {
+            if(App.State.activeExecution) return UI.Modal.alert("Atención", "Ya tienes un proceso corriendo. Cancélalo primero.");
+            this.tempProcId = procId;
+            document.getElementById('triageProcessTitle').innerText = App.State.procesos[procId].nombre;
+            this.setEnergy('high');
+            App.navTo('view-triage');
+        },
+        setEnergy: function(level) {
+            this.tempEnergy = level;
+            document.getElementById('triageEnergyText').innerText = level === 'high' ? "Ejecutarás todas las tareas." : "Modo supervivencia: Solo tareas esenciales.";
+        },
+        start: function() {
+            const proc = App.State.procesos[this.tempProcId];
+            const tasks = proc.tareas
+                .map((t, index) => ({ ...t, _originalIndex: index }))
+                .filter(t => this.tempEnergy === 'high' || t.esencial);
+                
+            if(tasks.length === 0) return UI.Modal.alert("Aviso", "No hay tareas para este nivel de energía.");
 
-    setEnergyLevel: function(level) {
-        this.State.energyLevel = level;
-        document.getElementById('triageEnergyText').innerText = level === 'high' ? "Ejecutarás todas las tareas." : "Modo supervivencia: Solo tareas esenciales.";
-    },
-
-    startExecution: function() {
-        const proc = this.State.procesos[this.State.activeProcId];
-        this.State.remainingTasks = proc.tareas
-            .map((t, index) => ({ ...t, _originalIndex: index }))
-            .filter(t => this.State.energyLevel === 'high' || t.esencial);
+            App.State.activeExecution = { procId: proc.id, energy: this.tempEnergy, log: [], tasks: tasks, currentTask: null };
+            App.saveAll();
             
-        if(this.State.remainingTasks.length === 0) return UI.Modal.alert("Aviso", "No hay tareas para este nivel de energía.");
-
-        this.State.executionLog = [];
-        document.getElementById('execProcessName').innerText = proc.nombre;
-        
-        this.navTo('view-execution');
-        this.speak(proc.lang, 'INICIO');
-        this.nextTask();
-        if (this.State.timerInterval) clearInterval(this.State.timerInterval);
-        this.State.timerInterval = setInterval(() => this.updateTimerUI(), 1000);
-    },
-
-    nextTask: function() {
-        document.getElementById('jevChoiceBox').classList.add('hidden');
-        document.getElementById('jevScoreBox').classList.add('hidden');
-        document.getElementById('btnCompleteTask').classList.remove('hidden');
-        document.getElementById('taskNoteInput').value = '';
-
-        if (this.State.remainingTasks.length === 0) return this.showSummaryBars();
-
-        const taskData = this.State.remainingTasks.shift();
-        this.State.currentTask = { ...taskData, totalMs: taskData.tiempoMin * 60000, startMs: Date.now(), warnFlags: { 25: false, 50: false, 75: false, 100: false } };
-        
-        const proc = this.State.procesos[this.State.activeProcId];
-        document.getElementById('execProgressCount').innerText = `Faltan: ${this.State.remainingTasks.length}`;
-        document.getElementById('execTaskTitle').innerText = this.State.currentTask.nombre;
-        
-        const reqEl = document.getElementById('execTaskReq');
-        if(taskData.requerimientos) { reqEl.innerText = "🛠️ " + taskData.requerimientos; reqEl.classList.remove('hidden'); } 
-        else { reqEl.classList.add('hidden'); }
-
-        const noteEl = document.getElementById('execPersistentNote');
-        if(taskData.ultimaNota) { noteEl.innerHTML = "📝 <strong>Nota anterior:</strong> " + Utils.linkify(taskData.ultimaNota); noteEl.classList.remove('hidden'); }
-        else { noteEl.classList.add('hidden'); }
-
-        this.speakDirect(this.State.currentTask.nombre, proc.lang);
-    },
-
-    updateTimerUI: function() {
-        if (!this.State.currentTask) return;
-        const now = Date.now();
-        const elapsed = now - this.State.currentTask.startMs;
-        const pct = (elapsed / this.State.currentTask.totalMs) * 100;
-        const procLang = this.State.procesos[this.State.activeProcId].lang;
-
-        const sec = Math.floor(elapsed / 1000);
-        document.getElementById('execTimer').innerText = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
-        
-        const bar = document.getElementById('execProgressBar');
-        bar.style.width = `${Math.min(pct, 100)}%`;
-
-        const checkWarn = (pt, key) => {
-            if (pct >= pt && pct < (pt+25) && !this.State.currentTask.warnFlags[pt]) {
-                this.State.currentTask.warnFlags[pt] = true;
-                this.speak(procLang, key);
-            }
-        };
-        checkWarn(25, 'PCT_25'); checkWarn(50, 'PCT_50'); checkWarn(75, 'PCT_75');
-
-        if (pct >= 100) {
-            bar.classList.add('overtime');
-            if (!this.State.currentTask.warnFlags[100]) {
-                this.State.currentTask.warnFlags[100] = true;
-                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                this.speak(procLang, 'OVERTIME');
-                document.getElementById('jevChoiceBox').classList.remove('hidden');
-            }
-        } else { bar.classList.remove('overtime'); }
-    },
-
-    showScorePrimitive: function() {
-        document.getElementById('jevChoiceBox').classList.add('hidden');
-        document.getElementById('btnCompleteTask').classList.add('hidden');
-        document.getElementById('jevScoreBox').classList.remove('hidden');
-        document.getElementById('taskNoteInput').focus();
-    },
-
-    Jev: {
-        choiceAddExtra: function(min) { App.State.currentTask.totalMs += (min * 60000); App.State.currentTask.warnFlags[100] = false; document.getElementById('jevChoiceBox').classList.add('hidden'); },
-        choiceSkipTask: function() { App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: true, score: 0, nota: '' }); App.nextTask(); },
-        choiceCompleteNow: function() { App.showScorePrimitive(); },
-        recordScore: function(score) {
-            const nota = document.getElementById('taskNoteInput').value.trim();
-            const realMs = Date.now() - App.State.currentTask.startMs;
-            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: realMs, omitido: false, score: score, nota: nota });
+            App.navTo('view-execution');
+            App.speak(proc.lang, 'INICIO');
+            this.nextTask();
+        },
+        resume: function() {
+            if(!App.State.activeExecution) return;
+            App.navTo('view-execution');
             
-            if(nota) {
-                const proc = App.State.procesos[App.State.activeProcId];
-                if(proc && proc.tareas[App.State.currentTask._originalIndex]) {
-                    proc.tareas[App.State.currentTask._originalIndex].ultimaNota = nota;
-                    App.saveAll();
+            // Refrescar UI con el task actual
+            const current = App.State.activeExecution.currentTask;
+            if (current) {
+                const proc = App.State.procesos[App.State.activeExecution.procId];
+                document.getElementById('execProcessName').innerText = proc.nombre;
+                document.getElementById('execProgressCount').innerText = `Faltan: ${App.State.activeExecution.tasks.length}`;
+                document.getElementById('execTaskTitle').innerText = current.nombre;
+                
+                const reqEl = document.getElementById('execTaskReq');
+                if(current.requerimientos) { reqEl.innerText = "🛠️ " + current.requerimientos; reqEl.classList.remove('hidden'); } 
+                else { reqEl.classList.add('hidden'); }
+                
+                this.Notes.renderList();
+                this.updateETA();
+
+                document.getElementById('jevChoiceBox').classList.add('hidden');
+                document.getElementById('jevScoreBox').classList.add('hidden');
+                document.getElementById('btnCompleteTask').classList.remove('hidden');
+
+                if (App.TimerInterval) clearInterval(App.TimerInterval);
+                App.TimerInterval = setInterval(() => this.updateTimerUI(), 1000);
+            } else if(App.State.activeExecution.tasks.length > 0) {
+                this.nextTask();
+            } else {
+                this.showSummaryBars();
+            }
+        },
+        cancel: function() {
+            UI.Modal.confirm("Cancelar Proceso", "¿Seguro que deseas descartar el progreso actual? No se guardará en el historial.", () => {
+                if(App.TimerInterval) clearInterval(App.TimerInterval);
+                App.State.activeExecution = null;
+                App.saveAll();
+                App.renderMenu();
+            });
+        },
+        nextTask: function() {
+            document.getElementById('jevChoiceBox').classList.add('hidden');
+            document.getElementById('jevScoreBox').classList.add('hidden');
+            document.getElementById('btnCompleteTask').classList.remove('hidden');
+
+            if (App.State.activeExecution.tasks.length === 0) return this.showSummaryBars();
+
+            const taskData = App.State.activeExecution.tasks.shift();
+            App.State.activeExecution.currentTask = { ...taskData, totalMs: taskData.tiempoMin * 60000, startMs: Date.now(), warnFlags: { 25: false, 50: false, 75: false, 100: false } };
+            App.saveAll();
+            
+            const proc = App.State.procesos[App.State.activeExecution.procId];
+            document.getElementById('execProcessName').innerText = proc.nombre;
+            document.getElementById('execProgressCount').innerText = `Faltan: ${App.State.activeExecution.tasks.length}`;
+            document.getElementById('execTaskTitle').innerText = App.State.activeExecution.currentTask.nombre;
+            
+            const reqEl = document.getElementById('execTaskReq');
+            if(taskData.requerimientos) { reqEl.innerText = "🛠️ " + taskData.requerimientos; reqEl.classList.remove('hidden'); } 
+            else { reqEl.classList.add('hidden'); }
+
+            this.Notes.renderList();
+            this.updateETA();
+
+            App.speakDirect(App.State.activeExecution.currentTask.nombre, proc.lang);
+            
+            if (App.TimerInterval) clearInterval(App.TimerInterval);
+            App.TimerInterval = setInterval(() => this.updateTimerUI(), 1000);
+        },
+        updateETA: function() {
+            const current = App.State.activeExecution.currentTask;
+            let remMs = current ? current.totalMs - (Date.now() - current.startMs) : 0;
+            if(remMs < 0) remMs = 0;
+            App.State.activeExecution.tasks.forEach(t => remMs += (t.tiempoMin * 60000));
+            document.getElementById('execEtaBanner').innerText = `Tiempo est. restante: ${Math.ceil(remMs/60000)} min | Fin aprox: ${Utils.formatTime(remMs)}`;
+        },
+        updateTimerUI: function() {
+            const current = App.State.activeExecution.currentTask;
+            if (!current) return;
+            const now = Date.now();
+            const elapsed = now - current.startMs;
+            const pct = (elapsed / current.totalMs) * 100;
+            const procLang = App.State.procesos[App.State.activeExecution.procId].lang;
+
+            const sec = Math.floor(elapsed / 1000);
+            document.getElementById('execTimer').innerText = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+            
+            const bar = document.getElementById('execProgressBar');
+            bar.style.width = `${Math.min(pct, 100)}%`;
+
+            const checkWarn = (pt, key) => {
+                if (pct >= pt && pct < (pt+25) && !current.warnFlags[pt]) {
+                    current.warnFlags[pt] = true; App.saveAll();
+                    App.speak(procLang, key);
                 }
+            };
+            checkWarn(25, 'PCT_25'); checkWarn(50, 'PCT_50'); checkWarn(75, 'PCT_75');
+
+            if (pct >= 100) {
+                bar.classList.add('overtime');
+                if (!current.warnFlags[100]) {
+                    current.warnFlags[100] = true; App.saveAll();
+                    if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                    App.speak(procLang, 'OVERTIME');
+                    document.getElementById('jevChoiceBox').classList.remove('hidden');
+                }
+            } else { bar.classList.remove('overtime'); }
+            
+            if (sec % 30 === 0) this.updateETA(); // Update ETA every 30s
+        },
+        showScorePrimitive: function() {
+            document.getElementById('jevChoiceBox').classList.add('hidden');
+            document.getElementById('btnCompleteTask').classList.add('hidden');
+            document.getElementById('jevScoreBox').classList.remove('hidden');
+        },
+        Notes: {
+            getRef: function() {
+                const proc = App.State.procesos[App.State.activeExecution.procId];
+                const task = proc.tareas[App.State.activeExecution.currentTask._originalIndex];
+                if(!task.notas) task.notas = [];
+                return task.notas;
+            },
+            renderList: function() {
+                const notas = this.getRef();
+                const cont = document.getElementById('execNotesList');
+                cont.innerHTML = notas.length === 0 ? '<p style="font-size:0.8em; color:var(--text-muted);">No hay notas previas para esta tarea.</p>' : '';
+                notas.forEach((n, i) => {
+                    cont.innerHTML += `
+                        <div class="persistent-note">
+                            <span style="flex:1;">${Utils.linkify(n)}</span>
+                            <button class="btn-outline btn-icon" style="padding: 2px 6px; border-color:var(--danger); color:var(--danger);" onclick="App.Execution.Notes.remove(${i})">X</button>
+                        </div>`;
+                });
+            },
+            addInline: function() {
+                const input = document.getElementById('inlineNoteInput');
+                const val = input.value.trim();
+                if(!val) return;
+                this.getRef().push(val);
+                App.saveAll();
+                input.value = '';
+                this.renderList();
+            },
+            remove: function(i) {
+                this.getRef().splice(i, 1);
+                App.saveAll();
+                this.renderList();
             }
-            App.nextTask();
+        },
+        Jev: {
+            choiceAddExtra: function(min) { 
+                App.State.activeExecution.currentTask.totalMs += (min * 60000); 
+                App.State.activeExecution.currentTask.warnFlags[100] = false; 
+                App.saveAll();
+                document.getElementById('jevChoiceBox').classList.add('hidden'); 
+            },
+            choiceSkipTask: function() { 
+                const cur = App.State.activeExecution.currentTask;
+                App.State.activeExecution.log.push({ nombre: cur.nombre, estMs: cur.totalMs, realMs: Date.now() - cur.startMs, omitido: true, score: 0 }); 
+                App.Execution.nextTask(); 
+            },
+            recordScore: function(score) {
+                const cur = App.State.activeExecution.currentTask;
+                App.State.activeExecution.log.push({ nombre: cur.nombre, estMs: cur.totalMs, realMs: Date.now() - cur.startMs, omitido: false, score: score });
+                App.Execution.nextTask();
+            }
+        },
+        showSummaryBars: function() {
+            if (App.TimerInterval) clearInterval(App.TimerInterval);
+            const proc = App.State.procesos[App.State.activeExecution.procId];
+            App.speak(proc.lang, 'FINALIZADO');
+            
+            let totalRealMs = 0, totalEstMs = 0;
+            const cont = document.getElementById('summaryBarsContainer');
+            cont.innerHTML = '';
+
+            App.State.activeExecution.log.forEach(log => {
+                totalRealMs += log.realMs; totalEstMs += log.estMs;
+                const pct = Math.min((log.realMs / log.estMs) * 100, 100);
+                cont.innerHTML += `
+                    <div style="margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85em;">
+                            <span>${log.omitido ? '⏭️ ' : ''}${log.nombre} ${log.score > 0 ? `(Fricción: ${log.score}/5)` : ''}</span>
+                            <span>${(log.realMs/60000).toFixed(1)}m / ${(log.estMs/60000).toFixed(1)}m</span>
+                        </div>
+                        <div style="width:100%; height:8px; background:#0f172a; border-radius:4px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${log.realMs>log.estMs?'var(--danger)':'var(--success)'};"></div></div>
+                    </div>`;
+            });
+
+            document.getElementById('summaryTotalTime').innerText = `Total: ${(totalRealMs/60000).toFixed(1)}m Real vs ${(totalEstMs/60000).toFixed(1)}m Estimado`;
+            
+            const nextBox = document.getElementById('nextProcessSuggestion');
+            if (proc.siguienteProcId && App.State.procesos[proc.siguienteProcId]) {
+                const nextP = App.State.procesos[proc.siguienteProcId];
+                document.getElementById('btnNextProcess').innerText = "▶️ " + nextP.nombre;
+                document.getElementById('btnNextProcess').onclick = () => { App.Execution.closeSummary(true); App.Execution.setupTriage(nextP.id); };
+                nextBox.classList.remove('hidden');
+            } else { nextBox.classList.add('hidden'); }
+
+            App.navTo('view-summary');
+        },
+        closeSummary: function(skipNav = false) {
+            const proc = App.State.procesos[App.State.activeExecution.procId];
+            App.State.historial.push({ id: Utils.generateId(), procId: proc.id, fecha: new Date().toISOString(), log: [...App.State.activeExecution.log] });
+            App.State.activeExecution = null; // Clear active state
+            App.saveAll();
+            
+            // Hack to force replace state to menu so back button works nicely
+            if(!skipNav) { history.replaceState({view: 'view-menu'}, ''); App._renderView('view-menu'); }
         }
-    },
-
-    showSummaryBars: function() {
-        clearInterval(this.State.timerInterval);
-        const proc = this.State.procesos[this.State.activeProcId];
-        this.speak(proc.lang, 'FINALIZADO');
-        
-        let totalRealMs = 0, totalEstMs = 0;
-        const cont = document.getElementById('summaryBarsContainer');
-        cont.innerHTML = '';
-
-        this.State.executionLog.forEach(log => {
-            totalRealMs += log.realMs; totalEstMs += log.estMs;
-            const pct = Math.min((log.realMs / log.estMs) * 100, 100);
-            const notaHtml = log.nota ? `<div style="font-size:0.8em; color:var(--primary); margin-top:2px;">📝 ${Utils.linkify(log.nota)}</div>` : '';
-            cont.innerHTML += `
-                <div style="margin-bottom: 10px;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.85em;">
-                        <span>${log.omitido ? '⏭️ ' : ''}${log.nombre}</span>
-                        <span>${(log.realMs/60000).toFixed(1)}m / ${(log.estMs/60000).toFixed(1)}m</span>
-                    </div>
-                    <div style="width:100%; height:8px; background:#0f172a; border-radius:4px; overflow:hidden;"><div style="height:100%; width:${pct}\%; background:${log.realMs>log.estMs?'var(--danger)':'var(--success)'};"></div></div>
-                    ${notaHtml}
-                </div>`;
-        });
-
-        document.getElementById('summaryTotalTime').innerText = `Total: ${(totalRealMs/60000).toFixed(1)}m Real vs${(totalEstMs/60000).toFixed(1)}m Estimado`;
-        
-        const nextBox = document.getElementById('nextProcessSuggestion');
-        if (proc.siguienteProcId && this.State.procesos[proc.siguienteProcId]) {
-            const nextP = this.State.procesos[proc.siguienteProcId];
-            document.getElementById('btnNextProcess').innerText = "▶️ " + nextP.nombre;
-            document.getElementById('btnNextProcess').onclick = () => { App.closeSummary(true); App.setupTriage(nextP.id); };
-            nextBox.classList.remove('hidden');
-        } else { nextBox.classList.add('hidden'); }
-
-        this.navTo('view-summary');
-    },
-
-    closeSummary: function(skipNav = false) {
-        const proc = this.State.procesos[this.State.activeProcId];
-        this.State.historial.push({ id: Utils.generateId(), procId: proc.id, fecha: new Date().toISOString(), log: [...this.State.executionLog] });
-        this.saveAll();
-        if(!skipNav) { this.navTo('view-menu'); }
     },
 
     CRUD: {
@@ -566,6 +709,10 @@ const App = {
             const selNext = document.getElementById('editNextProc');
             selNext.innerHTML = '<option value="">Ninguno</option>' + Object.values(App.State.procesos).filter(p => p.id !== App.Draft.id).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
             selNext.value = App.Draft.siguienteProcId || '';
+
+            // Llenar Datalist de categorías
+            const cats = new Set(Object.values(App.State.procesos).map(p => p.categoria).filter(Boolean));
+            document.getElementById('catDatalist').innerHTML = Array.from(cats).map(c => `<option value="${c}">`).join('');
 
             this.clearInputs(); this.renderLists(); App.navTo('view-editor');
         },
@@ -581,7 +728,7 @@ const App = {
             const req = document.getElementById('newTaskReq').value.trim(); 
             const t = parseInt(document.getElementById('newTaskTime').value);
             if (!n || !t) return UI.Modal.alert("Error", "Nombre y minutos son obligatorios.");
-            const tk = { nombre: n, tiempoMin: t, esencial: document.getElementById('newTaskEssential').checked, requerimientos: req };
+            const tk = { nombre: n, tiempoMin: t, esencial: document.getElementById('newTaskEssential').checked, requerimientos: req, notas: [] };
             App.Draft.editIndex > -1 ? App.Draft.tareas[App.Draft.editIndex] = { ...App.Draft.tareas[App.Draft.editIndex], ...tk } : App.Draft.tareas.push(tk);
             this.clearInputs(); this.renderLists();
         },
@@ -602,16 +749,12 @@ const App = {
             App.Draft.tareas[i + dir] = temp;
             this.renderLists();
         },
-        deleteProcessPrompt: function(id) {
-            UI.Modal.confirm("Borrar Proceso", "¿Seguro que deseas borrar este proceso entero?", () => {
-                delete App.State.procesos[id]; App.saveAll(); App.renderMenu();
-            });
-        },
         renderLists: function() {
             document.getElementById('editTaskList').innerHTML = App.Draft.tareas.map((tk, i) => `
                 <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-item); padding:8px; border-radius:6px; border:1px solid var(--border);">
                     <div style="flex:1; font-size:0.9em;">
-                        <strong>${i+1}.${tk.nombre} (${tk.tiempoMin}m)</strong><br>${tk.requerimientos ? `<span style="font-size:0.8em; color:var(--warning);">🛠️ ${tk.requerimientos}</span>` : ''}
+                        <strong>${i+1}. ${tk.nombre} (${tk.tiempoMin}m)</strong><br>
+                        ${tk.requerimientos ? `<span style="font-size:0.8em; color:var(--warning);">🛠️ ${tk.requerimientos}</span>` : ''}
                     </div>
                     <div style="display:flex; gap:4px;">
                         <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${i}, -1)">⬆️</button>
@@ -635,43 +778,40 @@ const App = {
         generatePrompt: function() {
             const topic = document.getElementById('aiTopic').value.trim() || 'Cualquier tarea';
             const detail = document.getElementById('aiDetail').value;
+            const lang = document.getElementById('aiLang').value;
             const promptText = `Actúa como experto en productividad. Crea un proceso sobre: ${topic}.
 Reglas:
-1. Las tareas deben ser ${detail}.
-2. Dificultad progresiva.
-3. Devuelve ÚNICAMENTE un JSON válido (sin markdown \`\`\`), con esta estructura:
+1. Tareas ${detail}. Dificultad progresiva.
+2. Devuelve ÚNICAMENTE un JSON válido (sin markdown), estructura exacta:
 {
   "id": "proc_${Date.now()}",
-  "nombre": "Nombre del Proceso",
+  "nombre": "Título",
   "categoria": "General",
-  "lang": "es-US",
+  "lang": "${lang}",
   "tareas": [
-    { "nombre": "Paso 1", "requerimientos": "Opcional, herramientas", "tiempoMin": 2, "esencial": true }
+    { "nombre": "Paso 1", "requerimientos": "Opcional", "tiempoMin": 2, "esencial": true }
   ]
 }`;
             navigator.clipboard.writeText(promptText).then(() => {
-                UI.Modal.alert("¡Prompt Copiado!", "Ve a ChatGPT/Claude, pégalo y luego trae la respuesta aquí.");
+                UI.Modal.alert("¡Prompt Copiado!", "Pégalo en ChatGPT/Claude. Luego copia su respuesta y pégala abajo.");
             });
         },
         importProcess: function() {
             try {
                 let data = document.getElementById('aiInputCode').value.trim();
-                // Limpiar posibles bloques markdown si la IA los puso por error
                 if(data.startsWith('```json')) data = data.replace(/```json/g, '').replace(/```/g, '');
                 
                 const proc = JSON.parse(data);
-                if(!proc.id || !proc.tareas) throw new Error("Faltan datos clave");
+                if(!proc.id || !proc.tareas) throw new Error("Faltan datos");
                 
-                // Asegurar ID único
                 if(App.State.procesos[proc.id]) proc.id = proc.id + "_" + Utils.generateId();
-                
                 App.State.procesos[proc.id] = proc;
                 App.saveAll(); 
                 document.getElementById('aiInputCode').value = '';
-                UI.Modal.alert("Éxito", "Proceso importado correctamente.");
+                UI.Modal.alert("Éxito", "Proceso importado.");
                 App.navTo('view-menu');
             } catch(e) { 
-                UI.Modal.alert("Error de Formato", "El texto no es un JSON válido o la estructura es incorrecta.");
+                UI.Modal.alert("Error", "JSON inválido. Revisa que no tenga texto adicional.");
             }
         }
     },
@@ -734,35 +874,37 @@ Reglas:
             const procId = document.getElementById('statProcessSelect').value;
             const histData = procId === 'ALL' ? App.State.historial : App.State.historial.filter(h => h.procId === procId);
             const list = document.getElementById('statsList');
-            if (histData.length === 0) { list.innerHTML = '<p style="text-align:center;">No hay datos.</p>'; if(App.State.chartInstance) App.State.chartInstance.destroy(); return; }
+            if (histData.length === 0) { list.innerHTML = '<p style="text-align:center;">No hay datos.</p>'; if(App.ChartInstance) App.ChartInstance.destroy(); return; }
 
             const labels = []; const dataReal = []; const dataEst = []; list.innerHTML = '';
-            let totalHistRealMs = 0;
-
+            
             histData.forEach((run, i) => {
-                labels.push(`S-${i+1}`); let tr = 0, te = 0;
-                run.log.forEach(l => { tr += l.realMs; te += l.estMs; });
-                totalHistRealMs += tr;
+                labels.push(`S-${i+1}`); let tr = 0, te = 0, sumScore = 0, countScore = 0;
+                run.log.forEach(l => { 
+                    tr += l.realMs; te += l.estMs; 
+                    if(l.score > 0) { sumScore += l.score; countScore++; }
+                });
                 dataReal.push((tr / 60000).toFixed(1)); dataEst.push((te / 60000).toFixed(1));
                 
+                const avgScore = countScore > 0 ? (sumScore / countScore).toFixed(1) : 0;
                 const pName = App.State.procesos[run.procId] ? App.State.procesos[run.procId].nombre : 'Desconocido';
-                const notesHtml = run.log.filter(l=>l.nota).map(l=> `<div style="font-size:0.8em; color:var(--text-muted); margin-left:10px;">- ${l.nombre}: ${Utils.linkify(l.nota)}</div>`).join('');
+                
                 list.innerHTML = `<div style="border-bottom:1px solid var(--border); padding:8px 0; font-size:0.85em;">
                     <div style="display:flex; justify-content:space-between; color:var(--primary);">
                         <strong>${pName}</strong>
                         <span>${new Date(run.fecha).toLocaleDateString()}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; margin-top:4px;">
-                        <span>Real ${dataReal[dataReal.length-1]}m / Teórico ${dataEst[dataEst.length-1]}m</span>
+                        <span>Real ${dataReal[dataReal.length-1]}m / Estimado ${dataEst[dataEst.length-1]}m</span>
                         <button class="btn-outline btn-icon" style="padding:2px 6px;" onclick="App.Stats.deleteRecord('${run.id}')">🗑️</button>
                     </div>
-                    ${notesHtml}
+                    ${avgScore > 0 ? `<div style="color:var(--warning); margin-top:4px;">⭐ Esfuerzo promedio: ${avgScore}/5</div>` : ''}
                 </div>` + list.innerHTML;
             });
 
             const ctx = document.getElementById('perfChart').getContext('2d');
-            if(App.State.chartInstance) App.State.chartInstance.destroy();
-            App.State.chartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [ { label: 'T. Real', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 }, { label: 'T. Estimado', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 } ]}, options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } } });
+            if(App.ChartInstance) App.ChartInstance.destroy();
+            App.ChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [ { label: 'T. Real', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 }, { label: 'T. Estimado', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 } ]}, options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } } });
         }
     },
 
@@ -771,8 +913,8 @@ Reglas:
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(App.State));
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "jev_matrix_backup.json");
-            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.setAttribute("download", "jev_matrix_backup_v6.json");
+            document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
         },
@@ -785,11 +927,9 @@ Reglas:
                     const imported = JSON.parse(e.target.result);
                     if(!imported.procesos || !imported.historial) throw new Error("Formato inválido");
                     
-                    // Fusionar datos para no borrar lo que ya está en local si se desea, o sobreescribir. Optamos por sobreescribir/fusionar inteligentemente:
                     App.State.procesos = { ...App.State.procesos, ...imported.procesos };
                     App.State.mensajes = imported.mensajes || App.State.mensajes;
                     
-                    // Evitar duplicados en historial por ID
                     const histMap = new Map(App.State.historial.map(h => [h.id, h]));
                     imported.historial.forEach(h => histMap.set(h.id, h));
                     App.State.historial = Array.from(histMap.values());
@@ -805,9 +945,10 @@ Reglas:
         },
         nuke: function() {
             UI.Modal.confirm("⚠️ PELIGRO", "Esto borrará TODOS tus procesos e historial. ¿Estás absolutamente seguro?", () => {
-                localStorage.removeItem('jev_procs_v5');
-                localStorage.removeItem('jev_msgs_v5');
-                localStorage.removeItem('jev_hist_v5');
+                localStorage.removeItem('jev_procs_v6');
+                localStorage.removeItem('jev_msgs_v6');
+                localStorage.removeItem('jev_hist_v6');
+                localStorage.removeItem('jev_active_v6');
                 location.reload();
             });
         }
