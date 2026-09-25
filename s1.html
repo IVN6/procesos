@@ -3,48 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jev Matrix V3 - Alto Rendimiento</title>
+    <title>Jev Matrix V4 - Automatización y Flujo</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-body: #090d16;
-            --bg-card: #131b2e;
-            --bg-item: #1e293b;
-            --bg-item-hover: #334155;
-            --primary: #38bdf8;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --bg-body: #090d16; --bg-card: #131b2e; --bg-item: #1e293b; --bg-item-hover: #334155;
+            --primary: #38bdf8; --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
+            --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
         .container { width: 100%; max-width: 700px; padding-bottom: 40px; }
         
         .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         h1, h2, h3 { text-align: center; margin-bottom: 16px; color: #fff; }
-        p { color: var(--text-muted); font-size: 0.95em; line-height: 1.5; }
-        
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 10px; align-items: center; }
         .flex-col { display: flex; flex-direction: column; gap: 12px; }
 
-        /* Navegación Superior */
         .navbar { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
         .nav-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
         .nav-btn:hover { background: var(--bg-item); color: var(--primary); border-color: var(--primary); }
         .nav-btn.active { background: var(--primary); color: #000; font-weight: bold; }
 
-        /* Proceso Card */
         .process-card { background: var(--bg-item); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 12px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
-        .process-info { flex: 1 1 200px; }
-        .process-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-        /* Botones Generales */
+        
         button { font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;}
         button:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-primary { background-color: var(--primary); color: #0f172a; }
@@ -57,7 +41,6 @@
         input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: #fff; font-size: 14px; margin-top: 4px; }
         input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
 
-        /* Contadores y Progreso */
         .time-tracker { display: flex; justify-content: space-between; background: #0f172a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85em; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .time-col { display: flex; flex-direction: column; text-align: center; }
         .time-col span:first-child { color: var(--text-muted); font-size: 0.85em; }
@@ -69,32 +52,24 @@
         .progress-bar.overtime { background: var(--danger); }
         
         .jev-box { background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 16px; margin: 15px 0; text-align: center; }
-        .primitive-tag { display: inline-block; font-size: 0.75em; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: var(--primary); color: #000; margin-bottom: 8px; }
-
-        /* Barras Finales */
         .summary-bar-bg { width: 100%; height: 8px; background: #0f172a; border-radius: 4px; margin-top: 4px; overflow: hidden;}
         .summary-bar-fill { height: 100%; background: var(--success); }
         .summary-bar-fill.over { background: var(--danger); }
-        
         canvas { max-width: 100%; background: #0f172a; border-radius: 8px; padding: 10px; margin-top: 15px; }
-
-        /* Tareas Editor */
-        .task-edit-row { font-size: 0.9em; display: flex; justify-content: space-between; margin-bottom: 6px; background: var(--bg-item); padding: 8px; border-radius: 6px; align-items: center; border: 1px solid var(--border); }
-        .task-controls { display: flex; gap: 4px; }
+        
+        .badge-streak { background: var(--warning); color: #000; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-bottom: 10px; display: inline-block;}
     </style>
 </head>
 <body>
 
 <div class="container">
-    
-    <!-- MENÚ HAMBURGUESA / NAVEGACIÓN SUPERIOR -->
     <nav class="navbar">
-        <h2 style="margin:0; font-size: 1.1em; color: var(--primary);">⚡ JEV MATRIX</h2>
+        <h2 style="margin:0; font-size: 1.1em; color: var(--primary);">⚡ JEV MATRIX V4</h2>
         <div class="nav-links">
             <button class="nav-btn active" id="nav-menu" onclick="App.navTo('view-menu')">🏠 Inicio</button>
             <button class="nav-btn" id="nav-stats" onclick="App.navTo('view-stats')">📊 Stats</button>
             <button class="nav-btn" id="nav-messages" onclick="App.navTo('view-messages')">💬 Mensajes</button>
-            <button class="btn-outline btn-icon" onclick="App.toggleAudio()" id="btnAudioToggle" title="Activar/Desactivar Voz">🔊</button>
+            <button class="btn-outline btn-icon" onclick="App.toggleAudio()" id="btnAudioToggle">🔊</button>
         </div>
     </nav>
 
@@ -103,14 +78,15 @@
         <h1>Sistemas de Ejecución</h1>
         <div id="processList" class="flex-col"></div>
         <hr style="border-color: var(--border); margin: 20px 0;">
-        <button class="btn-primary" style="width: 100%;" onclick="App.CRUD.openEditor()">➕ Crear Nuevo Proceso</button>
+        <div class="flex-row">
+            <button class="btn-primary" style="flex: 1;" onclick="App.CRUD.openEditor()">➕ Crear Proceso</button>
+            <button class="btn-outline" onclick="App.CRUD.importAI()">📥 Importar IA</button>
+        </div>
     </div>
 
-    <!-- VISTA 2: TRIAJE (IF/ELSE) -->
+    <!-- VISTA 2: TRIAJE -->
     <div id="view-triage" class="card hidden">
-        <span class="primitive-tag">PRE-FLIGHT</span>
         <h2 id="triageProcessTitle">Alineación</h2>
-        
         <div class="jev-box">
             <label style="font-weight: bold; display: block; margin-bottom: 12px;">Nivel de Energía:</label>
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap;">
@@ -126,20 +102,10 @@
     <div id="view-execution" class="card hidden">
         <h2 id="execProcessName" style="margin-bottom: 15px;">Proceso</h2>
         
-        <!-- PROYECCIONES DINÁMICAS DE TIEMPO -->
         <div class="time-tracker">
-            <div class="time-col">
-                <span>Inicio</span>
-                <span id="tt-start">--:--</span>
-            </div>
-            <div class="time-col">
-                <span>Est. Original</span>
-                <span id="tt-original">--:--</span>
-            </div>
-            <div class="time-col">
-                <span>Proyección Actual</span>
-                <span id="tt-projected" style="color: var(--warning);">--:--</span>
-            </div>
+            <div class="time-col"><span>Inicio</span><span id="tt-start">--:--</span></div>
+            <div class="time-col"><span>Est. Original</span><span id="tt-original">--:--</span></div>
+            <div class="time-col"><span>Proyección</span><span id="tt-projected" style="color: var(--warning);">--:--</span></div>
         </div>
 
         <h3 id="execTaskTitle" style="font-size: 1.4em; color: #fff;">Tarea</h3>
@@ -149,9 +115,7 @@
             <div id="execProgressBar" class="progress-bar"></div>
         </div>
 
-        <!-- CHOICE RÁPIDO (RETRASO) -->
         <div id="jevChoiceBox" class="jev-box hidden">
-            <span class="primitive-tag">RETRASO DETECTADO</span>
             <div class="flex-row" style="justify-content: center; flex-wrap: wrap; margin-top: 10px;">
                 <button class="btn-warning" onclick="App.Jev.choiceAddExtra(2)">⏳ +2 Min</button>
                 <button class="btn-danger" onclick="App.Jev.choiceSkipTask()">⏭️ Omitir</button>
@@ -163,10 +127,8 @@
             <button id="btnCompleteTask" class="btn-success" style="width: 100%; font-size: 1.1em;" onclick="App.showScorePrimitive()">✅ Tarea Completada</button>
         </div>
 
-        <!-- SCORE OPCIONAL -->
         <div id="jevScoreBox" class="jev-box hidden">
-            <span class="primitive-tag">FRICCIÓN (OPCIONAL)</span>
-            <p style="margin-bottom: 8px;">Dificultad (1 = Fácil | 5 = Bloqueo):</p>
+            <input type="text" id="taskNoteInput" placeholder="Añadir nota o reflexión rápida... (Opcional)" style="margin-bottom: 12px;">
             <div class="flex-row" style="justify-content: center; margin-bottom: 12px;">
                 <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(1)">1</button>
                 <button class="btn-outline btn-icon" onclick="App.Jev.recordScore(2)">2</button>
@@ -181,14 +143,18 @@
     <!-- VISTA 3.5: RESUMEN FINAL -->
     <div id="view-summary" class="card hidden">
         <h2>Resumen de Ejecución</h2>
-        <div id="summaryTotalTime" style="text-align: center; font-size: 1.1em; color: var(--primary); font-weight: bold; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px;">
-            <!-- Rellenado dinámicamente -->
-        </div>
+        <div id="summaryTotalTime" style="text-align: center; font-size: 1.1em; color: var(--primary); font-weight: bold; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px;"></div>
         <div id="summaryBarsContainer" style="margin: 20px 0; max-height: 300px; overflow-y: auto;"></div>
-        <button class="btn-primary" style="width: 100%;" onclick="App.closeSummary()">💾 Guardar y Volver al Inicio</button>
+        
+        <div id="nextProcessSuggestion" class="jev-box hidden" style="border-color: var(--success); background: rgba(34, 197, 94, 0.08);">
+            <p style="margin-bottom: 10px; font-weight: bold; color: var(--success);">🎯 Siguiente paso recomendado:</p>
+            <button id="btnNextProcess" class="btn-success" style="width: 100%;"></button>
+        </div>
+
+        <button class="btn-primary" style="width: 100%; margin-top: 15px;" onclick="App.closeSummary()">💾 Guardar y Volver al Inicio</button>
     </div>
 
-    <!-- VISTA 4: EDITOR (CRUD AVANZADO) -->
+    <!-- VISTA 4: EDITOR -->
     <div id="view-editor" class="card hidden">
         <h2>Editor de Proceso</h2>
         <input type="text" id="editProcName" placeholder="Nombre de la Rutina">
@@ -196,9 +162,10 @@
             <option value="es-US">Voz: Español (Latino)</option>
             <option value="en-US">Voz: English (US)</option>
             <option value="fr-FR">Voz: Français</option>
-            <option value="it-IT">Voz: Italiano</option>
-            <option value="pt-BR">Voz: Português</option>
         </select>
+        
+        <label style="display:block; margin-top:10px; font-size: 0.85em; color:var(--text-muted);">Sugerir al terminar (Opcional):</label>
+        <select id="editNextProc"></select>
 
         <div style="margin: 15px 0; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
             <h3>Pasos</h3>
@@ -206,115 +173,72 @@
                 <input type="text" id="newTaskName" placeholder="Descripción de la tarea">
                 <div class="flex-row">
                     <input type="number" id="newTaskTime" placeholder="Min" style="width: 80px;">
-                    <label style="font-size: 0.9em; display:flex; align-items:center;">
-                        <input type="checkbox" id="newTaskEssential" checked> Esencial
-                    </label>
+                    <label style="font-size: 0.9em; display:flex; align-items:center;"><input type="checkbox" id="newTaskEssential" checked> Esencial</label>
                 </div>
                 <button class="btn-primary" id="btnAddTask" onclick="App.CRUD.addTask()">+ Añadir Paso</button>
             </div>
-            
-            <!-- Lista de Tareas con Controles -->
             <div id="editTaskList"></div>
         </div>
 
         <div class="flex-row" style="justify-content: space-between;">
-            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar Todo</button>
+            <button class="btn-success" onclick="App.CRUD.saveProcess()">💾 Guardar</button>
             <button class="btn-outline" onclick="App.navTo('view-menu')">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- VISTA 5: EDITOR DE MENSAJES -->
+    <!-- VISTA 5: MENSAJES -->
     <div id="view-messages" class="card hidden">
-        <h2>Personalizar Frases de Voz</h2>
-        <p style="margin-bottom: 15px;">Escribe las frases (una por línea). El sistema escogerá una al azar.</p>
-        <div id="msgFieldsContainer" class="flex-col" style="margin: 15px 0; max-height: 350px; overflow-y: auto; padding-right: 5px;"></div>
-        <button class="btn-success" style="width: 100%;" onclick="App.Messages.save()">💾 Guardar Frases</button>
+        <h2>Frases de Voz</h2>
+        <p style="margin-bottom: 15px;">Si dejas en blanco los porcentajes, el sistema dirá automáticamente "25%", "50%", etc.</p>
+        <div id="msgFieldsContainer" class="flex-col" style="margin: 15px 0; max-height: 350px; overflow-y: auto;"></div>
+        <button class="btn-success" style="width: 100%;" onclick="App.Messages.save()">💾 Guardar</button>
     </div>
 
     <!-- VISTA 6: ESTADÍSTICAS -->
     <div id="view-stats" class="card hidden">
-        <h2>Rendimiento Histórico</h2>
+        <h2>Rendimiento</h2>
+        <div id="streakBadge" class="badge-streak hidden">🔥 Racha: 0 días</div>
         <select id="statProcessSelect" onchange="App.Stats.renderChart()"></select>
         <canvas id="perfChart" width="400" height="250"></canvas>
         <div id="statsList" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
     </div>
-
 </div>
 
 <script>
-const DEFAULT_DATA = {
-    procesos: {
-        p1: { id: 'p1', nombre: '🚀 Bloque Deep Work', lang: 'es-US', tareas: [{ nombre: 'Definir objetivo', tiempoMin: 2, esencial: true }, { nombre: 'Bloque ejecución', tiempoMin: 25, esencial: true }] }
-    },
-    mensajes: {
-        INICIO: ['Proceso iniciado. Enfoque total.'],
-        PCT_25: ['Llevas el 25% del tiempo.'],
-        PCT_50: ['50% completado. Mantén el ritmo.'],
-        PCT_75: ['75% completado. Entrando en la recta final.'],
-        OVERTIME: ['Tiempo superado. Selecciona una acción en pantalla.'],
-        FINALIZADO: ['Proceso finalizado.']
-    },
-    historial: []
-};
-
 const App = {
-    State: {
-        procesos: {}, mensajes: {}, historial: [],
-        audioActive: true, activeProcId: null, energyLevel: 'high',
-        remainingTasks: [], currentTask: null, executionLog: [],
-        timerInterval: null, chartInstance: null,
-        
-        // Tiempos
-        startTimeGlobal: null,
-        totalEstimatedMsGlobal: 0
-    },
-    
-    Draft: { id: null, nombre: '', lang: 'es-US', tareas: [], editIndex: -1 },
+    State: { procesos: {}, mensajes: {}, historial: [], audioActive: true, activeProcId: null, energyLevel: 'high', remainingTasks: [], currentTask: null, executionLog: [], timerInterval: null, chartInstance: null, startTimeGlobal: null, totalEstimatedMsGlobal: 0 },
+    Draft: { id: null, nombre: '', lang: 'es-US', siguienteProcId: '', tareas: [], editIndex: -1 },
 
     init: function() {
         this.loadStorage();
         this.renderMenu();
-        
-        // Navegación History API segura (Botón Atrás)
-        window.addEventListener('popstate', (e) => {
-            if (e.state && e.state.view) this._renderView(e.state.view);
-            else this._renderView('view-menu');
-        });
+        window.addEventListener('popstate', (e) => { if (e.state && e.state.view) this._renderView(e.state.view); else this._renderView('view-menu'); });
         history.replaceState({view: 'view-menu'}, '');
         this._renderView('view-menu');
     },
 
-    // --- NAVEGACIÓN ---
-    navTo: function(viewId) {
-        history.pushState({view: viewId}, '');
-        this._renderView(viewId);
-    },
+    navTo: function(viewId) { history.pushState({view: viewId}, ''); this._renderView(viewId); },
     
     _renderView: function(viewId) {
-        // Limpiar estilos de navbar
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         const activeBtn = document.getElementById(`nav-${viewId.split('-')[1]}`);
         if(activeBtn) activeBtn.classList.add('active');
-
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById(viewId).classList.remove('hidden');
-
-        // Renderizados condicionales
+        
         if(viewId === 'view-menu') this.renderMenu();
         if(viewId === 'view-messages') this.Messages.render();
         if(viewId === 'view-stats') this.Stats.show();
     },
 
-    // --- HERRAMIENTAS GENERALES ---
-    toggleAudio: function() {
-        this.State.audioActive = !this.State.audioActive;
-        document.getElementById('btnAudioToggle').innerText = this.State.audioActive ? '🔊' : '🔇';
-    },
+    toggleAudio: function() { this.State.audioActive = !this.State.audioActive; document.getElementById('btnAudioToggle').innerText = this.State.audioActive ? '🔊' : '🔇'; },
 
-    speak: function(text) {
+    speak: function(text, defaultText = '') {
         if (!this.State.audioActive || !window.speechSynthesis) return;
         window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(text);
+        const finalTxt = text || defaultText;
+        if(!finalTxt) return;
+        const msg = new SpeechSynthesisUtterance(finalTxt);
         const proc = this.State.procesos[this.State.activeProcId];
         msg.lang = (proc && proc.lang) ? proc.lang : 'es-US';
         window.speechSynthesis.speak(msg);
@@ -325,28 +249,18 @@ const App = {
         return arr[Math.floor(Math.random() * arr.length)] || '';
     },
 
-    formatTimeAMPM: function(date) {
-        return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    },
-
+    formatTimeAMPM: function(date) { return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); },
     loadStorage: function() {
-        const p = localStorage.getItem('jev_procs_v3');
-        this.State.procesos = p ? JSON.parse(p) : JSON.parse(JSON.stringify(DEFAULT_DATA.procesos));
-        
-        const m = localStorage.getItem('jev_msgs_v3');
-        this.State.mensajes = m ? JSON.parse(m) : JSON.parse(JSON.stringify(DEFAULT_DATA.mensajes));
-        
-        const h = localStorage.getItem('jev_hist_v3');
-        this.State.historial = h ? JSON.parse(h) : [];
+        this.State.procesos = JSON.parse(localStorage.getItem('jev_procs_v4')) || {};
+        this.State.mensajes = JSON.parse(localStorage.getItem('jev_msgs_v4')) || { PCT_25:[], PCT_50:[], PCT_75:[], OVERTIME:[], FINALIZADO:[] };
+        this.State.historial = JSON.parse(localStorage.getItem('jev_hist_v4')) || [];
     },
-    
     saveAll: function() {
-        localStorage.setItem('jev_procs_v3', JSON.stringify(this.State.procesos));
-        localStorage.setItem('jev_msgs_v3', JSON.stringify(this.State.mensajes));
-        localStorage.setItem('jev_hist_v3', JSON.stringify(this.State.historial));
+        localStorage.setItem('jev_procs_v4', JSON.stringify(this.State.procesos));
+        localStorage.setItem('jev_msgs_v4', JSON.stringify(this.State.mensajes));
+        localStorage.setItem('jev_hist_v4', JSON.stringify(this.State.historial));
     },
 
-    // --- MENÚ PRINCIPAL ---
     renderMenu: function() {
         const list = document.getElementById('processList');
         list.innerHTML = '';
@@ -356,19 +270,17 @@ const App = {
                 <div class="process-card">
                     <div class="process-info">
                         <strong style="font-size:1.1em; display:block;">${proc.nombre}</strong>
-                        <span style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos | ~${time}m | ${proc.lang}</span>
+                        <span style="font-size:0.85em; color:var(--text-muted);">${proc.tareas.length} pasos | ~${time}m</span>
                     </div>
                     <div class="process-actions">
                         <button class="btn-primary" onclick="App.setupTriage('${proc.id}')">▶️ Iniciar</button>
                         <button class="btn-outline btn-icon" onclick="App.CRUD.openEditor('${proc.id}')">✏️</button>
                         <button class="btn-outline btn-icon" onclick="App.CRUD.deleteProcess('${proc.id}')">🗑️</button>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
     },
 
-    // --- TRIAJE ---
     setupTriage: function(procId) {
         this.State.activeProcId = procId;
         document.getElementById('triageProcessTitle').innerText = this.State.procesos[procId].nombre;
@@ -378,32 +290,25 @@ const App = {
 
     setEnergyLevel: function(level) {
         this.State.energyLevel = level;
-        document.getElementById('triageEnergyText').innerText = level === 'high' ? 
-            "Modo Completo: Se ejecutarán todos los pasos." : 
-            "Modo Emergencia: Se omitirán las tareas no esenciales.";
+        document.getElementById('triageEnergyText').innerText = level === 'high' ? "Modo Completo: Todas las tareas." : "Modo Emergencia: Solo esenciales.";
     },
 
-    // --- EJECUCIÓN Y TIEMPOS DINÁMICOS ---
     startExecution: function() {
         const proc = this.State.procesos[this.State.activeProcId];
-        
         this.State.remainingTasks = proc.tareas.filter(t => this.State.energyLevel === 'high' || t.esencial).map(t => ({ ...t }));
-        if(this.State.remainingTasks.length === 0) return alert("No hay tareas esenciales.");
+        if(this.State.remainingTasks.length === 0) return alert("No hay tareas.");
 
         this.State.executionLog = [];
         this.State.totalEstimatedMsGlobal = this.State.remainingTasks.reduce((a, t) => a + t.tiempoMin, 0) * 60000;
         this.State.startTimeGlobal = new Date();
         
-        const origEnd = new Date(this.State.startTimeGlobal.getTime() + this.State.totalEstimatedMsGlobal);
-        
         document.getElementById('execProcessName').innerText = proc.nombre;
         document.getElementById('tt-start').innerText = this.formatTimeAMPM(this.State.startTimeGlobal);
-        document.getElementById('tt-original').innerText = this.formatTimeAMPM(origEnd);
+        document.getElementById('tt-original').innerText = this.formatTimeAMPM(new Date(this.State.startTimeGlobal.getTime() + this.State.totalEstimatedMsGlobal));
 
         this.navTo('view-execution');
-        this.speak(this.getMsg('INICIO'));
+        this.speak(this.getMsg('INICIO'), 'Iniciando');
         this.nextTask();
-        
         if (this.State.timerInterval) clearInterval(this.State.timerInterval);
         this.State.timerInterval = setInterval(() => this.updateTimerUI(), 1000);
     },
@@ -412,17 +317,12 @@ const App = {
         document.getElementById('jevChoiceBox').classList.add('hidden');
         document.getElementById('jevScoreBox').classList.add('hidden');
         document.getElementById('btnCompleteTask').classList.remove('hidden');
+        document.getElementById('taskNoteInput').value = '';
 
         if (this.State.remainingTasks.length === 0) return this.showSummaryBars();
 
         const taskData = this.State.remainingTasks.shift();
-        this.State.currentTask = {
-            ...taskData,
-            totalMs: taskData.tiempoMin * 60000,
-            startMs: Date.now(),
-            warnFlags: { 25: false, 50: false, 75: false, 100: false }
-        };
-
+        this.State.currentTask = { ...taskData, totalMs: taskData.tiempoMin * 60000, startMs: Date.now(), warnFlags: { 25: false, 50: false, 75: false, 100: false } };
         document.getElementById('execTaskTitle').innerText = this.State.currentTask.nombre;
         this.speak(this.State.currentTask.nombre);
     },
@@ -431,66 +331,57 @@ const App = {
         if (!this.State.currentTask) return;
         const now = Date.now();
         const elapsed = now - this.State.currentTask.startMs;
-        const total = this.State.currentTask.totalMs;
-        const pct = (elapsed / total) * 100;
+        const pct = (elapsed / this.State.currentTask.totalMs) * 100;
 
-        // Proyección Dinámica
-        const remainingUnstartedMs = this.State.remainingTasks.reduce((a, t) => a + (t.tiempoMin * 60000), 0);
-        const currentRemainingMs = Math.max(0, total - elapsed);
-        const projectedEnd = new Date(now + currentRemainingMs + remainingUnstartedMs);
-        document.getElementById('tt-projected').innerText = this.formatTimeAMPM(projectedEnd);
+        const remMs = Math.max(0, this.State.currentTask.totalMs - elapsed) + this.State.remainingTasks.reduce((a, t) => a + (t.tiempoMin * 60000), 0);
+        document.getElementById('tt-projected').innerText = this.formatTimeAMPM(new Date(now + remMs));
 
-        // UI Reloj
         const sec = Math.floor(elapsed / 1000);
         document.getElementById('execTimer').innerText = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
         
         const bar = document.getElementById('execProgressBar');
         bar.style.width = `${Math.min(pct, 100)}%`;
 
-        // Alertas de Voz por Porcentaje
-        if (pct >= 25 && pct < 50 && !this.State.currentTask.warnFlags[25]) { this.State.currentTask.warnFlags[25] = true; this.speak(this.getMsg('PCT_25')); }
-        if (pct >= 50 && pct < 75 && !this.State.currentTask.warnFlags[50]) { this.State.currentTask.warnFlags[50] = true; this.speak(this.getMsg('PCT_50')); }
-        if (pct >= 75 && pct < 100 && !this.State.currentTask.warnFlags[75]) { this.State.currentTask.warnFlags[75] = true; this.speak(this.getMsg('PCT_75')); }
+        const checkWarn = (pt, key, def) => {
+            if (pct >= pt && pct < (pt+25) && !this.State.currentTask.warnFlags[pt]) {
+                this.State.currentTask.warnFlags[pt] = true;
+                this.speak(this.getMsg(key), def);
+            }
+        };
+        checkWarn(25, 'PCT_25', '25 por ciento'); checkWarn(50, 'PCT_50', '50 por ciento'); checkWarn(75, 'PCT_75', '75 por ciento');
 
         if (pct >= 100) {
             bar.classList.add('overtime');
             if (!this.State.currentTask.warnFlags[100]) {
                 this.State.currentTask.warnFlags[100] = true;
-                this.speak(this.getMsg('OVERTIME'));
+                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                this.speak(this.getMsg('OVERTIME'), 'Tiempo superado');
                 document.getElementById('jevChoiceBox').classList.remove('hidden');
             }
-        } else {
-            bar.classList.remove('overtime');
-        }
+        } else { bar.classList.remove('overtime'); }
     },
 
     showScorePrimitive: function() {
         document.getElementById('jevChoiceBox').classList.add('hidden');
         document.getElementById('btnCompleteTask').classList.add('hidden');
         document.getElementById('jevScoreBox').classList.remove('hidden');
+        document.getElementById('taskNoteInput').focus();
     },
 
     Jev: {
-        choiceAddExtra: function(min) {
-            App.State.currentTask.totalMs += (min * 60000);
-            App.State.currentTask.warnFlags[100] = false;
-            document.getElementById('jevChoiceBox').classList.add('hidden');
-        },
-        choiceSkipTask: function() {
-            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: true, score: 0 });
-            App.nextTask();
-        },
+        choiceAddExtra: function(min) { App.State.currentTask.totalMs += (min * 60000); App.State.currentTask.warnFlags[100] = false; document.getElementById('jevChoiceBox').classList.add('hidden'); },
+        choiceSkipTask: function() { App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: true, score: 0, nota: '' }); App.nextTask(); },
         choiceCompleteNow: function() { App.showScorePrimitive(); },
         recordScore: function(score) {
-            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: false, score: score });
+            const nota = document.getElementById('taskNoteInput').value.trim();
+            App.State.executionLog.push({ nombre: App.State.currentTask.nombre, estMs: App.State.currentTask.totalMs, realMs: Date.now() - App.State.currentTask.startMs, omitido: false, score: score, nota: nota });
             App.nextTask();
         }
     },
 
-    // --- RESUMEN FINAL ---
     showSummaryBars: function() {
         clearInterval(this.State.timerInterval);
-        this.speak(this.getMsg('FINALIZADO'));
+        this.speak(this.getMsg('FINALIZADO'), 'Proceso completado');
         
         let totalRealMs = 0, totalEstMs = 0;
         const cont = document.getElementById('summaryBarsContainer');
@@ -498,188 +389,168 @@ const App = {
 
         this.State.executionLog.forEach(log => {
             totalRealMs += log.realMs; totalEstMs += log.estMs;
-            const minReal = (log.realMs / 60000).toFixed(1);
-            const minEst = (log.estMs / 60000).toFixed(1);
             const pct = Math.min((log.realMs / log.estMs) * 100, 100);
-            const isOver = log.realMs > log.estMs;
-            
+            const notaHtml = log.nota ? `<div style="font-size:0.8em; color:var(--primary); margin-top:2px;">📝 ${log.nota}</div>` : '';
             cont.innerHTML += `
                 <div style="margin-bottom: 10px;">
                     <div style="display:flex; justify-content:space-between; font-size:0.85em;">
                         <span>${log.omitido ? '⏭️ ' : ''}${log.nombre}</span>
-                        <span style="color: ${isOver ? 'var(--danger)' : 'var(--text-muted)'}">${minReal}m / ${minEst}m</span>
+                        <span>${(log.realMs/60000).toFixed(1)}m / ${(log.estMs/60000).toFixed(1)}m</span>
                     </div>
-                    <div class="summary-bar-bg"><div class="summary-bar-fill ${isOver ? 'over' : ''}" style="width: ${pct}%;"></div></div>
-                </div>
-            `;
+                    <div class="summary-bar-bg"><div class="summary-bar-fill ${log.realMs>log.estMs ? 'over' : ''}" style="width: ${pct}%;"></div></div>
+                    ${notaHtml}
+                </div>`;
         });
 
-        // Totales Finales
-        const sumText = `Tiempo Total: ${(totalRealMs/60000).toFixed(1)}m Real vs ${(totalEstMs/60000).toFixed(1)}m Estimado`;
-        document.getElementById('summaryTotalTime').innerText = sumText;
-        document.getElementById('summaryTotalTime').style.color = (totalRealMs > totalEstMs) ? 'var(--warning)' : 'var(--success)';
+        document.getElementById('summaryTotalTime').innerText = `Total: ${(totalRealMs/60000).toFixed(1)}m Real vs ${(totalEstMs/60000).toFixed(1)}m Estimado`;
+        
+        const proc = this.State.procesos[this.State.activeProcId];
+        const nextBox = document.getElementById('nextProcessSuggestion');
+        if (proc.siguienteProcId && this.State.procesos[proc.siguienteProcId]) {
+            const nextP = this.State.procesos[proc.siguienteProcId];
+            document.getElementById('btnNextProcess').innerText = "▶️ " + nextP.nombre;
+            document.getElementById('btnNextProcess').onclick = () => { App.closeSummary(true); App.setupTriage(nextP.id); };
+            nextBox.classList.remove('hidden');
+        } else { nextBox.classList.add('hidden'); }
 
         this.navTo('view-summary');
     },
 
-    closeSummary: function() {
+    closeSummary: function(skipNav = false) {
         const proc = this.State.procesos[this.State.activeProcId];
-        this.State.historial.push({ procId: proc.id, procName: proc.nombre, fecha: new Date().toISOString(), log: [...this.State.executionLog] });
+        this.State.historial.push({ id: Date.now().toString(), procId: proc.id, fecha: new Date().toISOString(), log: [...this.State.executionLog] });
         this.saveAll();
-        // Cierre limpio de navegación
-        history.pushState({view: 'view-menu'}, '');
-        this._renderView('view-menu'); 
+        if(!skipNav) { history.pushState({view: 'view-menu'}, ''); this._renderView('view-menu'); }
     },
 
-    // --- EDITOR AVANZADO (CRUD, REORDENAR, EDITAR) ---
     CRUD: {
         openEditor: function(id = null) {
-            if (id && App.State.procesos[id]) {
-                App.Draft = JSON.parse(JSON.stringify(App.State.procesos[id]));
-            } else {
-                App.Draft = { id: 'proc_' + Date.now(), nombre: '', lang: 'es-US', tareas: [] };
-            }
+            App.Draft = id && App.State.procesos[id] ? JSON.parse(JSON.stringify(App.State.procesos[id])) : { id: 'proc_' + Date.now(), nombre: '', lang: 'es-US', siguienteProcId: '', tareas: [] };
             App.Draft.editIndex = -1;
             document.getElementById('editProcName').value = App.Draft.nombre;
             document.getElementById('editProcLang').value = App.Draft.lang || 'es-US';
-            this.clearInputs();
-            this.renderLists();
-            App.navTo('view-editor');
-        },
-        clearInputs: function() {
-            document.getElementById('newTaskName').value = '';
-            document.getElementById('newTaskTime').value = '';
-            document.getElementById('newTaskEssential').checked = true;
-            document.getElementById('btnAddTask').innerText = "+ Añadir Paso";
-            App.Draft.editIndex = -1;
-        },
-        addTask: function() {
-            const n = document.getElementById('newTaskName').value.trim();
-            const t = parseInt(document.getElementById('newTaskTime').value);
-            const e = document.getElementById('newTaskEssential').checked;
-            if (!n || !t) return;
+            
+            const selNext = document.getElementById('editNextProc');
+            selNext.innerHTML = '<option value="">Ninguno</option>' + Object.values(App.State.procesos).filter(p => p.id !== App.Draft.id).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            selNext.value = App.Draft.siguienteProcId || '';
 
-            if (App.Draft.editIndex > -1) {
-                App.Draft.tareas[App.Draft.editIndex] = { nombre: n, tiempoMin: t, esencial: e };
-            } else {
-                App.Draft.tareas.push({ nombre: n, tiempoMin: t, esencial: e });
-            }
-            this.clearInputs();
-            this.renderLists();
+            this.clearInputs(); this.renderLists(); App.navTo('view-editor');
         },
-        loadTaskToEdit: function(i) {
-            const t = App.Draft.tareas[i];
-            document.getElementById('newTaskName').value = t.nombre;
-            document.getElementById('newTaskTime').value = t.tiempoMin;
-            document.getElementById('newTaskEssential').checked = t.esencial;
-            document.getElementById('btnAddTask').innerText = "💾 Actualizar Paso";
-            App.Draft.editIndex = i;
+        importAI: function() {
+            const data = prompt("Pega aquí el código JSON generado por la IA:");
+            if(!data) return;
+            try {
+                const proc = JSON.parse(data);
+                if(!proc.id || !proc.tareas) throw new Error("Inválido");
+                App.State.procesos[proc.id] = proc;
+                App.saveAll(); App.renderMenu(); alert("¡Proceso importado!");
+            } catch(e) { alert("Error: Verifica que el formato JSON sea exacto."); }
         },
-        moveTask: function(i, dir) {
-            const arr = App.Draft.tareas;
-            if (dir === -1 && i > 0) {
-                [arr[i-1], arr[i]] = [arr[i], arr[i-1]];
-            } else if (dir === 1 && i < arr.length - 1) {
-                [arr[i+1], arr[i]] = [arr[i], arr[i+1]];
-            }
-            this.renderLists();
+        clearInputs: function() { document.getElementById('newTaskName').value = ''; document.getElementById('newTaskTime').value = ''; document.getElementById('btnAddTask').innerText = "+ Añadir Paso"; App.Draft.editIndex = -1; },
+        addTask: function() {
+            const n = document.getElementById('newTaskName').value.trim(); const t = parseInt(document.getElementById('newTaskTime').value);
+            if (!n || !t) return;
+            const tk = { nombre: n, tiempoMin: t, esencial: document.getElementById('newTaskEssential').checked };
+            App.Draft.editIndex > -1 ? App.Draft.tareas[App.Draft.editIndex] = tk : App.Draft.tareas.push(tk);
+            this.clearInputs(); this.renderLists();
         },
-        deleteTask: function(i) {
-            App.Draft.tareas.splice(i, 1);
-            this.clearInputs();
-            this.renderLists();
-        },
+        loadTaskToEdit: function(i) { const t = App.Draft.tareas[i]; document.getElementById('newTaskName').value = t.nombre; document.getElementById('newTaskTime').value = t.tiempoMin; document.getElementById('newTaskEssential').checked = t.esencial; document.getElementById('btnAddTask').innerText = "💾 Actualizar"; App.Draft.editIndex = i; },
+        deleteTask: function(i) { App.Draft.tareas.splice(i, 1); this.clearInputs(); this.renderLists(); },
+        deleteProcess: function(id) { if(confirm("¿Borrar proceso?")) { delete App.State.procesos[id]; App.saveAll(); App.renderMenu(); } },
         renderLists: function() {
             document.getElementById('editTaskList').innerHTML = App.Draft.tareas.map((tk, i) => `
-                <div class="task-edit-row">
-                    <span style="flex:1;">${i+1}. ${tk.nombre} <strong>(${tk.tiempoMin}m)</strong> ${tk.esencial ? '⭐' : ''}</span>
-                    <div class="task-controls">
-                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${i}, -1)" ${i===0?'disabled':''}>↑</button>
-                        <button class="btn-outline btn-icon" onclick="App.CRUD.moveTask(${i}, 1)" ${i===App.Draft.tareas.length-1?'disabled':''}>↓</button>
+                <div style="font-size:0.9em; display:flex; justify-content:space-between; margin-bottom:6px; background:var(--bg-item); padding:8px; border-radius:6px; border:1px solid var(--border);">
+                    <span>${i+1}. ${tk.nombre} <strong>(${tk.tiempoMin}m)</strong></span>
+                    <div style="display:flex; gap:4px;">
                         <button class="btn-outline btn-icon" style="color:var(--primary);" onclick="App.CRUD.loadTaskToEdit(${i})">✏️</button>
                         <button class="btn-danger btn-icon" onclick="App.CRUD.deleteTask(${i})">X</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
         },
         saveProcess: function() {
             App.Draft.nombre = document.getElementById('editProcName').value.trim() || 'Sin Nombre';
             App.Draft.lang = document.getElementById('editProcLang').value;
+            App.Draft.siguienteProcId = document.getElementById('editNextProc').value;
             if (App.Draft.tareas.length === 0) return alert("Añade al menos 1 paso.");
-            delete App.Draft.editIndex;
-            App.State.procesos[App.Draft.id] = App.Draft;
-            App.saveAll();
-            App.navTo('view-menu');
+            App.State.procesos[App.Draft.id] = App.Draft; App.saveAll(); App.navTo('view-menu');
         }
     },
 
-    // --- EDITOR DE MENSAJES ---
     Messages: {
         render: function() {
-            const cont = document.getElementById('msgFieldsContainer');
-            cont.innerHTML = '';
-            Object.keys(App.State.mensajes).forEach(k => {
-                cont.innerHTML += `
-                    <div style="margin-bottom:10px;">
-                        <label style="font-weight:bold; font-size:0.85em; color:var(--primary); display:block; margin-bottom:4px;">Disparador: ${k}</label>
-                        <textarea id="msg_${k}" rows="2">${App.State.mensajes[k].join('\n')}</textarea>
-                    </div>
-                `;
+            const cont = document.getElementById('msgFieldsContainer'); cont.innerHTML = '';
+            ['PCT_25', 'PCT_50', 'PCT_75', 'OVERTIME', 'FINALIZADO'].forEach(k => {
+                const arr = App.State.mensajes[k] || [];
+                cont.innerHTML += `<div style="margin-bottom:10px;"><label style="font-weight:bold; font-size:0.85em; color:var(--primary);">${k}</label><textarea id="msg_${k}" rows="2">${arr.join('\n')}</textarea></div>`;
             });
         },
         save: function() {
-            Object.keys(App.State.mensajes).forEach(k => {
-                const txt = document.getElementById(`msg_${k}`).value;
-                App.State.mensajes[k] = txt.split('\n').map(s => s.trim()).filter(Boolean);
+            ['PCT_25', 'PCT_50', 'PCT_75', 'OVERTIME', 'FINALIZADO'].forEach(k => {
+                App.State.mensajes[k] = document.getElementById(`msg_${k}`).value.split('\n').map(s => s.trim()).filter(Boolean);
             });
-            App.saveAll();
-            alert("Frases actualizadas correctamente.");
+            App.saveAll(); alert("Frases actualizadas.");
         }
     },
 
-    // --- ESTADÍSTICAS ---
     Stats: {
         show: function() {
             const sel = document.getElementById('statProcessSelect');
             sel.innerHTML = Object.values(App.State.procesos).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            this.calcStreak();
             if(sel.options.length > 0) this.renderChart();
+        },
+        calcStreak: function() {
+            const dates = [...new Set(App.State.historial.map(h => new Date(h.fecha).toDateString()))].map(d => new Date(d)).sort((a,b)=>b-a);
+            let streak = 0; let check = new Date(); check.setHours(0,0,0,0);
+            if (dates.length > 0 && (check - dates[0]) / 86400000 <= 1) {
+                for(let i=0; i<dates.length; i++) {
+                    const diff = i===0 ? (check - dates[0])/86400000 : (dates[i-1] - dates[i])/86400000;
+                    if(diff <= 1) streak++; else break;
+                }
+            }
+            const b = document.getElementById('streakBadge');
+            b.innerText = `🔥 Racha de uso: ${streak} días`;
+            b.classList.remove('hidden');
+        },
+        deleteRecord: function(id) {
+            if(!confirm("¿Borrar este registro?")) return;
+            App.State.historial = App.State.historial.filter(h => h.id !== id);
+            App.saveAll(); App.Stats.renderChart(); App.Stats.calcStreak();
         },
         renderChart: function() {
             const procId = document.getElementById('statProcessSelect').value;
             const histData = App.State.historial.filter(h => h.procId === procId);
             const list = document.getElementById('statsList');
-            if (histData.length === 0) {
-                list.innerHTML = '<p style="text-align:center;">No hay datos.</p>';
-                if(App.State.chartInstance) App.State.chartInstance.destroy();
-                return;
-            }
+            if (histData.length === 0) { list.innerHTML = '<p style="text-align:center;">No hay datos.</p>'; if(App.State.chartInstance) App.State.chartInstance.destroy(); return; }
 
-            const labels = []; const dataReal = []; const dataEst = [];
-            list.innerHTML = '';
+            const labels = []; const dataReal = []; const dataEst = []; list.innerHTML = '';
+            let totalHistRealMs = 0;
 
             histData.forEach((run, i) => {
-                labels.push(`S-${i+1}`);
-                let tr = 0, te = 0;
+                labels.push(`S-${i+1}`); let tr = 0, te = 0;
                 run.log.forEach(l => { tr += l.realMs; te += l.estMs; });
+                totalHistRealMs += tr;
                 dataReal.push((tr / 60000).toFixed(1)); dataEst.push((te / 60000).toFixed(1));
-
+                
+                const notesHtml = run.log.filter(l=>l.nota).map(l=> `<div style="font-size:0.8em; color:var(--text-muted); margin-left:10px;">- ${l.nombre}: ${l.nota}</div>`).join('');
                 list.innerHTML = `<div style="border-bottom:1px solid var(--border); padding:8px 0; font-size:0.85em;">
-                    <strong>${new Date(run.fecha).toLocaleDateString()}</strong>: Real ${dataReal[dataReal.length-1]}m / Teórico ${dataEst[dataEst.length-1]}m
+                    <div style="display:flex; justify-content:space-between;">
+                        <span><strong>${new Date(run.fecha).toLocaleDateString()}</strong>: Real ${dataReal[dataReal.length-1]}m / Teórico ${dataEst[dataEst.length-1]}m</span>
+                        <button class="btn-outline btn-icon" style="padding:2px 6px;" onclick="App.Stats.deleteRecord('${run.id}')">🗑️</button>
+                    </div>
+                    ${notesHtml}
                 </div>` + list.innerHTML;
             });
 
+            const avg = (totalHistRealMs / histData.length / 60000).toFixed(1);
+            list.innerHTML = `<div style="background:var(--bg-item); padding:10px; border-radius:8px; margin-bottom:10px; color:var(--primary); font-weight:bold;">Promedio Histórico Real: ${avg} min</div>` + list.innerHTML;
+
             const ctx = document.getElementById('perfChart').getContext('2d');
             if(App.State.chartInstance) App.State.chartInstance.destroy();
-            App.State.chartInstance = new Chart(ctx, {
-                type: 'line', data: { labels: labels, datasets: [
-                    { label: 'T. Real (min)', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 },
-                    { label: 'T. Estimado (min)', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 }
-                ]}, options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
-            });
+            App.State.chartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [ { label: 'T. Real', data: dataReal, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 }, { label: 'T. Estimado', data: dataEst, borderColor: '#38bdf8', borderDash: [5, 5], fill: false, tension: 0 } ]}, options: { responsive: true, color: '#f8fafc', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } } });
         }
     }
 };
-
 document.addEventListener('DOMContentLoaded', () => App.init());
 </script>
 </body>
