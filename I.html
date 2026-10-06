@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Cognitive Accelerator 2.0: Intention Re-frame</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #eef3ff; color: #333; padding: 20px; }
+        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); border-top: 5px solid #6a0dad; }
+        h1 { color: #6a0dad; text-align: center; margin-bottom: 15px; font-weight: 700; }
+        
+        /* ANCLA VISUAL */
+        #anchor-section { text-align: center; margin-bottom: 20px; }
+        #anchor-img { max-height: 200px; width: auto; border-radius: 12px; display: none; margin: 0 auto 10px auto; box-shadow: 0 8px 20px rgba(0,0,0,0.15); object-fit: cover; }
+
+        /* OUTPUT AREA */
+        #output-area { 
+            background-color: #f0f8ff; border: 3px solid #6a0dad; min-height: 90px; padding: 20px; 
+            margin-bottom: 25px; border-radius: 12px; font-size: 1.4em; text-align: center; font-weight: 600;
+            color: #1a1a1a; display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+        }
+
+        /* BUTTONS GRID */
+        .buttons-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 25px; }
+        .obstacle-btn { 
+            padding: 15px 22px; font-size: 1em; font-weight: 600; border: none; border-radius: 30px; 
+            cursor: pointer; transition: all 0.2s; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .obstacle-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+
+        #btn-p { background-color: #ff4500; }
+        #btn-o { background-color: #1e90ff; }
+        #btn-d { background-color: #3cb371; }
+        #btn-e { background-color: #ffc107; color: #333; }
+        #btn-f { background-color: #00bcd4; }
+
+        .controls-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f8ff; border-radius: 10px; border: 1px solid #e0e0e0; }
+        .control-btn { padding: 8px 12px; border: 1px solid #6a0dad; background: #fff; color: #6a0dad; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .control-btn:hover { background-color: #e6e6fa; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>⚡ Disparador Cognitivo Instantáneo</h1>
+
+        <!-- SECCIÓN DEL ANCLA VISUAL -->
+        <div id="anchor-section">
+            <img id="anchor-img" src="" alt="Tu Ancla Visual">
+            <input type="file" id="image-loader" accept="image/*" style="display: none;" onchange="saveVisualAnchor(event)">
+            <button class="control-btn" onclick="document.getElementById('image-loader').click()">🖼️ Cargar Ancla Visual (Tu Meta / Propósito)</button>
+        </div>
+        
+        <div id="output-area">Selecciona un botón para encender el foco.</div>
+
+        <div class="buttons-grid">
+            <button class="obstacle-btn" id="btn-p" onclick="triggerHack('p', 'PROCRASTINACIÓN', 220)">PROCRASTINACIÓN</button>
+            <button class="obstacle-btn" id="btn-o" onclick="triggerHack('o', 'SOBRECARGA', 180)">SOBRECARGA</button>
+            <button class="obstacle-btn" id="btn-d" onclick="triggerHack('d', 'DISTRACCIÓN', 300)">DISTRACCIÓN</button>
+            <button class="obstacle-btn" id="btn-e" onclick="triggerHack('e', 'MÁS ENERGÍA 🔋', 440)">ENERGÍA 🔋</button>
+            <button class="obstacle-btn" id="btn-f" onclick="triggerHack('f', 'SÚPER ENFOQUE 🎯', 523)">SÚPER ENFOQUE 🎯</button>
+        </div>
+
+        <div class="controls-bar">
+            <span style="color: #6c757d; font-size: 0.9em;">Ancla auditiva & Registro IndexedDB activos</span>
+            <button class="control-btn" onclick="getLogsCount()">📊 Ver Registros</button>
+        </div>
+    </div>
+
+    <script>
+        // === 1. FRASES DE REENCUADRE ===
+        const hacks = {
+            p: ['Solo los primeros 5 minutos. El impulso vendrá solo.', 'Tu borrador es suficiente. Empieza ya.'],
+            o: ['Define el siguiente paso único. Olvida el resto.', 'Aplica el 80/20. ¿Qué es lo único vital ahora?'],
+            d: ['Una sola tarea, una pantalla, un objetivo.', 'El acto de enfocarse es decir NO miles de veces.'],
+            e: ['¡Respira profundo! El movimiento crea energía.', 'Cambia el entorno o ponte de pie ahora mismo.'],
+            f: ['Inicia un bloque de 25 min sin interrupciones.', 'Tu foco es un rayo láser. Concentra toda tu fuerza.']
+        };
+
+        // === 2. BASE DE DATOS INDEXEDDB (Persistencia Silenciosa) ===
+        let db;
+        const dbRequest = indexedDB.open("CognitiveAcceleratorDB", 1);
+
+        dbRequest.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("logs")) db.createObjectStore("logs", { autoIncrement: true });
+            if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings", { keyPath: "key" });
+        };
+
+        dbRequest.onsuccess = (e) => {
+            db = e.target.result;
+            loadVisualAnchor();
+        };
+
+        function saveLog(category, text) {
+            if (!db) return;
+            const tx = db.transaction(["logs"], "readwrite");
+            tx.objectStore("logs").add({ category, text, date: new Date().toISOString() });
+        }
+
+        // === 3. ANCLA VISUAL ===
+        function saveVisualAnchor(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imgData = e.target.result;
+                document.getElementById('anchor-img').src = imgData;
+                document.getElementById('anchor-img').style.display = 'block';
+                const tx = db.transaction(["settings"], "readwrite");
+                tx.objectStore("settings").put({ key: "visualAnchor", value: imgData });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadVisualAnchor() {
+            if (!db) return;
+            const tx = db.transaction(["settings"], "readonly");
+            const req = tx.objectStore("settings").get("visualAnchor");
+            req.onsuccess = () => {
+                if (req.result) {
+                    const img = document.getElementById('anchor-img');
+                    img.src = req.result.value;
+                    img.style.display = 'block';
+                }
+            };
+        }
+
+        // === 4. SINTETIZADOR AUDIO (Atajo Neuronal mediante Sonido) ===
+        function playAudioFrequency(freq) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine'; // Tono puro
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime); // Frecuencia en Hz
+                
+                // Envolvente de volumen rápida (Impacto directo)
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            } catch(e) {
+                console.log("Audio no permitido aún por interacción del navegador.");
+            }
+        }
+
+        // === 5. DISPARADOR DE REACCION ===
+        function triggerHack(key, label, freq) {
+            // A. Disparo sonoro inmediato
+            playAudioFrequency(freq);
+
+            // B. Obtener frase
+            const list = hacks[key];
+            const randomHack = list[Math.floor(Math.random() * list.length)];
+
+            // C. Mostrar en pantalla
+            document.getElementById('output-area').innerText = `“${randomHack}”`;
+
+            // D. Guardar en IndexedDB
+            saveLog(label, randomHack);
+        }
+
+        function getLogsCount() {
+            if (!db) return;
+            const tx = db.transaction(["logs"], "readonly");
+            const req = tx.objectStore("logs").count();
+            req.onsuccess = () => {
+                alert(`Has activado la app ${req.result} veces.`);
+            };
+        }
+    </script>
+</body>
+</html>
