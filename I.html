@@ -1,369 +1,459 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Mensaje Mágico de Neón</title>
-        <script src="https://code.jquery.com/jquery-3.1.1.js"></script>
-        <style>
-            :root {
-                --cell-size: 14px;
-                --cell-gap: 2px;
-                --glow-color: #00ffff;
-            }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensaje Mágico en Partículas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-            * {
-                box-sizing: border-box;
-            }
+        body {
+            background-color: #050508;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
 
-            body {
-                background-color: #08080c;
-                color: #ffffff;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                margin: 0;
-                padding: 0;
-                min-height: 100vh;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                overflow-x: hidden;
-            }
+        /* Canvas de fondo completo */
+        #particleCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
 
-            /* Botón Menú Hamburguesa Flotante */
-            .hamburger-btn {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: rgba(255, 255, 255, 0.08);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                color: #fff;
-                font-size: 1.4rem;
-                width: 44px;
-                height: 44px;
-                border-radius: 50%;
-                cursor: pointer;
-                z-index: 100;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                backdrop-filter: blur(8px);
-                transition: all 0.3s ease;
-                opacity: 0.4;
-            }
+        /* Botón Menú Hamburguesa Flotante */
+        .hamburger-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1.4rem;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
 
-            .hamburger-btn:hover {
-                opacity: 1;
-                background: rgba(0, 255, 255, 0.2);
-                border-color: #00ffff;
-                box-shadow: 0 0 10px #00ffff;
-            }
+        .hamburger-btn:hover {
+            opacity: 1;
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            box-shadow: 0 0 12px #00ffff;
+        }
 
-            /* Panel Desplegable Oculto */
-            .control-panel {
-                position: fixed;
-                top: 75px;
-                right: 20px;
-                background: rgba(16, 16, 26, 0.92);
-                border: 1px solid rgba(0, 255, 255, 0.3);
-                border-radius: 12px;
-                padding: 20px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 255, 0.2);
-                backdrop-filter: blur(12px);
-                z-index: 99;
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-                width: 280px;
-                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-                transform: translateY(-20px) scale(0.95);
-                opacity: 0;
-                pointer-events: none;
-            }
+        /* Panel Desplegable Oculto */
+        .control-panel {
+            position: fixed;
+            top: 75px;
+            right: 20px;
+            background: rgba(12, 12, 20, 0.92);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(12px);
+            z-index: 99;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 290px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            transform: translateY(-20px) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+        }
 
-            .control-panel.active {
-                transform: translateY(0) scale(1);
-                opacity: 1;
-                pointer-events: all;
-            }
+        .control-panel.active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: all;
+        }
 
-            .control-panel label {
-                font-size: 0.85rem;
-                color: #aaa;
-            }
+        .control-panel label {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
 
-            .control-panel input[type="text"] {
-                padding: 10px;
-                border-radius: 6px;
-                border: 1px solid rgba(0, 255, 255, 0.5);
-                background: #0d0d14;
-                color: #fff;
-                outline: none;
-            }
+        .control-panel input[type="text"], .control-panel select {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            background: #090910;
+            color: #fff;
+            outline: none;
+            font-size: 0.9rem;
+        }
 
-            .control-panel button {
-                padding: 10px;
-                border-radius: 6px;
-                border: none;
-                background: linear-gradient(135deg, #00ffff, #ff00ff);
-                color: #000;
-                font-weight: bold;
-                cursor: pointer;
-                transition: opacity 0.2s;
-            }
+        .control-panel button {
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
 
-            .control-panel button:hover {
-                opacity: 0.9;
-            }
+        .control-panel button:hover {
+            opacity: 0.9;
+        }
 
-            .slider-container {
-                display: flex;
-                flex-direction: column;
-                gap: 5px;
-            }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #ddd;
+            cursor: pointer;
+        }
 
-            #shareInfo {
-                font-size: 0.75rem;
-                color: #00ffff;
-                text-align: center;
-                display: none;
-            }
+        #shareInfo {
+            font-size: 0.75rem;
+            color: #00ffff;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
 
-            /* Contenedor Principal */
-            #display-container {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                align-content: center;
-                gap: calc(var(--cell-size) * 1.8) calc(var(--cell-size) * 2.2);
-                max-width: 90vw;
-                padding: 20px;
-            }
+    <!-- Botón Menú Hamburguesa -->
+    <button id="menuBtn" class="hamburger-btn" title="Configuración">☰</button>
 
-            .word {
-                display: flex;
-                gap: calc(var(--cell-size) * 0.4);
-                flex-wrap: nowrap;
-            }
+    <!-- Menú Desplegable -->
+    <div id="controlPanel" class="control-panel">
+        <label for="textInput">Mensaje personalizado:</label>
+        <input type="text" id="textInput" value="Feliz dia tio Fairo">
 
-            .letter {
-                display: flex;
-                flex-direction: column;
-            }
+        <label for="themeSelect">Tema de Color:</label>
+        <select id="themeSelect">
+            <option value="gold">Dorado Cumpleaños 🎆</option>
+            <option value="rainbow">Arcoíris Neón 🌈</option>
+            <option value="cyberpunk">Ciberpunk (Cyan/Pink) ⚡</option>
+            <option value="matrix">Matrix Green 🟩</option>
+            <option value="blue">Azul Neón 💎</option>
+        </select>
 
-            .row {
-                display: flex;
-            }
+        <label for="animSelect">Estilo de Animación:</label>
+        <select id="animSelect">
+            <option value="fly">Partículas Voladoras (Fly-In)</option>
+            <option value="pulse">Onda Radiante</option>
+            <option value="explode">Explosión Mágica</option>
+        </select>
 
-            .cell {
-                width: var(--cell-size);
-                height: var(--cell-size);
-                margin: var(--cell-gap);
-                border-radius: 3px;
-                opacity: 0; /* Inicia invisible para la animación */
-            }
+        <label class="checkbox-group">
+            <input type="checkbox" id="confettiCheck" checked>
+            Activar Confeti de Cumpleaños
+        </label>
 
-            /* Animación de Revelación Mágica */
-            .cell.filled {
-                background-color: var(--glow-color);
-                box-shadow: 0 0 8px var(--glow-color), 0 0 16px var(--glow-color);
-                animation: popGlow 0.4s ease forwards;
-                animation-delay: var(--delay);
-            }
+        <button id="replayBtn">▶ Reproducir Animación</button>
+        <button id="copyUrlBtn">🔗 Copiar Enlace Personalizado</button>
+        <div id="shareInfo">¡Enlace copiado!</div>
+    </div>
 
-            .cell.empty {
-                background-color: transparent;
-                animation: fadeInEmpty 0.2s ease forwards;
-                animation-delay: var(--delay);
-            }
+    <!-- Canvas Principal -->
+    <canvas id="particleCanvas"></canvas>
 
-            @keyframes popGlow {
-                0% {
-                    opacity: 0;
-                    transform: scale(0.1);
-                    filter: brightness(0);
+    <script>
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        let particles = [];
+        let confetti = [];
+        let hueOffset = 0;
+        let animFrameId = null;
+
+        // Mouse Tracker para interacción
+        const mouse = { x: null, y: null, radius: 80 };
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.x;
+            mouse.y = e.y;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            }
+        });
+
+        window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+        window.addEventListener('touchend', () => { mouse.x = null; mouse.y = null; });
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initEngine();
+        });
+
+        // Clase Partícula para el texto
+        class Particle {
+            constructor(targetX, targetY, theme, animType) {
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.size = Math.min(width, height) < 600 ? 2.5 : 3.5;
+                this.theme = theme;
+
+                // Posición Inicial según tipo de animación
+                if (animType === 'fly') {
+                    // Partículas viajan desde los bordes fuera de pantalla
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.max(width, height) * 1.2;
+                    this.x = width / 2 + Math.cos(angle) * distance;
+                    this.y = height / 2 + Math.sin(angle) * distance;
+                } else if (animType === 'explode') {
+                    // Nacen en el centro y se expanden
+                    this.x = width / 2 + (Math.random() - 0.5) * 50;
+                    this.y = height / 2 + (Math.random() - 0.5) * 50;
+                } else {
+                    // Onda desde arriba
+                    this.x = targetX + (Math.random() - 0.5) * 200;
+                    this.y = -50 - Math.random() * 200;
                 }
-                60% {
-                    opacity: 1;
-                    transform: scale(1.3);
-                    filter: brightness(2);
+
+                this.vx = 0;
+                this.vy = 0;
+                this.friction = 0.88;
+                this.ease = 0.07 + Math.random() * 0.04; // Velocidad de vuelo
+                this.baseHue = Math.random() * 60;
+            }
+
+            getColor(time) {
+                switch (this.theme) {
+                    case 'gold':
+                        return `hsl(${38 + Math.sin(time * 0.002 + this.baseHue) * 15}, 100%, ${55 + Math.random() * 20}%)`;
+                    case 'rainbow':
+                        return `hsl(${(hueOffset + this.targetX * 0.2) % 360}, 100%, 65%)`;
+                    case 'cyberpunk':
+                        return this.targetX % 20 < 10 ? '#00ffff' : '#ff00ff';
+                    case 'matrix':
+                        return `#00ff${Math.floor(100 + Math.random() * 155).toString(16)}`;
+                    case 'blue':
+                    default:
+                        return `hsl(${185 + Math.sin(time * 0.003) * 20}, 100%, 60%)`;
                 }
-                100% {
-                    opacity: 1;
-                    transform: scale(1);
-                    filter: brightness(1);
-                }
             }
 
-            @keyframes fadeInEmpty {
-                0% { opacity: 0; }
-                100% { opacity: 0.15; }
-            }
+            update(time) {
+                // Atracción física a la posición destino (Target)
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
 
-            .cell.filled:hover {
-                transform: scale(1.4) !important;
-                background-color: #ff00ff !important;
-                box-shadow: 0 0 15px #ff00ff !important;
-                transition: all 0.2s ease;
-            }
-        </style>
-    </head>
-    <body>
+                this.vx += dx * this.ease;
+                this.vy += dy * this.ease;
 
-        <!-- Botón Menú Hamburguesa -->
-        <button id="menuBtn" class="hamburger-btn" title="Configuración">☰</button>
+                this.vx *= this.friction;
+                this.vy *= this.friction;
 
-        <!-- Menú Desplegable Oculto -->
-        <div id="controlPanel" class="control-panel">
-            <label for="userInput">Mensaje personalizado:</label>
-            <input type="text" id="userInput" placeholder="Escribe aquí...">
-            
-            <div class="slider-container">
-                <label for="sizeSlider">Tamaño de letra:</label>
-                <input type="range" id="sizeSlider" min="6" max="26" value="14">
-            </div>
+                this.x += this.vx;
+                this.y += this.vy;
 
-            <button id="updateBtn">▶ Reproducir Animación</button>
-            <button id="copyUrlBtn">🔗 Copiar Enlace con Tamaño</button>
-            <div id="shareInfo">¡Enlace copiado!</div>
-        </div>
+                // Repulsión con el ratón / dedo
+                if (mouse.x !== null && mouse.y !== null) {
+                    const mdx = this.x - mouse.x;
+                    const mdy = this.y - mouse.y;
+                    const dist = Math.sqrt(mdx * mdx + mdy * mdy);
 
-        <!-- Pantalla Principal -->
-        <div id="display-container"></div>
-
-        <script>
-            // Matrices del Abecedario
-            var A = [ [0,1,1,0], [1,0,0,1], [1,1,1,1], [1,0,0,1], [1,0,0,1] ];
-            var B = [ [1,1,1,1], [1,0,0,1], [1,1,1,0], [1,0,0,1], [1,1,1,1] ];
-            var C = [ [0,1,1,1], [1,0,0,0], [1,0,0,0], [1,0,0,0], [0,1,1,1] ];
-            var D = [ [1,1,1,0], [1,0,0,1], [1,0,0,1], [1,0,0,1], [1,1,1,0] ];
-            var E = [ [1,1,1,1], [1,0,0,0], [1,1,1,0], [1,0,0,0], [1,1,1,1] ];
-            var F = [ [1,1,1,1], [1,0,0,0], [1,1,1,0], [1,0,0,0], [1,0,0,0] ];
-            var G = [ [1,1,1,1], [1,0,0,0], [1,0,1,1], [1,0,0,1], [1,1,1,1] ];
-            var H = [ [1,0,0,1], [1,0,0,1], [1,1,1,1], [1,0,0,1], [1,0,0,1] ];
-            var I = [ [1,1,1],   [0,1,0],   [0,1,0],   [0,1,0],   [1,1,1]   ];
-            var J = [ [0,0,0,1], [0,0,0,1], [0,0,0,1], [1,0,0,1], [1,1,1,1] ];
-            var K = [ [1,0,0,1], [1,0,1,0], [1,1,0,0], [1,0,1,0], [1,0,0,1] ];
-            var L = [ [1,0,0],   [1,0,0],   [1,0,0],   [1,0,0],   [1,1,1]   ];
-            var M = [ [1,1,1,1,0], [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1] ];
-            var N = [ [1,0,0,0,1], [1,1,0,0,1], [1,0,1,0,1], [1,0,0,1,1], [1,0,0,0,1] ];
-            var O = [ [0,1,1,0], [1,0,0,1], [1,0,0,1], [1,0,0,1], [0,1,1,0] ];
-            var P = [ [1,1,1,0], [1,0,0,1], [1,0,0,1], [1,1,1,0], [1,0,0,0] ];
-            var Q = [ [0,1,1,0,0], [1,0,0,1,0], [1,0,0,1,0], [1,0,0,1,0], [0,1,1,0,1] ];
-            var R = [ [1,1,1,1], [1,0,0,1], [1,0,0,1], [1,1,1,0], [1,0,0,1] ];
-            var S = [ [0,1,1],   [1,0,0],   [1,1,1],   [0,0,1],   [1,1,0]   ];
-            var T = [ [1,1,1],   [0,1,0],   [0,1,0],   [0,1,0],   [0,1,0]   ];
-            var U = [ [1,0,0,1], [1,0,0,1], [1,0,0,1], [1,0,0,1], [0,1,1,0] ];
-            var V = [ [1,0,0,0,1], [1,0,0,0,1], [1,0,0,0,1], [0,1,0,1,0], [0,0,1,0,0] ];
-            var W = [ [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1], [0,1,1,1,0] ];
-            var X = [ [1,0,0,0,1], [0,1,0,1,0], [0,0,1,0,0], [0,1,0,1,0], [1,0,0,0,1] ];
-            var Y = [ [1,0,0,0,1], [0,1,0,1,0], [0,0,1,0,0], [0,0,1,0,0], [0,0,1,0,0] ];
-            var Z = [ [1,1,1,1], [0,0,0,1], [0,1,1,0], [1,0,0,0], [1,1,1,1] ];
-
-            var alphabet = {
-                'A': A, 'B': B, 'C': C, 'D': D, 'E': E, 'F': F, 'G': G, 'H': H, 'I': I, 'J': J,
-                'K': K, 'L': L, 'M': M, 'N': N, 'O': O, 'P': P, 'Q': Q, 'R': R, 'S': S, 'T': T,
-                'U': U, 'V': V, 'W': W, 'X': X, 'Y': Y, 'Z': Z
-            };
-
-            function cleanText(text) {
-                return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-            }
-
-            function setCellSize(pxSize) {
-                document.documentElement.style.setProperty('--cell-size', pxSize + 'px');
-            }
-
-            // Renderizado con retraso (animación)
-            function renderAnimatedMessage(text) {
-                var $container = $("#display-container");
-                $container.empty();
-
-                var clean = cleanText(text);
-                var words = clean.split(' ');
-                var globalCellCounter = 0; // Para calcular la secuencia del retraso
-
-                words.forEach(function(wordStr) {
-                    if (wordStr.length === 0) return;
-
-                    var $wordDiv = $("<div class='word'></div>");
-
-                    for (var i = 0; i < wordStr.length; i++) {
-                        var char = wordStr[i];
-                        var matrix = alphabet[char];
-
-                        if (matrix) {
-                            var $letterDiv = $("<div class='letter'></div>");
-                            
-                            for (var r = 0; r < matrix.length; r++) {
-                                var $rowDiv = $("<div class='row'></div>");
-                                for (var c = 0; c < matrix[r].length; c++) {
-                                    var isFilled = matrix[r][c] === 1;
-                                    var cellClass = isFilled ? 'filled' : 'empty';
-                                    
-                                    // Incremento secuencial para crear la onda mágica
-                                    globalCellCounter++;
-                                    var delaySec = (globalCellCounter * 0.015).toFixed(3) + 's';
-
-                                    var $cell = $("<div class='cell " + cellClass + "'></div>");
-                                    $cell.css('--delay', delaySec);
-                                    $rowDiv.append($cell);
-                                }
-                                $letterDiv.append($rowDiv);
-                            }
-                            $wordDiv.append($letterDiv);
-                        }
+                    if (dist < mouse.radius) {
+                        const force = (mouse.radius - dist) / mouse.radius;
+                        const angle = Math.atan2(mdy, mdx);
+                        this.x += Math.cos(angle) * force * 15;
+                        this.y += Math.sin(angle) * force * 15;
                     }
-
-                    $container.append($wordDiv);
-                });
+                }
             }
 
-            $(document).ready(function() {
-                // 1. Leer Parámetros URL (Mensaje y Tamaño)
-                var urlParams = new URLSearchParams(window.location.search);
-                var urlMessage = urlParams.get('mensaje') || urlParams.get('text') || urlParams.get('txt');
-                var urlSize = urlParams.get('size') || urlParams.get('tamano') || 14;
+            draw(time) {
+                ctx.fillStyle = this.getColor(time);
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
 
-                var initialText = urlMessage ? urlMessage : "Feliz dia tio Fairo";
+        // Partículas de Confeti
+        class Confetti {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = -20;
+                this.size = Math.random() * 6 + 4;
+                this.speedY = Math.random() * 3 + 2;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                this.rotation = Math.random() * 360;
+                this.spin = (Math.random() - 0.5) * 10;
+            }
 
-                // Ajustar UI inicial
-                $("#userInput").val(initialText);
-                $("#sizeSlider").val(urlSize);
-                setCellSize(urlSize);
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.rotation += this.spin;
 
-                // Renderizar animación inicial al cargar
-                renderAnimatedMessage(initialText);
+                if (this.y > height + 20) {
+                    this.y = -20;
+                    this.x = Math.random() * width;
+                }
+            }
 
-                // 2. Toggle del Menú Hamburguesa
-                $("#menuBtn").click(function() {
-                    $("#controlPanel").toggleClass("active");
-                });
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+        }
 
-                // 3. Reproducir de nuevo / Actualizar
-                $("#updateBtn").click(function() {
-                    var newText = $("#userInput").val();
-                    renderAnimatedMessage(newText);
-                });
+        // Generar mapa de coordenadas desde el texto
+        function createTextTargetPoints(text) {
+            const offscreen = document.createElement('canvas');
+            const offCtx = offscreen.getContext('2d');
+            
+            offscreen.width = width;
+            offscreen.height = height;
 
-                // 4. Cambio dinámico de tamaño con slider
-                $("#sizeSlider").on("input change", function() {
-                    setCellSize($(this).val());
-                });
+            // Tamaño adaptativo del texto
+            let fontSize = Math.min(width / (text.length * 0.7), 110);
+            fontSize = Math.max(fontSize, 28);
 
-                // 5. Copiar Enlace con Parámetros (Mensaje + Tamaño)
-                $("#copyUrlBtn").click(function() {
-                    var text = $("#userInput").val();
-                    var currentSize = $("#sizeSlider").val();
-                    
-                    var shareUrl = window.location.origin + window.location.pathname + 
-                                  "?mensaje=" + encodeURIComponent(text) + 
-                                  "&size=" + currentSize;
-                    
-                    navigator.clipboard.writeText(shareUrl).then(function() {
-                        $("#shareInfo").stop(true, true).fadeIn().delay(2500).fadeOut();
-                    });
-                });
+            offCtx.fillStyle = '#ffffff';
+            offCtx.font = `bold ${fontSize}px 'Segoe UI', Arial, sans-serif`;
+            offCtx.textAlign = 'center';
+            offCtx.textBaseline = 'middle';
+
+            // Dibujar palabras en múltiples líneas si es necesario
+            const words = text.split(' ');
+            let lines = [];
+            let currentLine = words[0] || '';
+
+            for (let i = 1; i < words.length; i++) {
+                let testLine = currentLine + ' ' + words[i];
+                let metrics = offCtx.measureText(testLine);
+                if (metrics.width > width * 0.85) {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            lines.push(currentLine);
+
+            const lineHeight = fontSize * 1.25;
+            const startY = height / 2 - ((lines.length - 1) * lineHeight) / 2;
+
+            lines.forEach((line, index) => {
+                offCtx.fillText(line, width / 2, startY + index * lineHeight);
             });
-        </script>
-    </body>
+
+            // Leer información de píxeles
+            const imgData = offCtx.getImageData(0, 0, width, height).data;
+            const points = [];
+            const step = Math.min(width, height) < 600 ? 6 : 8; // Densidad de puntos
+
+            for (let y = 0; y < height; y += step) {
+                for (let x = 0; x < width; x += step) {
+                    const alpha = imgData[(y * width + x) * 4 + 3];
+                    if (alpha > 128) {
+                        points.push({ x, y });
+                    }
+                }
+            }
+
+            return points;
+        }
+
+        function initEngine() {
+            const text = document.getElementById('textInput').value || 'Feliz dia';
+            const theme = document.getElementById('themeSelect').value;
+            const animType = document.getElementById('animSelect').value;
+            const hasConfetti = document.getElementById('confettiCheck').checked;
+
+            const targets = createTextTargetPoints(text);
+            particles = targets.map(pt => new Particle(pt.x, pt.y, theme, animType));
+
+            confetti = [];
+            if (hasConfetti) {
+                for (let i = 0; i < 70; i++) {
+                    confetti.push(new Confetti());
+                }
+            }
+        }
+
+        function animate(time = 0) {
+            ctx.fillStyle = 'rgba(5, 5, 8, 0.25)'; // Rastro brillante
+            ctx.fillRect(0, 0, width, height);
+
+            hueOffset += 1;
+
+            particles.forEach(p => {
+                p.update(time);
+                p.draw(time);
+            });
+
+            confetti.forEach(c => {
+                c.update();
+                c.draw();
+            });
+
+            animFrameId = requestAnimationFrame(animate);
+        }
+
+        // Configuración de eventos UI
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            document.getElementById('controlPanel').classList.toggle('active');
+        });
+
+        document.getElementById('replayBtn').addEventListener('click', () => {
+            initEngine();
+        });
+
+        document.getElementById('copyUrlBtn').addEventListener('click', () => {
+            const text = document.getElementById('textInput').value;
+            const theme = document.getElementById('themeSelect').value;
+            const anim = document.getElementById('animSelect').value;
+
+            const url = `${window.location.origin}${window.location.pathname}?mensaje=${encodeURIComponent(text)}&theme=${theme}&anim=${anim}`;
+
+            navigator.clipboard.writeText(url).then(() => {
+                const info = document.getElementById('shareInfo');
+                info.style.display = 'block';
+                setTimeout(() => info.style.display = 'none', 2500);
+            });
+        });
+
+        // Lectura de parámetros de la URL
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('mensaje')) document.getElementById('textInput').value = params.get('mensaje');
+            if (params.has('theme')) document.getElementById('themeSelect').value = params.get('theme');
+            if (params.has('anim')) document.getElementById('animSelect').value = params.get('anim');
+
+            initEngine();
+            animate();
+        });
+    </script>
+</body>
 </html>
