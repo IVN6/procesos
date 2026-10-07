@@ -11,68 +11,75 @@
             padding: 0;
         }
 
-        body {
+        html, body {
+            width: 100%;
+            min-height: 100vh;
             background-color: #06060a;
             color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* Canvas Fijo de Fondo */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100vw;
             height: 100vh;
+            z-index: 1;
+            pointer-events: auto;
         }
 
-        #particleCanvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Botón Menú Hamburguesa Flotante */
+        /* Botón Menú Hamburguesa */
         .hamburger-btn {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            font-size: 1.4rem;
-            width: 44px;
-            height: 44px;
+            background: rgba(18, 18, 32, 0.85);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            color: #00ffff;
+            font-size: 1.5rem;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             cursor: pointer;
-            z-index: 100;
+            z-index: 1001;
             display: flex;
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            opacity: 0.5;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.25);
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
         }
 
         .hamburger-btn:hover {
-            opacity: 1;
+            transform: scale(1.08);
             background: rgba(0, 255, 255, 0.2);
-            border-color: #00ffff;
-            box-shadow: 0 0 12px #00ffff;
+            box-shadow: 0 0 20px #00ffff;
         }
 
-        /* Panel Desplegable */
+        /* Panel Desplegable Scrollable */
         .control-panel {
             position: fixed;
-            top: 75px;
+            top: 80px;
             right: 20px;
-            background: rgba(12, 12, 22, 0.94);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 255, 0.2);
-            backdrop-filter: blur(12px);
-            z-index: 99;
+            background: rgba(12, 12, 22, 0.95);
+            border: 1px solid rgba(0, 255, 255, 0.35);
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 255, 255, 0.15);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
             display: flex;
             flex-direction: column;
             gap: 14px;
-            width: 290px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-            transform: translateY(-20px) scale(0.95);
+            width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            transform: translateY(-20px) scale(0.92);
             opacity: 0;
             pointer-events: none;
         }
@@ -85,32 +92,32 @@
 
         .control-panel label {
             font-size: 0.85rem;
-            color: #aaa;
+            color: #ccc;
         }
 
         .control-panel input[type="text"], .control-panel select {
             padding: 10px;
             border-radius: 6px;
-            border: 1px solid rgba(0, 255, 255, 0.5);
-            background: #090910;
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            background: #0d0d18;
             color: #fff;
             outline: none;
             font-size: 0.9rem;
         }
 
         .control-panel button {
-            padding: 10px;
+            padding: 11px;
             border-radius: 6px;
             border: none;
             background: linear-gradient(135deg, #00ffff, #ff00ff);
             color: #000;
             font-weight: bold;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s, transform 0.1s;
         }
 
-        .control-panel button:hover {
-            opacity: 0.9;
+        .control-panel button:active {
+            transform: scale(0.98);
         }
 
         .slider-group {
@@ -129,16 +136,24 @@
         }
 
         #shareInfo {
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: #00ffff;
             text-align: center;
             display: none;
+        }
+
+        .control-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        .control-panel::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 3px;
         }
     </style>
 </head>
 <body>
 
-    <button id="menuBtn" class="hamburger-btn" title="Configuración">☰</button>
+    <button id="menuBtn" class="hamburger-btn" aria-label="Abrir Menú">☰</button>
 
     <div id="controlPanel" class="control-panel">
         <label for="textInput">Mensaje personalizado:</label>
@@ -172,13 +187,13 @@
 
         <button id="replayBtn">▶ Reproducir Animación</button>
         <button id="copyUrlBtn">🔗 Copiar Enlace con Ajustes</button>
-        <div id="shareInfo">¡Enlace copiado!</div>
+        <div id="shareInfo">¡Enlace copiado al portapapeles!</div>
     </div>
 
     <canvas id="particleCanvas"></canvas>
 
     <script>
-        // Matrices originales exactas A-Z
+        // Matrices A-Z exactas
         const A = [ [0,1,1,0], [1,0,0,1], [1,1,1,1], [1,0,0,1], [1,0,0,1] ];
         const B = [ [1,1,1,1], [1,0,0,1], [1,1,1,0], [1,0,0,1], [1,1,1,1] ];
         const C = [ [0,1,1,1], [1,0,0,0], [1,0,0,0], [1,0,0,0], [0,1,1,1] ];
@@ -217,15 +232,23 @@
         let particles = [];
         let confetti = [];
         let hueOffset = 0;
-        const mouse = { x: null, y: null, radius: 90 };
+        const mouse = { x: null, y: null, radius: 100 };
 
-        window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
+        function updatePointerPos(clientX, clientY) {
+            mouse.x = clientX;
+            mouse.y = clientY;
+        }
+
+        window.addEventListener('mousemove', (e) => updatePointerPos(e.clientX, e.clientY));
+        
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
+
         window.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 0) {
-                mouse.x = e.touches[0].clientX;
-                mouse.y = e.touches[0].clientY;
-            }
-        });
+            if (e.touches.length > 0) updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
+
         window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
         window.addEventListener('touchend', () => { mouse.x = null; mouse.y = null; });
 
@@ -243,7 +266,6 @@
                 this.radius = Math.max(2, cellSize * 0.38);
                 this.theme = theme;
 
-                // Posiciones de origen
                 if (animType === 'fly') {
                     const angle = Math.random() * Math.PI * 2;
                     const dist = Math.max(width, height) * 1.2;
@@ -299,8 +321,8 @@
                     if (dist < mouse.radius) {
                         const force = (mouse.radius - dist) / mouse.radius;
                         const angle = Math.atan2(mdy, mdx);
-                        this.x += Math.cos(angle) * force * 14;
-                        this.y += Math.sin(angle) * force * 14;
+                        this.x += Math.cos(angle) * force * 15;
+                        this.y += Math.sin(angle) * force * 15;
                     }
                 }
             }
@@ -352,7 +374,6 @@
             return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
         }
 
-        // Calcula coordenadas exactas basadas en los arreglos A-Z
         function buildMatrixPoints(text, cellSize) {
             const clean = cleanText(text);
             const words = clean.split(' ');
@@ -361,12 +382,10 @@
             const wordSpacing = cellSize * 3.5;
             const lineSpacing = cellSize * 7.5;
 
-            let wordsData = [];
             let currentLine = [];
             let lines = [currentLine];
             let currentLineWidth = 0;
 
-            // Calcular ancho de palabras y realizar salto de línea si excede la pantalla
             words.forEach(wordStr => {
                 let wordWidth = 0;
                 let lettersInWord = [];
@@ -394,7 +413,6 @@
                 currentLineWidth += wordWidth + wordSpacing;
             });
 
-            // Centrar horizontal y verticalmente las palabras en pantalla
             const totalHeight = lines.length * lineSpacing;
             const startY = (height - totalHeight) / 2 + (cellSize * 2);
 
@@ -462,514 +480,21 @@
             requestAnimationFrame(animate);
         }
 
-        // Eventos de interfaz
-        document.getElementById('menuBtn').addEventListener('click', () => {
-            document.getElementById('controlPanel').classList.toggle('active');
+        // Lógica del menú desplegable y control de eventos
+        const menuBtn = document.getElementById('menuBtn');
+        const controlPanel = document.getElementById('controlPanel');
+
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            controlPanel.classList.toggle('active');
         });
 
-        document.getElementById('replayBtn').addEventListener('click', () => {
-            initEngine();
+        controlPanel.addEventListener('click', (e) => {
+            e.stopPropagation();
         });
 
-        document.getElementById('sizeSlider').addEventListener('input', () => {
-            initEngine();
-        });
-
-        document.getElementById('copyUrlBtn').addEventListener('click', () => {
-            const text = document.getElementById('textInput').value;
-            const size = document.getElementById('sizeSlider').value;
-            const theme = document.getElementById('themeSelect').value;
-            const anim = document.getElementById('animSelect').value;
-
-            const url = `${window.location.origin}${window.location.pathname}?mensaje=${encodeURIComponent(text)}&size=${size}&theme=${theme}&anim=${anim}`;
-
-            navigator.clipboard.writeText(url).then(() => {
-                const info = document.getElementById('shareInfo');
-                info.style.display = 'block';
-                setTimeout(() => info.style.display = 'none', 2500);
-            });
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            if (params.has('mensaje')) document.getElementById('textInput').value = params.get('mensaje');
-            if (params.has('size')) document.getElementById('sizeSlider').value = params.get('size');
-            if (params.has('theme')) document.getElementById('themeSelect').value = params.get('theme');
-            if (params.has('anim')) document.getElementById('animSelect').value = params.get('anim');
-
-            initEngine();
-            animate();
-        });
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mensaje Mágico de Neón</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: #06060a;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        #particleCanvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Botón Menú Hamburguesa Flotante */
-        .hamburger-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            font-size: 1.4rem;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            opacity: 0.5;
-        }
-
-        .hamburger-btn:hover {
-            opacity: 1;
-            background: rgba(0, 255, 255, 0.2);
-            border-color: #00ffff;
-            box-shadow: 0 0 12px #00ffff;
-        }
-
-        /* Panel Desplegable */
-        .control-panel {
-            position: fixed;
-            top: 75px;
-            right: 20px;
-            background: rgba(12, 12, 22, 0.94);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 255, 0.2);
-            backdrop-filter: blur(12px);
-            z-index: 99;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            width: 290px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-            transform: translateY(-20px) scale(0.95);
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .control-panel.active {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .control-panel label {
-            font-size: 0.85rem;
-            color: #aaa;
-        }
-
-        .control-panel input[type="text"], .control-panel select {
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 255, 255, 0.5);
-            background: #090910;
-            color: #fff;
-            outline: none;
-            font-size: 0.9rem;
-        }
-
-        .control-panel button {
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
-            background: linear-gradient(135deg, #00ffff, #ff00ff);
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .control-panel button:hover {
-            opacity: 0.9;
-        }
-
-        .slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-            color: #ddd;
-            cursor: pointer;
-        }
-
-        #shareInfo {
-            font-size: 0.75rem;
-            color: #00ffff;
-            text-align: center;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-
-    <button id="menuBtn" class="hamburger-btn" title="Configuración">☰</button>
-
-    <div id="controlPanel" class="control-panel">
-        <label for="textInput">Mensaje personalizado:</label>
-        <input type="text" id="textInput" value="Feliz dia tio Fairo">
-
-        <div class="slider-group">
-            <label for="sizeSlider">Tamaño de los puntos:</label>
-            <input type="range" id="sizeSlider" min="8" max="28" value="16">
-        </div>
-
-        <label for="themeSelect">Efecto de Color:</label>
-        <select id="themeSelect">
-            <option value="rainbow">Arcoíris Cambiante 🌈</option>
-            <option value="gold">Dorado Cumpleaños 🎆</option>
-            <option value="cyberpunk">Ciberpunk (Cyan/Pink) ⚡</option>
-            <option value="matrix">Matrix Green 🟩</option>
-            <option value="blue">Azul Neón 💎</option>
-        </select>
-
-        <label for="animSelect">Estilo de Ensamblaje:</label>
-        <select id="animSelect">
-            <option value="fly">Volando desde Bordes (Fly-In)</option>
-            <option value="explode">Explosión desde Centro</option>
-            <option value="wave">Lluvia de Puntos</option>
-        </select>
-
-        <label class="checkbox-group">
-            <input type="checkbox" id="confettiCheck" checked>
-            Activar Confeti de Cumpleaños
-        </label>
-
-        <button id="replayBtn">▶ Reproducir Animación</button>
-        <button id="copyUrlBtn">🔗 Copiar Enlace con Ajustes</button>
-        <div id="shareInfo">¡Enlace copiado!</div>
-    </div>
-
-    <canvas id="particleCanvas"></canvas>
-
-    <script>
-        // Matrices originales exactas A-Z
-        const A = [ [0,1,1,0], [1,0,0,1], [1,1,1,1], [1,0,0,1], [1,0,0,1] ];
-        const B = [ [1,1,1,1], [1,0,0,1], [1,1,1,0], [1,0,0,1], [1,1,1,1] ];
-        const C = [ [0,1,1,1], [1,0,0,0], [1,0,0,0], [1,0,0,0], [0,1,1,1] ];
-        const D = [ [1,1,1,0], [1,0,0,1], [1,0,0,1], [1,0,0,1], [1,1,1,0] ];
-        const E = [ [1,1,1,1], [1,0,0,0], [1,1,1,0], [1,0,0,0], [1,1,1,1] ];
-        const F = [ [1,1,1,1], [1,0,0,0], [1,1,1,0], [1,0,0,0], [1,0,0,0] ];
-        const G = [ [1,1,1,1], [1,0,0,0], [1,0,1,1], [1,0,0,1], [1,1,1,1] ];
-        const H = [ [1,0,0,1], [1,0,0,1], [1,1,1,1], [1,0,0,1], [1,0,0,1] ];
-        const I = [ [1,1,1],   [0,1,0],   [0,1,0],   [0,1,0],   [1,1,1]   ];
-        const J = [ [0,0,0,1], [0,0,0,1], [0,0,0,1], [1,0,0,1], [1,1,1,1] ];
-        const K = [ [1,0,0,1], [1,0,1,0], [1,1,0,0], [1,0,1,0], [1,0,0,1] ];
-        const L = [ [1,0,0],   [1,0,0],   [1,0,0],   [1,0,0],   [1,1,1]   ];
-        const M = [ [1,1,1,1,0], [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1] ];
-        const N = [ [1,0,0,0,1], [1,1,0,0,1], [1,0,1,0,1], [1,0,0,1,1], [1,0,0,0,1] ];
-        const O = [ [0,1,1,0], [1,0,0,1], [1,0,0,1], [1,0,0,1], [0,1,1,0] ];
-        const P = [ [1,1,1,0], [1,0,0,1], [1,0,0,1], [1,1,1,0], [1,0,0,0] ];
-        const Q = [ [0,1,1,0,0], [1,0,0,1,0], [1,0,0,1,0], [1,0,0,1,0], [0,1,1,0,1] ];
-        const R = [ [1,1,1,1], [1,0,0,1], [1,0,0,1], [1,1,1,0], [1,0,0,1] ];
-        const S = [ [0,1,1],   [1,0,0],   [1,1,1],   [0,0,1],   [1,1,0]   ];
-        const T = [ [1,1,1],   [0,1,0],   [0,1,0],   [0,1,0],   [0,1,0]   ];
-        const U = [ [1,0,0,1], [1,0,0,1], [1,0,0,1], [1,0,0,1], [0,1,1,0] ];
-        const V = [ [1,0,0,0,1], [1,0,0,0,1], [1,0,0,0,1], [0,1,0,1,0], [0,0,1,0,0] ];
-        const W = [ [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1], [1,0,1,0,1], [0,1,1,1,0] ];
-        const X = [ [1,0,0,0,1], [0,1,0,1,0], [0,0,1,0,0], [0,1,0,1,0], [1,0,0,0,1] ];
-        const Y = [ [1,0,0,0,1], [0,1,0,1,0], [0,0,1,0,0], [0,0,1,0,0], [0,0,1,0,0] ];
-        const Z = [ [1,1,1,1], [0,0,0,1], [0,1,1,0], [1,0,0,0], [1,1,1,1] ];
-
-        const alphabet = { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z };
-
-        const canvas = document.getElementById('particleCanvas');
-        const ctx = canvas.getContext('2d');
-
-        let width = canvas.width = window.innerWidth;
-        let height = canvas.height = window.innerHeight;
-
-        let particles = [];
-        let confetti = [];
-        let hueOffset = 0;
-        const mouse = { x: null, y: null, radius: 90 };
-
-        window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
-        window.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 0) {
-                mouse.x = e.touches[0].clientX;
-                mouse.y = e.touches[0].clientY;
-            }
-        });
-        window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
-        window.addEventListener('touchend', () => { mouse.x = null; mouse.y = null; });
-
-        window.addEventListener('resize', () => {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            initEngine();
-        });
-
-        class Particle {
-            constructor(targetX, targetY, cellSize, theme, animType) {
-                this.targetX = targetX;
-                this.targetY = targetY;
-                this.cellSize = cellSize;
-                this.radius = Math.max(2, cellSize * 0.38);
-                this.theme = theme;
-
-                // Posiciones de origen
-                if (animType === 'fly') {
-                    const angle = Math.random() * Math.PI * 2;
-                    const dist = Math.max(width, height) * 1.2;
-                    this.x = width / 2 + Math.cos(angle) * dist;
-                    this.y = height / 2 + Math.sin(angle) * dist;
-                } else if (animType === 'explode') {
-                    this.x = width / 2 + (Math.random() - 0.5) * 40;
-                    this.y = height / 2 + (Math.random() - 0.5) * 40;
-                } else {
-                    this.x = targetX + (Math.random() - 0.5) * 150;
-                    this.y = -50 - Math.random() * 200;
-                }
-
-                this.vx = 0;
-                this.vy = 0;
-                this.friction = 0.86;
-                this.ease = 0.06 + Math.random() * 0.04;
-            }
-
-            getColor(time) {
-                switch (this.theme) {
-                    case 'rainbow':
-                        return `hsl(${(hueOffset + this.targetX * 0.3) % 360}, 100%, 65%)`;
-                    case 'gold':
-                        return `hsl(${38 + Math.sin(time * 0.003 + this.targetX) * 12}, 100%, ${55 + Math.random() * 25}%)`;
-                    case 'cyberpunk':
-                        return this.targetX % (this.cellSize * 4) < (this.cellSize * 2) ? '#00ffff' : '#ff00ff';
-                    case 'matrix':
-                        return `#00ff${Math.floor(120 + Math.random() * 135).toString(16)}`;
-                    case 'blue':
-                    default:
-                        return `hsl(${185 + Math.sin(time * 0.003) * 20}, 100%, 60%)`;
-                }
-            }
-
-            update() {
-                const dx = this.targetX - this.x;
-                const dy = this.targetY - this.y;
-
-                this.vx += dx * this.ease;
-                this.vy += dy * this.ease;
-                this.vx *= this.friction;
-                this.vy *= this.friction;
-
-                this.x += this.vx;
-                this.y += this.vy;
-
-                if (mouse.x !== null && mouse.y !== null) {
-                    const mdx = this.x - mouse.x;
-                    const mdy = this.y - mouse.y;
-                    const dist = Math.sqrt(mdx * mdx + mdy * mdy);
-
-                    if (dist < mouse.radius) {
-                        const force = (mouse.radius - dist) / mouse.radius;
-                        const angle = Math.atan2(mdy, mdx);
-                        this.x += Math.cos(angle) * force * 14;
-                        this.y += Math.sin(angle) * force * 14;
-                    }
-                }
-            }
-
-            draw(time) {
-                const color = this.getColor(time);
-                ctx.fillStyle = color;
-                ctx.shadowColor = color;
-                ctx.shadowBlur = 10;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        class Confetti {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = -20;
-                this.size = Math.random() * 6 + 4;
-                this.speedY = Math.random() * 3 + 2;
-                this.speedX = (Math.random() - 0.5) * 2;
-                this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
-                this.rotation = Math.random() * 360;
-                this.spin = (Math.random() - 0.5) * 10;
-            }
-
-            update() {
-                this.y += this.speedY;
-                this.x += this.speedX;
-                this.rotation += this.spin;
-                if (this.y > height + 20) {
-                    this.y = -20;
-                    this.x = Math.random() * width;
-                }
-            }
-
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate((this.rotation * Math.PI) / 180);
-                ctx.fillStyle = this.color;
-                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
-                ctx.restore();
-            }
-        }
-
-        function cleanText(text) {
-            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-        }
-
-        // Calcula coordenadas exactas basadas en los arreglos A-Z
-        function buildMatrixPoints(text, cellSize) {
-            const clean = cleanText(text);
-            const words = clean.split(' ');
-            const gap = cellSize * 0.4;
-            const letterSpacing = cellSize * 1.5;
-            const wordSpacing = cellSize * 3.5;
-            const lineSpacing = cellSize * 7.5;
-
-            let wordsData = [];
-            let currentLine = [];
-            let lines = [currentLine];
-            let currentLineWidth = 0;
-
-            // Calcular ancho de palabras y realizar salto de línea si excede la pantalla
-            words.forEach(wordStr => {
-                let wordWidth = 0;
-                let lettersInWord = [];
-
-                for (let i = 0; i < wordStr.length; i++) {
-                    const char = wordStr[i];
-                    const matrix = alphabet[char];
-                    if (matrix) {
-                        const cols = matrix[0].length;
-                        const lWidth = cols * (cellSize + gap);
-                        wordWidth += lWidth + (i < wordStr.length - 1 ? letterSpacing : 0);
-                        lettersInWord.push({ matrix, width: lWidth });
-                    }
-                }
-
-                if (lettersInWord.length === 0) return;
-
-                if (currentLineWidth + wordWidth > width * 0.88 && currentLine.length > 0) {
-                    currentLineWidth = 0;
-                    currentLine = [];
-                    lines.push(currentLine);
-                }
-
-                currentLine.push({ letters: lettersInWord, width: wordWidth });
-                currentLineWidth += wordWidth + wordSpacing;
-            });
-
-            // Centrar horizontal y verticalmente las palabras en pantalla
-            const totalHeight = lines.length * lineSpacing;
-            const startY = (height - totalHeight) / 2 + (cellSize * 2);
-
-            let points = [];
-
-            lines.forEach((line, lineIdx) => {
-                let lineWidth = line.reduce((acc, w) => acc + w.width, 0) + (line.length - 1) * wordSpacing;
-                let startX = (width - lineWidth) / 2;
-                let cursorX = startX;
-                let cursorY = startY + lineIdx * lineSpacing;
-
-                line.forEach(wordObj => {
-                    wordObj.letters.forEach(letterObj => {
-                        const mat = letterObj.matrix;
-                        for (let r = 0; r < mat.length; r++) {
-                            for (let c = 0; c < mat[r].length; c++) {
-                                if (mat[r][c] === 1) {
-                                    const px = cursorX + c * (cellSize + gap);
-                                    const py = cursorY + r * (cellSize + gap);
-                                    points.push({ x: px, y: py });
-                                }
-                            }
-                        }
-                        cursorX += letterObj.width + letterSpacing;
-                    });
-                    cursorX += wordSpacing - letterSpacing;
-                });
-            });
-
-            return points;
-        }
-
-        function initEngine() {
-            const text = document.getElementById('textInput').value || 'Feliz dia';
-            const cellSize = parseInt(document.getElementById('sizeSlider').value, 10);
-            const theme = document.getElementById('themeSelect').value;
-            const animType = document.getElementById('animSelect').value;
-            const hasConfetti = document.getElementById('confettiCheck').checked;
-
-            const targets = buildMatrixPoints(text, cellSize);
-            particles = targets.map(pt => new Particle(pt.x, pt.y, cellSize, theme, animType));
-
-            confetti = [];
-            if (hasConfetti) {
-                for (let i = 0; i < 70; i++) confetti.push(new Confetti());
-            }
-        }
-
-        function animate(time = 0) {
-            ctx.fillStyle = 'rgba(6, 6, 10, 0.28)';
-            ctx.fillRect(0, 0, width, height);
-
-            hueOffset += 1.2;
-
-            particles.forEach(p => {
-                p.update();
-                p.draw(time);
-            });
-
-            confetti.forEach(c => {
-                c.update();
-                c.draw();
-            });
-
-            requestAnimationFrame(animate);
-        }
-
-        // Eventos de interfaz
-        document.getElementById('menuBtn').addEventListener('click', () => {
-            document.getElementById('controlPanel').classList.toggle('active');
+        document.addEventListener('click', () => {
+            controlPanel.classList.remove('active');
         });
 
         document.getElementById('replayBtn').addEventListener('click', () => {
