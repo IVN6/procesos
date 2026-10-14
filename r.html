@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Móvil de Alto Rendimiento</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel Standalone for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-850 font-sans antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useReducer, createContext, useContext, useRef } = React;
+
+        // --- 1. CATÁLOGO DE PRODUCTOS DE EJEMPLO ---
+        const PRODUCTS = [
+            {
+                id: 1,
+                name: 'Camisa Oversize Urbana',
+                price: 65000,
+                category: 'ropa',
+                image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=60',
+                sizes: ['S', 'M', 'L', 'XL'],
+                optionsDefaults: { size: 'M' }
+            },
+            {
+                id: 2,
+                name: 'Hamburguesa Doble Artesanal',
+                price: 28000,
+                category: 'comida',
+                image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60',
+                additions: ['Queso Cheddar Extra', 'Tocineta Crujiente', 'Papas Cascos', 'Sin Cebolla'],
+                optionsDefaults: { addition: 'Queso Cheddar Extra' }
+            },
+            {
+                id: 3,
+                name: 'Mesa de Centro Nórdica',
+                price: 189000,
+                category: 'muebles',
+                image: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=500&auto=format&fit=crop&q=60',
+                finishes: ['Madera Clara', 'Negro Mate', 'Blanco Ártico'],
+                optionsDefaults: { finish: 'Madera Clara' }
+            },
+            {
+                id: 4,
+                name: 'Freidora de Aire Digital 4L',
+                price: 299000,
+                category: 'electrodomesticos',
+                image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=500&auto=format&fit=crop&q=60',
+                warranties: ['Estándar (1 año)', 'Garantía Extendida (+1 año)'],
+                optionsDefaults: { warranty: 'Estándar (1 año)' }
+            }
+        ];
+
+        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL) ---
+        const CartContext = createContext();
+
+        const initialState = {
+            cart: [],
+            likes: {},
+            affiliateRef: 'directo',
+            tamperedAlerts: []
+        };
+
+        function cartReducer(state, action) {
+            switch (action.type) {
+                case 'ADD_TO_ITEM': {
+                    const existingIndex = state.cart.findIndex(
+                        item => item.id === action.payload.id && JSON.stringify(item.options) === JSON.stringify(action.payload.options) && item.purchaseType === action.payload.purchaseType
+                    );
+                    let updatedCart = [...state.cart];
+                    if (existingIndex > -1) {
+                        updatedCart[existingIndex].quantity += action.payload.quantity;
+                    } else {
+                        updatedCart.push(action.payload);
+                    }
+                    return { ...state, cart: updatedCart };
+                }
+                case 'UPDATE_QUANTITY': {
+                    const { index, quantity } = action.payload;
+                    let updatedCart = [...state.cart];
+                    if (quantity <= 0) {
+                        updatedCart.splice(index, 1);
+                    } else {
+                        updatedCart[index].quantity = quantity;
+                    }
+                    return { ...state, cart: updatedCart };
+                }
+                case 'SET_SHARED_CART': {
+                    return { ...state, cart: action.payload.items, tamperedAlerts: action.payload.alerts };
+                }
+                case 'TOGGLE_LIKE':
+                    return {
+                        ...state,
+                        likes: { ...state.likes, [action.payload]: !state.likes[action.payload] }
+                    };
+                case 'SET_AFFILIATE':
+                    return { ...state, affiliateRef: action.payload };
+                default:
+                    return state;
+            }
+        }
+
+        function CartProvider({ children }) {
+            const [state, dispatch] = useReducer(cartReducer, initialState, (initial) => {
+                try {
+                    const localCart = localStorage.getItem('ecommerce_cart');
+                    return localCart ? { ...initial, cart: JSON.parse(localCart) } : initial;
+                } catch {
+                    return initial;
+                }
+            });
+
+            // Procesar URL al cargar la app (Afiliados y Carrito Compartido con validación anti-fraude)
+            useEffect(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const ref = urlParams.get('ref');
+                const encodedCart = urlParams.get('cart');
+
+                if (ref) {
+                    dispatch({ type: 'SET_AFFILIATE', payload: ref });
+                    localStorage.setItem('affiliate_ref', ref);
+                }
+
+                if (encodedCart) {
+                    try {
+                        const decoded = JSON.parse(atob(encodedCart));
+                        let alerts = [];
+                        let validItems = decoded.map(sharedItem => {
+                            const official = PRODUCTS.find(p => p.id === sharedItem.id);
+                            if (!official) {
+                                alerts.push(`El producto ID ${sharedItem.id} ya no está disponible.`);
+                                return null;
+                            }
+                            if (sharedItem.price !== official.price) {
+                                alerts.push(`Se detectó alteración en "${official.name}". Su precio oficial fue restaurado ($${official.price}).`);
+                            }
+                            return { ...sharedItem, price: official.price };
+                        }).filter(Boolean);
+
+                        dispatch({ type: 'SET_SHARED_CART', payload: { items: validItems, alerts } });
+                    } catch {
+                        dispatch({ type: 'SET_SHARED_CART', payload: { items: [], alerts: ["El enlace del carrito compartido está corrupto o es inválido."] } });
+                    }
+                }
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('ecommerce_cart', JSON.stringify(state.cart));
+            }, [state.cart]);
+
+            return (
+                <CartContext.Provider value={{ state, dispatch }}>
+                    {children}
+                </CartContext.Provider>
+            );
+        }
+
+        const useCart = () => useContext(CartContext);
+
+        // --- 3. COMPONENTE DE IMAGEN CON LAZY LOADING (AHORRO DE DATOS) ---
+        function LazyImage({ src, alt, className }) {
+            const [isLoaded, setIsLoaded] = useState(false);
+            const [isInView, setIsInView] = useState(false);
+            const imgRef = useRef();
+
+            useEffect(() => {
+                const observer = new IntersectionObserver(
+                    ([entry]) => {
+                        if (entry.isIntersecting) {
+                            setIsInView(true);
+                            observer.disconnect();
+                        }
+                    },
+                    { rootMargin: '150px' }
+                );
+                if (imgRef.current) observer.observe(imgRef.current);
+                return () => observer.disconnect();
+            }, []);
+
+            return (
+                <div ref={imgRef} className={`relative overflow-hidden bg-gray-200 ${className}`}>
+                    {isInView && (
+                        <img
+                            src={src}
+                            alt={alt}
+                            loading="lazy"
+                            onLoad={() => setIsLoaded(true)}
+                            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        />
+                    )}
+                    {!isLoaded && (
+                        <div className="absolute inset-0 animate-pulse bg-gray-300 flex items-center justify-center text-xs text-gray-500">
+                            Cargando...
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- 4. TARJETA DE PRODUCTO INTELIGENTE ---
+        function ProductCard({ product }) {
+            const { state, dispatch } = useCart();
+            const [selectedOptions, setSelectedOptions] = useState(product.optionsDefaults || {});
+            const [isLayaway, setIsLayaway] = useState(false); // Apartar con adelanto (50%)
+
+            const handleAddToCart = () => {
+                dispatch({
+                    type: 'ADD_TO_ITEM',
+                    payload: {
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.image,
+                        options: selectedOptions,
+                        quantity: 1,
+                        purchaseType: isLayaway ? 'layaway' : 'full'
+                    }
+                });
+                alert(`¡${product.name} añadido al carrito!`);
+            };
+
+            const isLiked = state.likes[product.id];
+
+            return (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col justify-between transition-all hover:shadow-md">
+                    <div>
+                        <div className="relative rounded-xl overflow-hidden mb-2">
+                            <LazyImage src={product.image} alt={product.name} className="h-40 w-full rounded-xl" />
+                            <button
+                                onClick={() => dispatch({ type: 'TOGGLE_LIKE', payload: product.id })}
+                                className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90"
+                            >
+                                {isLiked ? '❤️' : '🤍'}
+                            </button>
+                        </div>
+                        <h3 className="font-semibold text-sm text-gray-900 line-clamp-1">{product.name}</h3>
+                        <p className="text-emerald-600 font-extrabold text-base mt-0.5">${product.price.toLocaleString()}</p>
+                    </div>
+
+                    {/* Opciones dinámicas según categoría */}
+                    <div className="my-2 text-xs">
+                        {product.category === 'ropa' && (
+                            <div className="flex gap-1">
+                                {product.sizes.map(size => (
+                                    <button
+                                        key={size}
+                                        onClick={() => setSelectedOptions({...selectedOptions, size})}
+                                        className={`px-2 py-1 rounded border font-medium ${selectedOptions.size === size ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-600'}`}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {product.category === 'comida' && (
+                            <select
+                                value={selectedOptions.addition}
+                                onChange={(e) => setSelectedOptions({...selectedOptions, addition: e.target.value})}
+                                className="w-full p-1.5 border border-gray-200 rounded-lg bg-gray-50 text-xs"
+                            >
+                                {product.additions.map(add => <option key={add} value={add}>{add}</option>)}
+                            </select>
+                        )}
+
+                        {product.category === 'muebles' && (
+                            <select
+                                value={selectedOptions.finish}
+                                onChange={(e) => setSelectedOptions({...selectedOptions, finish: e.target.value})}
+                                className="w-full p-1.5 border border-gray-200 rounded-lg bg-gray-50 text-xs"
+                            >
+                                {product.finishes.map(f => <option key={f} value={f}>{f}</option>)}
+                            </select>
+                        )}
+
+                        {product.category === 'electrodomesticos' && (
+                            <select
+                                value={selectedOptions.warranty}
+                                onChange={(e) => setSelectedOptions({...selectedOptions, warranty: e.target.value})}
+                                className="w-full p-1.5 border border-gray-200 rounded-lg bg-gray-50 text-xs"
+                            >
+                                {product.warranties.map(w => <option key={w} value={w}>{w}</option>)}
+                            </select>
+                        )}
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
+                        <label className="text-[11px] text-gray-500 flex items-center gap-1.5 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={isLayaway}
+                                onChange={(e) => setIsLayaway(e.target.checked)}
+                                className="rounded text-emerald-600 focus:ring-emerald-500"
+                            />
+                            Apartar con adelanto (50%)
+                        </label>
+                        <button
+                            onClick={handleAddToCart}
+                            className="w-full bg-black text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
+                        >
+                            Añadir al Carrito
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 5. MODAL DE CHECKOUT & CARRITO ---
+        function CartCheckoutModal({ isOpen, onClose }) {
+            const { state, dispatch } = useCart();
+            const [form, setForm] = useState({ name: '', phone: '', address: '', paymentMethod: 'Nequi' });
+
+            if (!isOpen) return null;
+
+            const total = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            const isLayawayOrder = state.cart.some(i => i.purchaseType === 'layaway');
+            const finalTotalToPay = isLayawayOrder ? total / 2 : total;
+
+            const handleShareCart = () => {
+                const ref = state.affiliateRef || 'directo';
+                const cartPayload = btoa(JSON.stringify(state.cart.map(i => ({ id: i.id, price: i.price, quantity: i.quantity, options: i.options, purchaseType: i.purchaseType }))));
+                const shareUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&cart=${cartPayload}`;
+                
+                if (navigator.share) {
+                    navigator.share({ title: 'Mi Carrito de Compras', url: shareUrl });
+                } else {
+                    navigator.clipboard.writeText(shareUrl);
+                    alert('¡Enlace de carrito copiado! Compártelo con amigos o para generar comisión de afiliado.');
+                }
+            };
+
+            const handleSubmitWhatsApp = (e) => {
+                e.preventDefault();
+                const affiliateInfo = state.affiliateRef && state.affiliateRef !== 'directo' ? `🔗 *Afiliado / Asesor:* ${state.affiliateRef}\n` : '';
+                const itemsText = state.cart.map(i => `- ${i.quantity}x ${i.name} (${JSON.stringify(i.options)}) ${i.purchaseType === 'layaway' ? '[APARTADO 50%]' : ''} [$${i.price * i.quantity}]`).join('\n');
+                
+                const message = `🛒 *NUEVO PEDIDO EXPRESS*\n\n` +
+                    `${affiliateInfo}` +
+                    `👤 *Cliente:* ${form.name}\n` +
+                    `📞 *Teléfono:* ${form.phone}\n` +
+                    `📍 *Dirección:* ${form.address}\n` +
+                    `💳 *Pago:* ${form.paymentMethod}\n` +
+                    `${isLayawayOrder ? '⚠️ *Modalidad:* APARTADO CON ADELANTO (50%)\n' : ''}\n` +
+                    `📦 *Ítems:*\n${itemsText}\n\n` +
+                    `💰 *Total a pagar ahora:* $${finalTotalToPay.toLocaleString()}`;
+
+                const whatsappUrl = `https://wa.me/573001234567?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div className="flex justify-between items-center mb-4 pb-2 border-b">
+                            <h2 className="font-bold text-lg text-gray-900">Tu Carrito y Pago</h2>
+                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
+                        </div>
+
+                        {state.tamperedAlerts.length > 0 && (
+                            <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs mb-3 space-y-1">
+                                {state.tamperedAlerts.map((alert, idx) => <p key={idx}>⚠️ {alert}</p>)}
+                            </div>
+                        )}
+
+                        {state.cart.length === 0 ? (
+                            <div className="text-center py-10 text-gray-400 text-sm">Tu carrito está vacío 🛍️</div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="divide-y max-h-48 overflow-y-auto pr-1">
+                                    {state.cart.map((item, idx) => (
+                                        <div key={idx} className="py-2 flex items-center justify-between text-xs">
+                                            <div>
+                                                <p className="font-semibold">{item.name}</p>
+                                                <p className="text-gray-500 text-[10px]">{JSON.stringify(item.options)} {item.purchaseType === 'layaway' && '• (Apartado)'}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold">${(item.price * item.quantity).toLocaleString()}</span>
+                                                <div className="flex items-center border rounded bg-gray-50">
+                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity - 1}})} className="px-1.5 py-0.5">-</button>
+                                                    <span className="px-2">{item.quantity}</span>
+                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity + 1}})} className="px-1.5 py-0.5">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button onClick={handleShareCart} className="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 rounded-xl text-xs font-bold transition">
+                                    🔗 Compartir Carrito (Afiliado / Amigos)
+                                </button>
+
+                                <form onSubmit={handleSubmitWhatsApp} className="space-y-3 pt-2 border-t">
+                                    <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Información de Envío</h3>
+                                    <div>
+                                        <label className="text-xs text-gray-500">Nombre Completo</label>
+                                        <input required type="text" value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="w-full p-2 border rounded-xl text-xs bg-gray-50" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500">Teléfono / WhatsApp</label>
+                                        <input required type="tel" value={form.phone} onChange={e=>setForm({...form, phone: e.target.value})} className="w-full p-2 border rounded-xl text-xs bg-gray-50" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500">Dirección de Entrega</label>
+                                        <input required type="text" value={form.address} onChange={e=>setForm({...form, address: e.target.value})} className="w-full p-2 border rounded-xl text-xs bg-gray-50" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500">Método de Pago</label>
+                                        <select value={form.paymentMethod} onChange={e=>setForm({...form, paymentMethod: e.target.value})} className="w-full p-2 border rounded-xl text-xs bg-gray-50">
+                                            <option value="Nequi">Nequi</option>
+                                            <option value="Daviplata">Daviplata</option>
+                                            <option value="Contra Entrega">Contra Entrega</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1">
+                                        <div className="flex justify-between"><span>Subtotal:</span><span>${total.toLocaleString()}</span></div>
+                                        {isLayawayOrder && <div className="flex justify-between text-emerald-600 font-medium"><span>Adelanto Requerido (50%):</span><span>${finalTotalToPay.toLocaleString()}</span></div>}
+                                        <div className="flex justify-between font-bold text-sm pt-1 border-t text-black"><span>Total a Gestionar:</span><span>${finalTotalToPay.toLocaleString()}</span></div>
+                                    </div>
+
+                                    <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-extrabold text-sm shadow-lg transition active:scale-95">
+                                        Cerrar Venta por WhatsApp 🚀
+                                    </button>
+                                </form>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 6. APLICACIÓN PRINCIPAL ---
+        function App() {
+            const { state } = useCart();
+            const [selectedCategory, setSelectedCategory] = useState('todos');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isCartOpen, setIsCartOpen] = useState(false);
+
+            const categories = [
+                { id: 'todos', label: '🔥 Todos' },
+                { id: 'ropa', label: '👕 Ropa' },
+                { id: 'comida', label: '🍔 Comida' },
+                { id: 'muebles', label: '🛋️ Muebles' },
+                { id: 'electrodomesticos', label: '⚡ Electrodomésticos' }
+            ];
+
+            const filteredProducts = PRODUCTS.filter(p => {
+                const matchesCategory = selectedCategory === 'todos' || p.category === selectedCategory;
+                const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchesCategory && matchesSearch;
+            });
+
+            const totalCartItems = state.cart.reduce((acc, item) => acc + item.quantity, 0);
+
+            return (
+                <div className="min-h-screen pb-20">
+                    {/* Header */}
+                    <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-gray-100 px-4 py-3">
+                        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+                            <h1 className="font-black text-base tracking-tight">E-COMMERCE MÓVIL</h1>
+                            <div className="flex-1 max-w-xs">
+                                <input
+                                    type="text"
+                                    placeholder="Buscar productos..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-gray-100 border border-transparent focus:border-black rounded-full px-3 py-1.5 text-xs outline-none transition"
+                                />
+                            </div>
+                            <button
+                                onClick={() => setIsCartOpen(true)}
+                                className="relative bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 active:scale-95 transition"
+                            >
+                                🛒 {totalCartItems > 0 && <span className="bg-emerald-500 text-white rounded-full px-1.5 py-0.2 text-[10px]">{totalCartItems}</span>}
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Categorías (Fácil navegación horizontal en celular) */}
+                    <nav className="max-w-2xl mx-auto px-4 py-3 overflow-x-auto flex gap-2 no-scrollbar">
+                        {categories.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setSelectedCategory(cat.id)}
+                                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${selectedCategory === cat.id ? 'bg-black text-white shadow' : 'bg-white border border-gray-200 text-gray-600'}`}
+                            >
+                                {cat.label}
+                            </button>
+                        ))}
+                    </nav>
+
+                    {/* Grid de Productos (1 o 2 columnas adaptables para celular) */}
+                    <main className="max-w-2xl mx-auto px-4 py-2">
+                        <div className="grid grid-cols-2 gap-3">
+                            {filteredProducts.map(product => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
+                        {filteredProducts.length === 0 && (
+                            <div className="text-center py-16 text-gray-400 text-sm">No se encontraron productos con esos filtros.</div>
+                        )}
+                    </main>
+
+                    {/* Modal del Carrito */}
+                    <CartCheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+                </div>
+            );
+        }
+
+        // Renderizar App en el DOM
+        ReactDOM.render(
+            <CartProvider>
+                <App />
+            </CartProvider>,
+            document.getElementById('root')
+        );
+    </script>
+</body>
+</html>
