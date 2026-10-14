@@ -22,7 +22,7 @@
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_1](start_span)[span_1](end_span).",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_2](start_span)[span_2](end_span).",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
@@ -32,7 +32,7 @@
             }
         ];
 
-        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL CON CONTROL DE STOCK) ---
+        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL CON AUTOCORRECCIÓN DE STOCK) ---
         const StoreContext = createContext();
 
         const initialStoreState = {
@@ -48,21 +48,34 @@
 
         function storeReducer(state, action) {
             switch (action.type) {
-                case 'SET_PRODUCTS':
-                    return { ...state, products: action.payload, loading: false };
+                case 'SET_PRODUCTS': {
+                    const newProducts = action.payload;
+                    // Auto-actualizar el carrito validando el stock actual de cada producto
+                    const updatedCart = state.cart.map(item => {
+                        const official = newProducts.find(p => String(p.id) === String(item.id));
+                        if (!official) return null;
+                        const maxStock = official.cantidad ?? 999;
+                        if (item.quantity > maxStock) {
+                            return { ...item, quantity: maxStock };
+                        }
+                        return item;
+                    }).filter(Boolean);
+
+                    return { ...state, products: newProducts, cart: updatedCart, loading: false };
+                }
                 case 'ADD_TO_CART': {
                     const { product, quantity, selectedColor } = action.payload;
-                    const officialProd = state.products.find(p => p.id === product.id);
+                    const officialProd = state.products.find(p => String(p.id) === String(product.id));
                     const maxStock = officialProd ? officialProd.cantidad : 999;
 
                     const existingIndex = state.cart.findIndex(
-                        item => item.id === product.id && item.selectedColor === selectedColor
+                        item => String(item.id) === String(product.id) && item.selectedColor === selectedColor
                     );
                     let updatedCart = [...state.cart];
                     const currentQtyInCart = existingIndex > -1 ? updatedCart[existingIndex].quantity : 0;
 
                     if (currentQtyInCart + quantity > maxStock) {
-                        return { ...state, toastMessage: `⚠️ Solo hay ${maxStock} unidades disponibles en stock.` };
+                        return { ...state, toastMessage: `⚠️ Stock máximo alcanzado (${maxStock} disponibles).` };
                     }
 
                     if (existingIndex > -1) {
@@ -76,7 +89,7 @@
                     const { index, quantity } = action.payload;
                     let updatedCart = [...state.cart];
                     const item = updatedCart[index];
-                    const officialProd = state.products.find(p => p.id === item.id);
+                    const officialProd = state.products.find(p => String(p.id) === String(item.id));
                     const maxStock = officialProd ? officialProd.cantidad : 999;
 
                     if (quantity > maxStock) {
@@ -124,7 +137,7 @@
                 }
             });
 
-            // Cargar JSON con versión y caché[span_2](start_span)[span_2](end_span)
+            // Cargar JSON con versión y caché[span_3](start_span)[span_3](end_span)
             useEffect(() => {
                 const version = Date.now();
                 fetch(`https://ivn6.github.io/JHNPTA/productos.json?v=${version}`)
@@ -158,19 +171,22 @@
                         const decoded = JSON.parse(atob(encodedCart));
                         let alerts = [];
                         let validItems = decoded.map(sharedItem => {
-                            const official = state.products.find(p => p.id == sharedItem.id);
+                            const official = state.products.find(p => String(p.id) === String(sharedItem.id));
                             if (!official) {
                                 alerts.push(`El producto ID ${sharedItem.id} ya no está disponible.`);
                                 return null;
                             }
                             const officialPrice = official.precio_venta;
+                            const maxStock = official.cantidad ?? 999;
+                            const finalQty = Math.min(sharedItem.quantity, maxStock);
+
                             if (sharedItem.price !== officialPrice) {
-                                alerts.push(`Se ajustó el precio de "${official.producto_Nombre}" al valor oficial ($${officialPrice.toLocaleString()}).`);
+                                alerts.push(`Se ajustó el precio de "${official.producto_Nombre}" al valor oficial.`);
                             }
                             return {
                                 ...official,
                                 price: officialPrice,
-                                quantity: sharedItem.quantity,
+                                quantity: finalQty,
                                 selectedColor: sharedItem.selectedColor || ''
                             };
                         }).filter(Boolean);
@@ -354,11 +370,21 @@
 
             useEffect(() => {
                 if (colorsList.length > 0) setSelectedColor(colorsList[0]);
+                if (product) setQuantity(1);
             }, [product]);
 
             if (!product) return null;
 
             const isOutOfStock = product.cantidad === 0;
+            const maxStock = product.cantidad ?? 999;
+
+            const handleIncrease = () => {
+                if (quantity < maxStock) setQuantity(quantity + 1);
+            };
+
+            const handleDecrease = () => {
+                if (quantity > 1) setQuantity(quantity - 1);
+            };
 
             const handleAddToCart = () => {
                 if (isOutOfStock) return;
@@ -395,9 +421,9 @@
                                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                             </div>
 
-                            {/* Imagen fluida con proporción natural optimizada */}
-                            <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 w-full max-h-[50vh] flex items-center justify-center p-2">
-                                <img src={product.link_foto} alt={product.producto_Nombre} className="w-auto h-auto max-w-full max-h-[50vh] object-contain rounded-xl" />
+                            {/* Imagen expandida al 100% de ancho sin espacios vacíos laterales */}
+                            <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 w-full h-72 sm:h-80 flex items-center justify-center">
+                                <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-contain rounded-xl p-1" />
                             </div>
 
                             <div className="flex justify-between items-center">
@@ -435,17 +461,18 @@
 
                             {!isOutOfStock && (
                                 <div className="flex items-center justify-between my-4 py-2 border-t border-b">
-                                    <span className="text-xs font-bold text-gray-700">Cantidad:</span>
+                                    <span className="text-xs font-bold text-gray-700">Cantidad (Máx. {maxStock}):</span>
                                     <div className="flex items-center border rounded-xl bg-gray-50">
-                                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-1 text-sm font-bold">-</button>
+                                        <button onClick={handleDecrease} className="px-3 py-1 text-sm font-bold">-</button>
                                         <span className="px-3 text-xs font-bold">{quantity}</span>
-                                        <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-1 text-sm font-bold">+</button>
+                                        <button onClick={handleIncrease} disabled={quantity >= maxStock} className={`px-3 py-1 text-sm font-bold ${quantity >= maxStock ? 'text-gray-300 cursor-not-allowed' : ''}`}>+</button>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="pt-3 sticky bottom-0 bg-white">
+                        {/* Botón inferior fijo sin huecos flotantes */}
+                        <div className="pt-3 pb-1 bg-white border-t border-gray-100 mt-3">
                             <button
                                 onClick={handleAddToCart}
                                 disabled={isOutOfStock}
@@ -521,25 +548,29 @@
                         ) : (
                             <div className="space-y-4">
                                 <div className="divide-y max-h-48 overflow-y-auto pr-1">
-                                    {state.cart.map((item, idx) => (
-                                        <div key={idx} className="py-2.5 flex items-center justify-between text-xs gap-2">
-                                            <div className="flex items-center gap-2">
-                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-contain bg-gray-50" />
-                                                <div>
-                                                    <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
-                                                    <p className="text-gray-500 text-[10px]">{item.selectedColor}</p>
+                                    {state.cart.map((item, idx) => {
+                                        const officialProd = state.products.find(p => String(p.id) === String(item.id));
+                                        const maxStock = officialProd ? officialProd.cantidad : 999;
+                                        return (
+                                            <div key={idx} className="py-2.5 flex items-center justify-between text-xs gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-contain bg-gray-50" />
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
+                                                        <p className="text-gray-500 text-[10px]">{item.selectedColor} {item.quantity >= maxStock && <span className="text-amber-600">(Máx. stock)</span>}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-emerald-600">${(item.price * item.quantity).toLocaleString()}</span>
+                                                    <div className="flex items-center border rounded-lg bg-gray-50">
+                                                        <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity - 1}})} className="px-2 py-0.5">-</button>
+                                                        <span className="px-1.5">{item.quantity}</span>
+                                                        <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity + 1}})} disabled={item.quantity >= maxStock} className={`px-2 py-0.5 ${item.quantity >= maxStock ? 'text-gray-300' : ''}`}>+</button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-emerald-600">${(item.price * item.quantity).toLocaleString()}</span>
-                                                <div className="flex items-center border rounded-lg bg-gray-50">
-                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity - 1}})} className="px-2 py-0.5">-</button>
-                                                    <span className="px-1.5">{item.quantity}</span>
-                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity + 1}})} className="px-2 py-0.5">+</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 <form onSubmit={handleSubmitWhatsApp} className="space-y-3 pt-2 border-t">
