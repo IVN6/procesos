@@ -22,7 +22,7 @@
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_2](start_span)[span_2](end_span).",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_1](start_span)[span_1](end_span).",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
@@ -32,7 +32,7 @@
             }
         ];
 
-        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL) ---
+        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL CON CONTROL DE STOCK) ---
         const StoreContext = createContext();
 
         const initialStoreState = {
@@ -52,10 +52,19 @@
                     return { ...state, products: action.payload, loading: false };
                 case 'ADD_TO_CART': {
                     const { product, quantity, selectedColor } = action.payload;
+                    const officialProd = state.products.find(p => p.id === product.id);
+                    const maxStock = officialProd ? officialProd.cantidad : 999;
+
                     const existingIndex = state.cart.findIndex(
                         item => item.id === product.id && item.selectedColor === selectedColor
                     );
                     let updatedCart = [...state.cart];
+                    const currentQtyInCart = existingIndex > -1 ? updatedCart[existingIndex].quantity : 0;
+
+                    if (currentQtyInCart + quantity > maxStock) {
+                        return { ...state, toastMessage: `⚠️ Solo hay ${maxStock} unidades disponibles en stock.` };
+                    }
+
                     if (existingIndex > -1) {
                         updatedCart[existingIndex].quantity += quantity;
                     } else {
@@ -66,6 +75,14 @@
                 case 'UPDATE_QUANTITY': {
                     const { index, quantity } = action.payload;
                     let updatedCart = [...state.cart];
+                    const item = updatedCart[index];
+                    const officialProd = state.products.find(p => p.id === item.id);
+                    const maxStock = officialProd ? officialProd.cantidad : 999;
+
+                    if (quantity > maxStock) {
+                        return { ...state, toastMessage: `⚠️ Solo hay ${maxStock} unidades disponibles.` };
+                    }
+
                     if (quantity <= 0) {
                         updatedCart.splice(index, 1);
                     } else {
@@ -107,7 +124,7 @@
                 }
             });
 
-            // Cargar JSON con versión y caché[span_3](start_span)[span_3](end_span)
+            // Cargar JSON con versión y caché[span_2](start_span)[span_2](end_span)
             useEffect(() => {
                 const version = Date.now();
                 fetch(`https://ivn6.github.io/JHNPTA/productos.json?v=${version}`)
@@ -280,11 +297,6 @@
                                     ¡Oferta!
                                 </span>
                             )}
-                            {isOutOfStock && (
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
-                                    <span className="bg-white text-gray-900 text-xs font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">Agotado</span>
-                                </div>
-                            )}
                             <button
                                 onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
                                 className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90 z-10"
@@ -302,9 +314,6 @@
                             <p className="text-emerald-600 font-extrabold text-sm">
                                 ${product.precio_venta ? product.precio_venta.toLocaleString() : '0'}
                             </p>
-                            {!isOutOfStock && product.cantidad <= 2 && (
-                                <span className="text-[10px] text-amber-600 font-bold">¡Últimas unidades!</span>
-                            )}
                         </div>
                     </div>
 
@@ -312,7 +321,7 @@
                         <button
                             onClick={handleQuickAddToCart}
                             disabled={isOutOfStock}
-                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-black text-white active:scale-95'}`}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${isOutOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-black text-white active:scale-95'}`}
                         >
                             {isOutOfStock ? 'Agotado' : 'Añadir 🛒'}
                         </button>
@@ -379,73 +388,72 @@
 
             return (
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
-                        <div className="flex justify-between items-center mb-3 pb-2 border-b">
-                            <h2 className="font-bold text-base text-gray-900">Detalles del Producto</h2>
-                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
-                        </div>
+                    <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-center mb-3 pb-2 border-b">
+                                <h2 className="font-bold text-base text-gray-900">Detalles del Producto</h2>
+                                <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
+                            </div>
 
-                        {/* Imagen ampliada con mayor proporción visual */}
-                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 h-80 sm:h-96 w-full flex items-center justify-center">
-                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-contain rounded-2xl p-2" />
-                            {isOutOfStock && (
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                    <span className="bg-white text-gray-900 text-sm font-black px-4 py-1.5 rounded-xl uppercase tracking-wider">Agotado</span>
+                            {/* Imagen fluida con proporción natural optimizada */}
+                            <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 w-full max-h-[50vh] flex items-center justify-center p-2">
+                                <img src={product.link_foto} alt={product.producto_Nombre} className="w-auto h-auto max-w-full max-h-[50vh] object-contain rounded-xl" />
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                    {product["Tipo de producto"]}
+                                </span>
+                                <button onClick={handleShareThisProduct} className="text-xs font-bold bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200">
+                                    🔗 Compartir Producto
+                                </button>
+                            </div>
+
+                            <h1 className="font-bold text-lg text-gray-900 mt-2">{product.producto_Nombre}</h1>
+                            <p className="text-emerald-600 font-black text-xl mt-1">${product.precio_venta?.toLocaleString()}</p>
+
+                            <div className="my-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl leading-relaxed">
+                                <div dangerouslySetInnerHTML={{ __html: product["Detalles del producto ( opcional )"] || 'Sin descripción detallada.' }} />
+                            </div>
+
+                            {colorsList.length > 0 && (
+                                <div className="my-3">
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">Color disponible:</label>
+                                    <div className="flex gap-2">
+                                        {colorsList.map(color => (
+                                            <button
+                                                key={color}
+                                                onClick={() => setSelectedColor(color)}
+                                                className={`px-3 py-1 rounded-lg text-xs font-semibold border ${selectedColor === color ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200'}`}
+                                            >
+                                                {color}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!isOutOfStock && (
+                                <div className="flex items-center justify-between my-4 py-2 border-t border-b">
+                                    <span className="text-xs font-bold text-gray-700">Cantidad:</span>
+                                    <div className="flex items-center border rounded-xl bg-gray-50">
+                                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-1 text-sm font-bold">-</button>
+                                        <span className="px-3 text-xs font-bold">{quantity}</span>
+                                        <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-1 text-sm font-bold">+</button>
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                                {product["Tipo de producto"]}
-                            </span>
-                            <button onClick={handleShareThisProduct} className="text-xs font-bold bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200">
-                                🔗 Compartir Producto
+                        <div className="pt-3 sticky bottom-0 bg-white">
+                            <button
+                                onClick={handleAddToCart}
+                                disabled={isOutOfStock}
+                                className={`w-full py-3 rounded-2xl font-bold text-sm shadow-lg transition ${isOutOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-black text-white active:scale-95'}`}
+                            >
+                                {isOutOfStock ? 'Producto Agotado' : 'Añadir al Carrito 🛒'}
                             </button>
                         </div>
-
-                        <h1 className="font-bold text-lg text-gray-900 mt-2">{product.producto_Nombre}</h1>
-                        <p className="text-emerald-600 font-black text-xl mt-1">${product.precio_venta?.toLocaleString()}</p>
-
-                        <div className="my-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl leading-relaxed">
-                            <div dangerouslySetInnerHTML={{ __html: product["Detalles del producto ( opcional )"] || 'Sin descripción detallada.' }} />
-                        </div>
-
-                        {colorsList.length > 0 && (
-                            <div className="my-3">
-                                <label className="text-xs font-bold text-gray-700 block mb-1">Color disponible:</label>
-                                <div className="flex gap-2">
-                                    {colorsList.map(color => (
-                                        <button
-                                            key={color}
-                                            onClick={() => setSelectedColor(color)}
-                                            className={`px-3 py-1 rounded-lg text-xs font-semibold border ${selectedColor === color ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200'}`}
-                                        >
-                                            {color}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {!isOutOfStock && (
-                            <div className="flex items-center justify-between my-4 py-2 border-t border-b">
-                                <span className="text-xs font-bold text-gray-700">Cantidad:</span>
-                                <div className="flex items-center border rounded-xl bg-gray-50">
-                                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-1 text-sm font-bold">-</button>
-                                    <span className="px-3 text-xs font-bold">{quantity}</span>
-                                    <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-1 text-sm font-bold">+</button>
-                                </div>
-                            </div>
-                        )}
-
-                        <button
-                            onClick={handleAddToCart}
-                            disabled={isOutOfStock}
-                            className={`w-full py-3 rounded-2xl font-bold text-sm shadow-lg transition ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-black text-white active:scale-95'}`}
-                        >
-                            {isOutOfStock ? 'Producto Agotado' : 'Añadir al Carrito 🛒'}
-                        </button>
                     </div>
                 </div>
             );
@@ -470,7 +478,6 @@
                 const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* ${i.selectedColor ? `(${i.selectedColor})` : ''} [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
                 const notesText = checkoutForm.notes ? `📝 *Notas adicionales:* ${checkoutForm.notes}\n` : '';
                 
-                // Generar link cifrado del carrito automáticamente dentro del mensaje
                 const cartPayload = btoa(JSON.stringify(state.cart.map(i => ({
                     id: i.id,
                     price: i.price,
@@ -686,18 +693,24 @@
                 }
             }, [state.loading, state.products]);
 
-            const categories = ['todos', ...new Set(state.products.map(p => p["Tipo de producto"]).filter(Boolean))];
+            const baseCategories = [...new Set(state.products.map(p => p["Tipo de producto"]).filter(Boolean))];
+            const categories = ['todos', 'favoritos', ...baseCategories];
 
             const filteredProducts = state.products.filter(p => {
-                const matchesCategory = selectedCategory === 'todos' || p["Tipo de producto"] === selectedCategory;
+                const matchesCategory = 
+                    selectedCategory === 'todos' ? true :
+                    selectedCategory === 'favoritos' ? !!state.likes[p.id] :
+                    p["Tipo de producto"] === selectedCategory;
+
                 const searchLower = searchTerm.toLowerCase();
                 const nameMatch = p.producto_Nombre?.toLowerCase().includes(searchLower);
                 const typeMatch = p["Tipo de producto"]?.toLowerCase().includes(searchLower);
                 const seoMatch = p.seo?.toLowerCase().includes(searchLower);
                 const detailsMatch = p["Detalles del producto ( opcional )"]?.toLowerCase().includes(searchLower);
                 const colorMatch = p.colores?.toLowerCase().includes(searchLower);
+                const offerMatch = searchLower.includes('oferta') && !!p.oferta;
 
-                const matchesSearch = !searchTerm || nameMatch || typeMatch || seoMatch || detailsMatch || colorMatch;
+                const matchesSearch = !searchTerm || nameMatch || typeMatch || seoMatch || detailsMatch || colorMatch || offerMatch;
                 return matchesCategory && matchesSearch;
             });
 
@@ -727,7 +740,7 @@
                             <div className="relative flex-1 max-w-xs">
                                 <input
                                     type="text"
-                                    placeholder="Buscar productos, colores, detalles..."
+                                    placeholder="Buscar productos, colores, oferta..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full bg-gray-100 border border-transparent focus:border-black rounded-full px-3.5 py-1.5 pr-8 text-xs outline-none transition"
@@ -758,7 +771,7 @@
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition capitalize ${selectedCategory === cat ? 'bg-black text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                             >
-                                {cat === 'todos' ? '🔥 Todos' : cat}
+                                {cat === 'todos' ? '🔥 Todos' : cat === 'favoritos' ? '❤️ Favoritos' : cat}
                             </button>
                         ))}
                     </nav>
