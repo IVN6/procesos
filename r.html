@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-commerce Móvil de Alto Rendimiento</title>
+    <title>Tienda Express</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM CDN -->
@@ -22,7 +22,7 @@
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_0](start_span)[span_0](end_span).",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_2](start_span)[span_2](end_span).",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
@@ -51,15 +51,15 @@
                 case 'SET_PRODUCTS':
                     return { ...state, products: action.payload, loading: false };
                 case 'ADD_TO_CART': {
-                    const { product, quantity, selectedColor, isLayaway } = action.payload;
+                    const { product, quantity, selectedColor } = action.payload;
                     const existingIndex = state.cart.findIndex(
-                        item => item.id === product.id && item.selectedColor === selectedColor && item.isLayaway === isLayaway
+                        item => item.id === product.id && item.selectedColor === selectedColor
                     );
                     let updatedCart = [...state.cart];
                     if (existingIndex > -1) {
                         updatedCart[existingIndex].quantity += quantity;
                     } else {
-                        updatedCart.push({ ...product, quantity, selectedColor, isLayaway });
+                        updatedCart.push({ ...product, quantity, selectedColor });
                     }
                     return { ...state, cart: updatedCart, toastMessage: `¡${product.producto_Nombre} añadido al carrito!` };
                 }
@@ -107,7 +107,7 @@
                 }
             });
 
-            // Cargar JSON con versión y caché
+            // Cargar JSON con versión y caché[span_3](start_span)[span_3](end_span)
             useEffect(() => {
                 const version = Date.now();
                 fetch(`https://ivn6.github.io/JHNPTA/productos.json?v=${version}`)
@@ -154,8 +154,7 @@
                                 ...official,
                                 price: officialPrice,
                                 quantity: sharedItem.quantity,
-                                selectedColor: sharedItem.selectedColor || '',
-                                isLayaway: sharedItem.isLayaway || false
+                                selectedColor: sharedItem.selectedColor || ''
                             };
                         }).filter(Boolean);
 
@@ -200,7 +199,7 @@
             );
         }
 
-        // --- 4. LAZY IMAGE CON OBJECT-CONTAIN (Muestra la imagen completa sin recortar) ---
+        // --- 4. LAZY IMAGE ---
         function LazyImage({ src, alt, className }) {
             const [isLoaded, setIsLoaded] = useState(false);
             const [isInView, setIsInView] = useState(false);
@@ -241,9 +240,11 @@
         function ProductCard({ product, onSelect }) {
             const { state, dispatch } = useStore();
             const isLiked = state.likes[product.id];
+            const isOutOfStock = product.cantidad === 0;
 
             const handleQuickAddToCart = (e) => {
                 e.stopPropagation();
+                if (isOutOfStock) return;
                 const colorsList = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
                 dispatch({
                     type: 'ADD_TO_CART',
@@ -256,8 +257,7 @@
                             category: product["Tipo de producto"]
                         },
                         quantity: 1,
-                        selectedColor: colorsList[0] || '',
-                        isLayaway: false
+                        selectedColor: colorsList[0] || ''
                     }
                 });
             };
@@ -280,6 +280,11 @@
                                     ¡Oferta!
                                 </span>
                             )}
+                            {isOutOfStock && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                                    <span className="bg-white text-gray-900 text-xs font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">Agotado</span>
+                                </div>
+                            )}
                             <button
                                 onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
                                 className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90 z-10"
@@ -293,17 +298,23 @@
                         <h3 className="font-semibold text-xs text-gray-900 line-clamp-2 mt-1 cursor-pointer" onClick={() => onSelect(product)}>
                             {product.producto_Nombre}
                         </h3>
-                        <p className="text-emerald-600 font-extrabold text-sm mt-1">
-                            ${product.precio_venta ? product.precio_venta.toLocaleString() : '0'}
-                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                            <p className="text-emerald-600 font-extrabold text-sm">
+                                ${product.precio_venta ? product.precio_venta.toLocaleString() : '0'}
+                            </p>
+                            {!isOutOfStock && product.cantidad <= 2 && (
+                                <span className="text-[10px] text-amber-600 font-bold">¡Últimas unidades!</span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="pt-2 border-t border-gray-100 mt-2 flex gap-1.5">
                         <button
                             onClick={handleQuickAddToCart}
-                            className="flex-1 bg-black text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
+                            disabled={isOutOfStock}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-black text-white active:scale-95'}`}
                         >
-                            Añadir 🛒
+                            {isOutOfStock ? 'Agotado' : 'Añadir 🛒'}
                         </button>
                         <button
                             onClick={() => onSelect(product)}
@@ -324,11 +335,10 @@
             );
         }
 
-        // --- 6. MODAL DE DETALLE DE PRODUCTO (Hooks ordenados correctamente) ---
+        // --- 6. MODAL DE DETALLE DE PRODUCTO ---
         function ProductDetailModal({ product, onClose }) {
             const { dispatch, state } = useStore();
             const [selectedColor, setSelectedColor] = useState('');
-            const [isLayaway, setIsLayaway] = useState(false);
             const [quantity, setQuantity] = useState(1);
 
             const colorsList = product && product.colores ? product.colores.split(',').map(c => c.trim()) : [];
@@ -337,9 +347,12 @@
                 if (colorsList.length > 0) setSelectedColor(colorsList[0]);
             }, [product]);
 
-            if (!product) return null; // Early return colocado DESPUÉS de los hooks
+            if (!product) return null;
+
+            const isOutOfStock = product.cantidad === 0;
 
             const handleAddToCart = () => {
+                if (isOutOfStock) return;
                 dispatch({
                     type: 'ADD_TO_CART',
                     payload: {
@@ -351,8 +364,7 @@
                             category: product["Tipo de producto"]
                         },
                         quantity,
-                        selectedColor,
-                        isLayaway
+                        selectedColor
                     }
                 });
                 onClose();
@@ -373,8 +385,14 @@
                             <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                         </div>
 
-                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 aspect-square max-h-72 mx-auto flex items-center justify-center">
-                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-contain rounded-2xl" />
+                        {/* Imagen ampliada con mayor proporción visual */}
+                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 h-80 sm:h-96 w-full flex items-center justify-center">
+                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-contain rounded-2xl p-2" />
+                            {isOutOfStock && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                    <span className="bg-white text-gray-900 text-sm font-black px-4 py-1.5 rounded-xl uppercase tracking-wider">Agotado</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex justify-between items-center">
@@ -410,32 +428,23 @@
                             </div>
                         )}
 
-                        <div className="flex items-center justify-between my-4 py-2 border-t border-b">
-                            <span className="text-xs font-bold text-gray-700">Cantidad:</span>
-                            <div className="flex items-center border rounded-xl bg-gray-50">
-                                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-1 text-sm font-bold">-</button>
-                                <span className="px-3 text-xs font-bold">{quantity}</span>
-                                <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-1 text-sm font-bold">+</button>
+                        {!isOutOfStock && (
+                            <div className="flex items-center justify-between my-4 py-2 border-t border-b">
+                                <span className="text-xs font-bold text-gray-700">Cantidad:</span>
+                                <div className="flex items-center border rounded-xl bg-gray-50">
+                                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-1 text-sm font-bold">-</button>
+                                    <span className="px-3 text-xs font-bold">{quantity}</span>
+                                    <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-1 text-sm font-bold">+</button>
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="text-xs text-gray-600 flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={isLayaway}
-                                    onChange={(e) => setIsLayaway(e.target.checked)}
-                                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
-                                />
-                                <span className="font-medium">Apartar con adelanto (50% de abono inicial)</span>
-                            </label>
-                        </div>
+                        )}
 
                         <button
                             onClick={handleAddToCart}
-                            className="w-full bg-black text-white py-3 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition"
+                            disabled={isOutOfStock}
+                            className={`w-full py-3 rounded-2xl font-bold text-sm shadow-lg transition ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-black text-white active:scale-95'}`}
                         >
-                            Añadir al Carrito 🛒
+                            {isOutOfStock ? 'Producto Agotado' : 'Añadir al Carrito 🛒'}
                         </button>
                     </div>
                 </div>
@@ -450,43 +459,37 @@
             if (!isOpen) return null;
 
             const total = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-            const isLayawayOrder = state.cart.some(i => i.isLayaway);
-            const finalTotalToPay = isLayawayOrder ? total / 2 : total;
 
             const handleFormChange = (e) => {
                 dispatch({ type: 'UPDATE_CHECKOUT_FORM', payload: { [e.target.name]: e.target.value } });
             };
 
-            const handleShareCart = () => {
-                const ref = state.affiliateRef || 'directo';
+            const handleSubmitWhatsApp = (e) => {
+                e.preventDefault();
+                const affiliateInfo = state.affiliateRef && state.affiliateRef !== 'directo' ? `🔗 *Asesor / Afiliado:* ${state.affiliateRef}\n` : '';
+                const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* ${i.selectedColor ? `(${i.selectedColor})` : ''} [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
+                const notesText = checkoutForm.notes ? `📝 *Notas adicionales:* ${checkoutForm.notes}\n` : '';
+                
+                // Generar link cifrado del carrito automáticamente dentro del mensaje
                 const cartPayload = btoa(JSON.stringify(state.cart.map(i => ({
                     id: i.id,
                     price: i.price,
                     quantity: i.quantity,
-                    selectedColor: i.selectedColor,
-                    isLayaway: i.isLayaway
+                    selectedColor: i.selectedColor
                 }))));
-                const shareUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&cart=${cartPayload}`;
-                const waText = `¡Hola! Te comparto este carrito de compras armado en nuestra tienda 🛒✨\nRevisalo aquí: ${shareUrl}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
-            };
+                const ref = state.affiliateRef || 'directo';
+                const shareCartUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&cart=${cartPayload}`;
 
-            const handleSubmitWhatsApp = (e) => {
-                e.preventDefault();
-                const affiliateInfo = state.affiliateRef && state.affiliateRef !== 'directo' ? `🔗 *Asesor / Afiliado:* ${state.affiliateRef}\n` : '';
-                const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* ${i.selectedColor ? `(${i.selectedColor})` : ''} ${i.isLayaway ? '[APARTADO 50%]' : ''} [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
-                const notesText = checkoutForm.notes ? `📝 *Notas adicionales:* ${checkoutForm.notes}\n` : '';
-                
                 const message = `🛒 *NUEVO PEDIDO DE E-COMMERCE*\n\n` +
                     `${affiliateInfo}` +
                     `👤 *Cliente:* ${checkoutForm.name}\n` +
                     `📞 *Teléfono:* ${checkoutForm.phone}\n` +
                     `📍 *Dirección:* ${checkoutForm.address}\n` +
                     `💳 *Pago:* ${checkoutForm.paymentMethod}\n` +
-                    `${notesText}` +
-                    `${isLayawayOrder ? '⚠️ *Modalidad:* APARTADO CON ADELANTO (50%)\n' : ''}\n` +
+                    `${notesText}\n` +
                     `📦 *Productos:*\n${itemsText}\n\n` +
-                    `💰 *Total a pagar ahora:* $${finalTotalToPay.toLocaleString()}`;
+                    `🔗 *Enlace de verificación:* ${shareCartUrl}\n\n` +
+                    `💰 *Total a pagar:* $${total.toLocaleString()}`;
 
                 const whatsappUrl = `https://wa.me/573247356178?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
@@ -517,7 +520,7 @@
                                                 <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-contain bg-gray-50" />
                                                 <div>
                                                     <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
-                                                    <p className="text-gray-500 text-[10px]">{item.selectedColor} {item.isLayaway && '• (Apartado)'}</p>
+                                                    <p className="text-gray-500 text-[10px]">{item.selectedColor}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -531,10 +534,6 @@
                                         </div>
                                     ))}
                                 </div>
-
-                                <button onClick={handleShareCart} className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-xl text-xs font-bold transition">
-                                    🔗 Compartir Carrito por WhatsApp
-                                </button>
 
                                 <form onSubmit={handleSubmitWhatsApp} className="space-y-3 pt-2 border-t">
                                     <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Información de Envío</h3>
@@ -564,9 +563,7 @@
                                     </div>
 
                                     <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1">
-                                        <div className="flex justify-between"><span>Subtotal:</span><span>${total.toLocaleString()}</span></div>
-                                        {isLayawayOrder && <div className="flex justify-between text-emerald-600 font-medium"><span>Adelanto Requerido (50%):</span><span>${finalTotalToPay.toLocaleString()}</span></div>}
-                                        <div className="flex justify-between font-bold text-sm pt-1 border-t text-black"><span>Total a Pagar:</span><span>${finalTotalToPay.toLocaleString()}</span></div>
+                                        <div className="flex justify-between font-bold text-sm text-black"><span>Total a Pagar:</span><span>${total.toLocaleString()}</span></div>
                                     </div>
 
                                     <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-extrabold text-sm shadow-lg transition active:scale-95">
@@ -616,16 +613,11 @@
                                         </div>
                                     )}
                                 </div>
-
-                                <div className="bg-gray-50 p-3.5 rounded-2xl space-y-1">
-                                    <p className="text-xs font-bold text-gray-800">📌 Enlace de Afiliado Activo:</p>
-                                    <p className="text-xs text-emerald-600 font-mono font-bold">{state.affiliateRef}</p>
-                                </div>
                             </div>
                         </div>
 
                         <div className="pt-4 border-t text-center text-[11px] text-gray-400">
-                            E-commerce Móvil con React & Tailwind
+                            Tienda Express • Catálogo Inteligente
                         </div>
                     </div>
                 </div>
@@ -732,14 +724,22 @@
                             <button onClick={openMenuModal} className="p-2 bg-gray-100 rounded-xl text-sm font-bold">
                                 ☰
                             </button>
-                            <div className="flex-1 max-w-xs">
+                            <div className="relative flex-1 max-w-xs">
                                 <input
                                     type="text"
                                     placeholder="Buscar productos, colores, detalles..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-gray-100 border border-transparent focus:border-black rounded-full px-3.5 py-1.5 text-xs outline-none transition"
+                                    className="w-full bg-gray-100 border border-transparent focus:border-black rounded-full px-3.5 py-1.5 pr-8 text-xs outline-none transition"
                                 />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs font-bold"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
                             </div>
                             <button
                                 onClick={openCartModal}
