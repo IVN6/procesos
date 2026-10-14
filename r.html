@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-commerce Móvil Inteligente</title>
+    <title>E-commerce Móvil de Alto Rendimiento</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM CDN -->
@@ -18,31 +18,21 @@
     <script type="text/babel">
         const { useState, useEffect, useReducer, createContext, useContext, useRef } = React;
 
-        // --- 1. DATOS DE FALLBACK (Basados en tu JSON oficial)[span_0](start_span)[span_0](end_span) ---
+        // --- 1. DATOS DE FALLBACK INICIAL ---
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia y 12 parámetros[span_1](start_span)[span_1](end_span).",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_0](start_span)[span_0](end_span).",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
                 "producto_Nombre": "Bascula Digital Pro",
                 "precio_venta": 56000,
                 "seo": "báscula inteligente, pesa personal, bluetooth"
-            },
-            {
-                "Tipo de producto": "Belleza",
-                "Detalles del producto ( opcional )": "Cepillo alisador profesional con placa protectora y modo reposo[span_2](start_span)[span_2](end_span).",
-                "id": "P-393464",
-                "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/937481/17201499561712355262266b129a-198e-43e9-919f-fa15f49b5aaa.jpg?w=300&strip=all&quality=60",
-                "cantidad": 4,
-                "producto_Nombre": "Cepillo Alisador De Cabello",
-                "precio_venta": 54000,
-                "seo": "cepillo alisador, plancha para cabello, mujer"
             }
         ];
 
-        // --- 2. CONTEXT Y REDUCER ---
+        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL) ---
         const StoreContext = createContext();
 
         const initialStoreState = {
@@ -52,16 +42,14 @@
             affiliateRef: 'directo',
             tamperedAlerts: [],
             checkoutForm: { name: '', phone: '', address: '', paymentMethod: 'Nequi', notes: '' },
-            toastMessage: null,
-            loading: true
+            loading: true,
+            toastMessage: null
         };
 
         function storeReducer(state, action) {
             switch (action.type) {
                 case 'SET_PRODUCTS':
                     return { ...state, products: action.payload, loading: false };
-                case 'SHOW_TOAST':
-                    return { ...state, toastMessage: action.payload };
                 case 'ADD_TO_CART': {
                     const { product, quantity, selectedColor, isLayaway } = action.payload;
                     const existingIndex = state.cart.findIndex(
@@ -87,13 +75,16 @@
                 }
                 case 'SET_SHARED_CART':
                     return { ...state, cart: action.payload.items, tamperedAlerts: action.payload.alerts };
-                case 'TOGGLE_LIKE':
-                    const newStateLikes = { ...state.likes, [action.payload]: !state.likes[action.payload] };
-                    return { ...state, likes: newStateLikes };
+                case 'TOGGLE_LIKE': {
+                    const newLikes = { ...state.likes, [action.payload]: !state.likes[action.payload] };
+                    return { ...state, likes: newLikes, toastMessage: newLikes[action.payload] ? 'Añadido a favoritos ❤️' : 'Eliminado de favoritos' };
+                }
                 case 'SET_AFFILIATE':
                     return { ...state, affiliateRef: action.payload };
                 case 'UPDATE_CHECKOUT_FORM':
                     return { ...state, checkoutForm: { ...state.checkoutForm, ...action.payload } };
+                case 'SET_TOAST':
+                    return { ...state, toastMessage: action.payload };
                 default:
                     return state;
             }
@@ -116,12 +107,10 @@
                 }
             });
 
-            // Cargar JSON remoto con versión y caché local[span_3](start_span)[span_3](end_span)
+            // Cargar JSON con versión y caché
             useEffect(() => {
                 const version = Date.now();
-                const jsonUrl = `https://ivn6.github.io/JHNPTA/productos.json?v=${version}`;
-                
-                fetch(jsonUrl)
+                fetch(`https://ivn6.github.io/JHNPTA/productos.json?v=${version}`)
                     .then(res => res.json())
                     .then(data => {
                         if (Array.isArray(data) && data.length > 0) {
@@ -131,15 +120,12 @@
                     })
                     .catch(() => {
                         const cached = localStorage.getItem('cached_products');
-                        if (cached) {
-                            dispatch({ type: 'SET_PRODUCTS', payload: JSON.parse(cached) });
-                        } else {
-                            dispatch({ type: 'SET_PRODUCTS', payload: FALLBACK_PRODUCTS });
-                        }
+                        if (cached) dispatch({ type: 'SET_PRODUCTS', payload: JSON.parse(cached) });
+                        else dispatch({ type: 'SET_PRODUCTS', payload: FALLBACK_PRODUCTS });
                     });
             }, []);
 
-            // Manejo de URL (Afiliados y Carrito compartido)
+            // Procesar URL (Afiliado, Carrito compartido y Producto directo)
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const ref = urlParams.get('ref');
@@ -162,7 +148,7 @@
                             }
                             const officialPrice = official.precio_venta;
                             if (sharedItem.price !== officialPrice) {
-                                alerts.push(`Se detectó alteración en "${official.producto_Nombre}". Precio oficial restaurado ($${officialPrice.toLocaleString()}).`);
+                                alerts.push(`Se ajustó el precio de "${official.producto_Nombre}" al valor oficial ($${officialPrice.toLocaleString()}).`);
                             }
                             return {
                                 ...official,
@@ -180,17 +166,9 @@
                 }
             }, [state.products]);
 
-            useEffect(() => {
-                localStorage.setItem('ecommerce_cart', JSON.stringify(state.cart));
-            }, [state.cart]);
-
-            useEffect(() => {
-                localStorage.setItem('ecommerce_likes', JSON.stringify(state.likes));
-            }, [state.likes]);
-
-            useEffect(() => {
-                localStorage.setItem('ecommerce_form', JSON.stringify(state.checkoutForm));
-            }, [state.checkoutForm]);
+            useEffect(() => { localStorage.setItem('ecommerce_cart', JSON.stringify(state.cart)); }, [state.cart]);
+            useEffect(() => { localStorage.setItem('ecommerce_likes', JSON.stringify(state.likes)); }, [state.likes]);
+            useEffect(() => { localStorage.setItem('ecommerce_form', JSON.stringify(state.checkoutForm)); }, [state.checkoutForm]);
 
             return (
                 <StoreContext.Provider value={{ state, dispatch }}>
@@ -201,13 +179,13 @@
 
         const useStore = () => useContext(StoreContext);
 
-        // --- 3. TOAST NOTIFICATION FLOTANTE ---
+        // --- 3. TOAST NOTIFICACIÓN FLOTANTE ---
         function Toast() {
             const { state, dispatch } = useStore();
             useEffect(() => {
                 if (state.toastMessage) {
                     const timer = setTimeout(() => {
-                        dispatch({ type: 'SHOW_TOAST', payload: null });
+                        dispatch({ type: 'SET_TOAST', payload: null });
                     }, 3000);
                     return () => clearTimeout(timer);
                 }
@@ -216,46 +194,42 @@
             if (!state.toastMessage) return null;
 
             return (
-                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-medium flex items-center gap-2 animate-bounce">
-                    <span>✨</span>
-                    <span>{state.toastMessage}</span>
+                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-black/90 text-white px-4 py-2.5 rounded-2xl text-xs font-semibold shadow-xl backdrop-blur-md transition animate-bounce">
+                    {state.toastMessage}
                 </div>
             );
         }
 
-        // --- 4. IMAGEN OPTIMIZADA CON CONTENEDOR LIMPIO ---
+        // --- 4. LAZY IMAGE ---
         function LazyImage({ src, alt, className }) {
             const [isLoaded, setIsLoaded] = useState(false);
             const [isInView, setIsInView] = useState(false);
             const imgRef = useRef();
 
             useEffect(() => {
-                const observer = new IntersectionObserver(
-                    ([entry]) => {
-                        if (entry.isIntersecting) {
-                            setIsInView(true);
-                            observer.disconnect();
-                        }
-                    },
-                    { rootMargin: '200px' }
-                );
+                const observer = new IntersectionObserver(([entry]) => {
+                    if (entry.isIntersecting) {
+                        setIsInView(true);
+                        observer.disconnect();
+                    }
+                }, { rootMargin: '200px' });
                 if (imgRef.current) observer.observe(imgRef.current);
                 return () => observer.disconnect();
             }, []);
 
             return (
-                <div ref={imgRef} className={`relative overflow-hidden bg-white flex items-center justify-center ${className}`}>
+                <div ref={imgRef} className={`relative overflow-hidden bg-gray-100 ${className}`}>
                     {isInView && (
                         <img
                             src={src}
                             alt={alt}
                             loading="lazy"
                             onLoad={() => setIsLoaded(true)}
-                            className={`w-full h-full object-contain transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                         />
                     )}
                     {!isLoaded && (
-                        <div className="absolute inset-0 animate-pulse bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">
+                        <div className="absolute inset-0 animate-pulse bg-gray-200 flex items-center justify-center text-[10px] text-gray-400">
                             Cargando...
                         </div>
                     )}
@@ -270,40 +244,28 @@
 
             const handleShareProduct = (e) => {
                 e.stopPropagation();
-                const shareUrl = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
-                if (navigator.share) {
-                    navigator.share({ title: product.producto_Nombre, url: shareUrl });
-                } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    dispatch({ type: 'SHOW_TOAST', payload: '¡Enlace del producto copiado!' });
-                }
+                const ref = state.affiliateRef || 'directo';
+                const shareUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&product=${product.id}`;
+                const waText = `¡Mira este producto en nuestra tienda! 🛍️\n*${product.producto_Nombre}*\nPrecio: $${product.precio_venta?.toLocaleString()}\n\nVer aquí: ${shareUrl}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
             };
 
             return (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col justify-between transition-all hover:shadow-md">
                     <div>
-                        <div className="relative rounded-xl overflow-hidden mb-2 cursor-pointer bg-gray-50 h-40" onClick={() => onSelect(product)}>
-                            <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="h-full w-full rounded-xl" />
+                        <div className="relative rounded-xl overflow-hidden mb-2 aspect-square cursor-pointer bg-gray-50" onClick={() => onSelect(product)}>
+                            <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full rounded-xl" />
                             {product.oferta && (
                                 <span className="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
                                     ¡Oferta!
                                 </span>
                             )}
-                            <div className="absolute top-2 right-2 flex gap-1">
-                                <button
-                                    onClick={handleShareProduct}
-                                    className="bg-white/90 p-1.5 rounded-full shadow text-xs transition active:scale-90"
-                                    title="Compartir producto"
-                                >
-                                    🔗
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
-                                    className="bg-white/90 p-1.5 rounded-full shadow text-xs transition active:scale-90"
-                                >
-                                    {isLiked ? '❤️' : '🤍'}
-                                </button>
-                            </div>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
+                                className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90"
+                            >
+                                {isLiked ? '❤️' : '🤍'}
+                            </button>
                         </div>
                         <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
                             {product["Tipo de producto"]}
@@ -316,12 +278,19 @@
                         </p>
                     </div>
 
-                    <div className="pt-2 border-t border-gray-100 mt-2">
+                    <div className="pt-2 border-t border-gray-100 mt-2 flex gap-1.5">
                         <button
                             onClick={() => onSelect(product)}
-                            className="w-full bg-gray-900 text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
+                            className="flex-1 bg-gray-900 text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
                         >
-                            Ver Detalles 👁️
+                            Ver 👁️
+                        </button>
+                        <button
+                            onClick={handleShareProduct}
+                            className="bg-emerald-50 text-emerald-700 px-2.5 py-2 rounded-xl text-xs font-bold border border-emerald-200 active:scale-95 transition"
+                            title="Compartir por WhatsApp"
+                        >
+                            🔗
                         </button>
                     </div>
                 </div>
@@ -330,7 +299,7 @@
 
         // --- 6. MODAL DE DETALLE DE PRODUCTO ---
         function ProductDetailModal({ product, onClose }) {
-            const { dispatch } = useStore();
+            const { dispatch, state } = useStore();
             const [selectedColor, setSelectedColor] = useState('');
             const [isLayaway, setIsLayaway] = useState(false);
             const [quantity, setQuantity] = useState(1);
@@ -363,13 +332,10 @@
             };
 
             const handleShareThisProduct = () => {
-                const shareUrl = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
-                if (navigator.share) {
-                    navigator.share({ title: product.producto_Nombre, url: shareUrl });
-                } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    dispatch({ type: 'SHOW_TOAST', payload: '¡Enlace copiado al portapapeles!' });
-                }
+                const ref = state.affiliateRef || 'directo';
+                const shareUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&product=${product.id}`;
+                const waText = `¡Mira este artículo recomendado! 🌟\n*${product.producto_Nombre}*\nPrecio: $${product.precio_venta?.toLocaleString()}\n\nCómpralo aquí: ${shareUrl}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
             };
 
             return (
@@ -380,19 +346,19 @@
                             <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                         </div>
 
-                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 h-64">
-                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-contain" />
-                            <button
-                                onClick={handleShareThisProduct}
-                                className="absolute top-3 right-3 bg-white/90 px-3 py-1.5 rounded-full shadow text-xs font-bold flex items-center gap-1.5"
-                            >
-                                🔗 Compartir
+                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-100 aspect-square max-h-72 mx-auto">
+                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-cover rounded-2xl" />
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                {product["Tipo de producto"]}
+                            </span>
+                            <button onClick={handleShareThisProduct} className="text-xs font-bold bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200">
+                                🔗 Compartir Producto
                             </button>
                         </div>
 
-                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                            {product["Tipo de producto"]}
-                        </span>
                         <h1 className="font-bold text-lg text-gray-900 mt-2">{product.producto_Nombre}</h1>
                         <p className="text-emerald-600 font-black text-xl mt-1">${product.precio_venta?.toLocaleString()}</p>
 
@@ -474,20 +440,15 @@
                     isLayaway: i.isLayaway
                 }))));
                 const shareUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&cart=${cartPayload}`;
-                
-                if (navigator.share) {
-                    navigator.share({ title: 'Mi Carrito de Compras', url: shareUrl });
-                } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    dispatch({ type: 'SHOW_TOAST', payload: '¡Enlace de carrito copiado!' });
-                }
+                const waText = `¡Hola! Te comparto este carrito de compras armado en nuestra tienda 🛒✨\nRevisalo aquí: ${shareUrl}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
             };
 
             const handleSubmitWhatsApp = (e) => {
                 e.preventDefault();
                 const affiliateInfo = state.affiliateRef && state.affiliateRef !== 'directo' ? `🔗 *Asesor / Afiliado:* ${state.affiliateRef}\n` : '';
                 const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* ${i.selectedColor ? `(${i.selectedColor})` : ''} ${i.isLayaway ? '[APARTADO 50%]' : ''} [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
-                const notesText = checkoutForm.notes ? `📝 *Comentarios:* ${checkoutForm.notes}\n` : '';
+                const notesText = checkoutForm.notes ? `📝 *Notas adicionales:* ${checkoutForm.notes}\n` : '';
                 
                 const message = `🛒 *NUEVO PEDIDO DE E-COMMERCE*\n\n` +
                     `${affiliateInfo}` +
@@ -526,7 +487,7 @@
                                     {state.cart.map((item, idx) => (
                                         <div key={idx} className="py-2.5 flex items-center justify-between text-xs gap-2">
                                             <div className="flex items-center gap-2">
-                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-contain bg-gray-50 border" />
+                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                                                 <div>
                                                     <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
                                                     <p className="text-gray-500 text-[10px]">{item.selectedColor} {item.isLayaway && '• (Apartado)'}</p>
@@ -545,7 +506,7 @@
                                 </div>
 
                                 <button onClick={handleShareCart} className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-xl text-xs font-bold transition">
-                                    🔗 Compartir Carrito (Afiliados / Amigos)
+                                    🔗 Compartir Carrito por WhatsApp
                                 </button>
 
                                 <form onSubmit={handleSubmitWhatsApp} className="space-y-3 pt-2 border-t">
@@ -571,8 +532,8 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-gray-500">Comentarios Adicionales (Opcional)</label>
-                                        <textarea name="notes" placeholder="Ej. Dejar con el celador, Nequi del familiar, etc." value={checkoutForm.notes} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50 h-16 resize-none" />
+                                        <label className="text-xs text-gray-500">Comentarios o notas adicionales (Opcional)</label>
+                                        <textarea name="notes" placeholder="Ej. Mi número de Nequi es distinto, dejar con el vecino..." value={checkoutForm.notes} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50 h-16 resize-none"></textarea>
                                     </div>
 
                                     <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1">
@@ -592,7 +553,7 @@
             );
         }
 
-        // --- 8. MENÚ HAMBURGUESA Y FAVORITOS ---
+        // --- 8. MENÚ LATERAL (HAMBURGUESA) ---
         function DrawerMenu({ isOpen, onClose, onSelectProduct }) {
             const { state } = useStore();
             const likedIds = Object.keys(state.likes).filter(id => state.likes[id]);
@@ -604,28 +565,24 @@
                 <div className="fixed inset-0 bg-black/60 z-50 flex justify-end backdrop-blur-sm">
                     <div className="bg-white w-80 h-full p-5 shadow-2xl flex flex-col justify-between overflow-y-auto">
                         <div>
-                            <div className="flex justify-between items-center mb-6 pb-2 border-b">
+                            <div className="flex justify-between items-center mb-5 pb-2 border-b">
                                 <h2 className="font-bold text-base text-gray-900">Menú y Favoritos</h2>
                                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                             </div>
 
                             <div className="space-y-4">
-                                <div className="bg-indigo-50 p-3 rounded-2xl">
+                                <div className="bg-indigo-50 p-3.5 rounded-2xl">
                                     <p className="text-xs font-bold text-indigo-900 mb-2">❤️ Mis Favoritos ({likedProducts.length})</p>
                                     {likedProducts.length === 0 ? (
                                         <p className="text-[11px] text-indigo-600">No tienes productos guardados aún.</p>
                                     ) : (
-                                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                                            {likedProducts.map(lp => (
-                                                <div 
-                                                    key={lp.id} 
-                                                    onClick={() => { onSelectProduct(lp); onClose(); }} 
-                                                    className="flex items-center gap-2 bg-white p-1.5 rounded-xl cursor-pointer shadow-sm hover:bg-gray-50 transition"
-                                                >
-                                                    <img src={lp.link_foto} alt="" className="w-8 h-8 object-contain rounded-lg bg-gray-50" />
+                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                            {likedProducts.map(p => (
+                                                <div key={p.id} onClick={() => { onClose(); onSelectProduct(p); }} className="flex items-center gap-2 bg-white p-2 rounded-xl cursor-pointer hover:shadow-sm">
+                                                    <img src={p.link_foto} alt="" className="w-8 h-8 rounded-lg object-cover" />
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-[11px] font-bold text-gray-800 truncate">{lp.producto_Nombre}</p>
-                                                        <p className="text-[10px] text-emerald-600 font-bold">${lp.precio_venta?.toLocaleString()}</p>
+                                                        <p className="text-[11px] font-bold text-gray-800 truncate">{p.producto_Nombre}</p>
+                                                        <p className="text-[10px] text-emerald-600 font-bold">${p.precio_venta?.toLocaleString()}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -633,14 +590,14 @@
                                     )}
                                 </div>
 
-                                <div className="bg-gray-50 p-3 rounded-2xl space-y-1">
+                                <div className="bg-gray-50 p-3.5 rounded-2xl space-y-1">
                                     <p className="text-xs font-bold text-gray-800">📌 Enlace de Afiliado Activo:</p>
                                     <p className="text-xs text-emerald-600 font-mono font-bold">{state.affiliateRef}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t text-center text-xs text-gray-400 mt-4">
+                        <div className="pt-4 border-t text-center text-[11px] text-gray-400">
                             E-commerce Móvil con React & Tailwind
                         </div>
                     </div>
@@ -648,7 +605,7 @@
             );
         }
 
-        // --- 9. APP PRINCIPAL Y MANEJADOR DE HISTORIAL ---
+        // --- 9. APLICACIÓN PRINCIPAL ---
         function App() {
             const { state } = useStore();
             const [searchTerm, setSearchTerm] = useState('');
@@ -657,9 +614,50 @@
             const [isMenuOpen, setIsMenuOpen] = useState(false);
             const [selectedProduct, setSelectedProduct] = useState(null);
 
-            // Sincronizar producto con Deep Linking (?product=ID) al iniciar
+            // Manejo de Historial (Botón "Atrás" del navegador cierra modales)
             useEffect(() => {
-                if (state.products.length > 0) {
+                const handlePopState = () => {
+                    if (selectedProduct) setSelectedProduct(null);
+                    if (isCartOpen) setIsCartOpen(false);
+                    if (isMenuOpen) setIsMenuOpen(false);
+                };
+                window.addEventListener('popstate', handlePopState);
+                return () => window.removeEventListener('popstate', handlePopState);
+            }, [selectedProduct, isCartOpen, isMenuOpen]);
+
+            const openProductModal = (product) => {
+                window.history.pushState({ modal: 'product' }, '');
+                setSelectedProduct(product);
+            };
+
+            const closeProductModal = () => {
+                if (window.history.state?.modal === 'product') window.history.back();
+                setSelectedProduct(null);
+            };
+
+            const openCartModal = () => {
+                window.history.pushState({ modal: 'cart' }, '');
+                setIsCartOpen(true);
+            };
+
+            const closeCartModal = () => {
+                if (window.history.state?.modal === 'cart') window.history.back();
+                setIsCartOpen(false);
+            };
+
+            const openMenuModal = () => {
+                window.history.pushState({ modal: 'menu' }, '');
+                setIsMenuOpen(true);
+            };
+
+            const closeMenuModal = () => {
+                if (window.history.state?.modal === 'menu') window.history.back();
+                setIsMenuOpen(false);
+            };
+
+            // Detectar parámetro ?product=ID al cargar para mostrar el producto directamente
+            useEffect(() => {
+                if (!state.loading && state.products.length > 0) {
                     const urlParams = new URLSearchParams(window.location.search);
                     const prodId = urlParams.get('product');
                     if (prodId) {
@@ -667,48 +665,7 @@
                         if (found) setSelectedProduct(found);
                     }
                 }
-            }, [state.products]);
-
-            // Manejo del botón "Atrás" del navegador/celular (Popstate)
-            useEffect(() => {
-                const handlePopState = () => {
-                    if (selectedProduct) setSelectedProduct(null);
-                    else if (isCartOpen) setIsCartOpen(false);
-                    else if (isMenuOpen) setIsMenuOpen(false);
-                };
-                window.addEventListener('popstate', handlePopState);
-                return () => window.removeEventListener('popstate', handlePopState);
-            }, [selectedProduct, isCartOpen, isMenuOpen]);
-
-            const handleOpenProduct = (product) => {
-                window.history.pushState({ modal: 'product' }, '');
-                setSelectedProduct(product);
-            };
-
-            const handleCloseProduct = () => {
-                setSelectedProduct(null);
-                if (window.history.state) window.history.back();
-            };
-
-            const handleOpenCart = () => {
-                window.history.pushState({ modal: 'cart' }, '');
-                setIsCartOpen(true);
-            };
-
-            const handleCloseCart = () => {
-                setIsCartOpen(false);
-                if (window.history.state) window.history.back();
-            };
-
-            const handleOpenMenu = () => {
-                window.history.pushState({ modal: 'menu' }, '');
-                setIsMenuOpen(true);
-            };
-
-            const handleCloseMenu = () => {
-                setIsMenuOpen(false);
-                if (window.history.state) window.history.back();
-            };
+            }, [state.loading, state.products]);
 
             const categories = ['todos', ...new Set(state.products.map(p => p["Tipo de producto"]).filter(Boolean))];
 
@@ -721,7 +678,8 @@
                 const detailsMatch = p["Detalles del producto ( opcional )"]?.toLowerCase().includes(searchLower);
                 const colorMatch = p.colores?.toLowerCase().includes(searchLower);
 
-                return matchesCategory && (!searchTerm || nameMatch || typeMatch || seoMatch || detailsMatch || colorMatch);
+                const matchesSearch = !searchTerm || nameMatch || typeMatch || seoMatch || detailsMatch || colorMatch;
+                return matchesCategory && matchesSearch;
             });
 
             const totalCartItems = state.cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -740,23 +698,24 @@
             return (
                 <div className="min-h-screen pb-20">
                     <Toast />
-                    {/* Header */}
-                    <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-gray-100 px-4 py-3">
+
+                    {/* Header Principal Fijo */}
+                    <header className="sticky top-0 bg-white/95 backdrop-blur-md z-40 border-b border-gray-100 px-4 py-3 shadow-sm">
                         <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
-                            <button onClick={handleOpenMenu} className="p-2 bg-gray-100 rounded-xl text-sm font-bold">
+                            <button onClick={openMenuModal} className="p-2 bg-gray-100 rounded-xl text-sm font-bold">
                                 ☰
                             </button>
                             <div className="flex-1 max-w-xs">
                                 <input
                                     type="text"
-                                    placeholder="Buscar productos..."
+                                    placeholder="Buscar productos, colores, detalles..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full bg-gray-100 border border-transparent focus:border-black rounded-full px-3.5 py-1.5 text-xs outline-none transition"
                                 />
                             </div>
                             <button
-                                onClick={handleOpenCart}
+                                onClick={openCartModal}
                                 className="relative bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 active:scale-95 transition"
                             >
                                 🛒 {totalCartItems > 0 && <span className="bg-emerald-500 text-white rounded-full px-1.5 py-0.2 text-[10px]">{totalCartItems}</span>}
@@ -764,24 +723,24 @@
                         </div>
                     </header>
 
-                    {/* Categorías */}
-                    <nav className="max-w-2xl mx-auto px-4 py-3 overflow-x-auto flex gap-2 no-scrollbar">
+                    {/* Categorías Fijas (Sticky debajo del Header) */}
+                    <nav className="sticky top-[57px] bg-white/95 backdrop-blur-md z-30 max-w-2xl mx-auto px-4 py-2.5 overflow-x-auto flex gap-2 no-scrollbar border-b border-gray-100 shadow-xs">
                         {categories.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
-                                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition capitalize ${selectedCategory === cat ? 'bg-black text-white shadow' : 'bg-white border border-gray-200 text-gray-600'}`}
+                                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition capitalize ${selectedCategory === cat ? 'bg-black text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                             >
                                 {cat === 'todos' ? '🔥 Todos' : cat}
                             </button>
                         ))}
                     </nav>
 
-                    {/* Grid */}
-                    <main className="max-w-2xl mx-auto px-4 py-2">
+                    {/* Grid de Productos Adaptable (1 o 2 columnas) */}
+                    <main className="max-w-2xl mx-auto px-4 py-3">
                         <div className="grid grid-cols-2 gap-3">
                             {filteredProducts.map(product => (
-                                <ProductCard key={product.id} product={product} onSelect={handleOpenProduct} />
+                                <ProductCard key={product.id} product={product} onSelect={openProductModal} />
                             ))}
                         </div>
                         {filteredProducts.length === 0 && (
@@ -790,13 +749,14 @@
                     </main>
 
                     {/* Modales con soporte de historial */}
-                    <ProductDetailModal product={selectedProduct} onClose={handleCloseProduct} />
-                    <CartCheckoutModal isOpen={isCartOpen} onClose={handleCloseCart} />
-                    <DrawerMenu isOpen={isMenuOpen} onClose={handleCloseMenu} onSelectProduct={handleOpenProduct} />
+                    <ProductDetailModal product={selectedProduct} onClose={closeProductModal} />
+                    <CartCheckoutModal isOpen={isCartOpen} onClose={closeCartModal} />
+                    <DrawerMenu isOpen={isMenuOpen} onClose={closeMenuModal} onSelectProduct={openProductModal} />
                 </div>
             );
         }
 
+        // Renderizar la Aplicación
         ReactDOM.render(
             <StoreProvider>
                 <App />
