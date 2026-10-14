@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-commerce Móvil Inteligente - Catálogo y Carrito</title>
+    <title>E-commerce Móvil de Alto Rendimiento</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM CDN -->
@@ -11,140 +11,64 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <!-- Babel Standalone para JSX en navegador -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        /* Ocultar barra de desplazamiento en móvil manteniendo scroll funcional */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
 </head>
-<body class="bg-gray-50 text-gray-850 font-sans antialiased selection:bg-emerald-500 selection:text-white">
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useReducer, createContext, useContext, useRef } = React;
 
-        // --- 1. FALLBACK DE PRODUCTOS (Copia de respaldo desde el JSON oficial) ---
+        // --- 1. DATOS DE FALLBACK INICIAL (Basados en el JSON oficial)[span_1](start_span)[span_1](end_span) ---
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia, 12 parámetros y conexión Bluetooth 5.0 con app OKOK-International. Capacidad hasta 180 kg.",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia y 12 parámetros[span_2](start_span)[span_2](end_span).",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
                 "producto_Nombre": "Bascula Digital Pro",
-                "Para Hombre o mujer": "",
-                "¿Cuál es la talla?": "",
-                "colores": "negro ⬛",
-                "oferta": "",
                 "precio_venta": 56000,
-                "seo": "báscula inteligente pesa personal Bluetooth app control de peso"
+                "seo": "báscula inteligente, pesa personal, bluetooth"
             },
             {
                 "Tipo de producto": "Belleza",
-                "Detalles del producto ( opcional )": "Plancha y cepillo alisador profesional con 5 ajustes de calor (266°F a 410°F), revestimiento antiquemaduras y apagado automático.",
+                "Detalles del producto ( opcional )": "Cepillo alisador profesional con placa protectora y modo reposo[span_3](start_span)[span_3](end_span).",
                 "id": "P-393464",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/937481/17201499561712355262266b129a-198e-43e9-919f-fa15f49b5aaa.jpg?w=300&strip=all&quality=60",
                 "cantidad": 4,
                 "producto_Nombre": "Cepillo Alisador De Cabello",
-                "Para Hombre o mujer": "Mujer",
-                "¿Cuál es la talla?": "",
-                "colores": "",
-                "oferta": "",
                 "precio_venta": 54000,
-                "seo": "cepillo alisador de cabello plancha para cabello estilista"
-            },
-            {
-                "Tipo de producto": "Ropa 👕👖",
-                "Detalles del producto ( opcional )": "TIMBERLAND DE CABALLERO. Talla: 37-43. Suela expanso, calzado cocido y vulcanizado con excelentes repujados.",
-                "id": "ID-5375",
-                "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/1492525/1731865966WhatsApp%20Image%202024-11-14%20at%209.54.56%20PM.jpeg?w=300&strip=all&quality=60",
-                "cantidad": 4,
-                "producto_Nombre": "Timberland De Caballero",
-                "Para Hombre o mujer": "Hombre",
-                "¿Cuál es la talla?": "37-43",
-                "colores": "negro ⬛",
-                "oferta": "",
-                "precio_venta": 120000,
-                "seo": "zapatilla negra botas negras zapatos de cuero hombre"
-            },
-            {
-                "Tipo de producto": "Hogar",
-                "Detalles del producto ( opcional )": "Escurridor de loza de 65cm hecho en acero inoxidable con acabado en pintura de piano antirresistencia y diseño triangular en L.",
-                "id": "ID-47871",
-                "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/1486345/17317021811728576760escurridor-platero-ahorrador-de-espacio-de-acero-inoxidable.webp?w=400&strip=all&quality=60",
-                "cantidad": 4,
-                "producto_Nombre": "Escurridor De Loza 65cm",
-                "Para Hombre o mujer": "",
-                "¿Cuál es la talla?": "",
-                "colores": "negro ⬛",
-                "oferta": "",
-                "precio_venta": 80000,
-                "seo": "escurridor de loza platos acero inoxidable organizador cocina"
-            },
-            {
-                "Tipo de producto": "Ropa 👕👖",
-                "Detalles del producto ( opcional )": "🧦✨ Medias Disney para niños y niñas. La compra incluye 3 pares con diseños variados de la colección.",
-                "id": 465136,
-                "link_foto": "https://lh3.googleusercontent.com/d/163gBooCt5NANLFeEg3mSeiztqFHR75B7=w400-h528-p-k-n-ra?authuser=0",
-                "cantidad": 5,
-                "producto_Nombre": "🧦✨ Medias Disney para niños y niñas",
-                "Para Hombre o mujer": "",
-                "¿Cuál es la talla?": "Infantil",
-                "colores": "blanco ⬜, negro ⬛, rojo ❤️, azul 🔷",
-                "oferta": 15000,
-                "precio_venta": 18000,
-                "seo": "Medias Disney calcetines niños Mickey Minnie"
-            },
-            {
-                "Tipo de producto": "Postres Paty",
-                "Detalles del producto ( opcional )": "Delicioso cheesecake de maracuyá artesanal con galletas, crema de leche, queso crema, leche condensada y salsa de maracuyá.",
-                "id": 297251,
-                "link_foto": "https://lh3.googleusercontent.com/d/1SZJrmC3rfeWkkULjbmmU41hAxaJax3f-=w469-ra?authuser=0",
-                "cantidad": 5,
-                "producto_Nombre": "Cheesecake de maracuyá",
-                "Para Hombre o mujer": "",
-                "¿Cuál es la talla?": "",
-                "colores": "",
-                "oferta": "",
-                "precio_venta": 9500,
-                "seo": "postre dulce maracuyá galletas artesanal"
+                "seo": "cepillo alisador, plancha para cabello, mujer"
             }
         ];
 
-        // --- 2. ESTADO GLOBAL CON REDUCER Y LOCALSTORAGE ---
-        const CartContext = createContext();
+        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL AVANZADO) ---
+        const StoreContext = createContext();
 
-        const initialCartState = {
-            products: [],
-            loadingProducts: true,
+        const initialStoreState = {
+            products: FALLBACK_PRODUCTS,
             cart: [],
             likes: {},
             affiliateRef: 'directo',
             tamperedAlerts: [],
-            userForm: {
-                name: '',
-                phone: '',
-                address: '',
-                paymentMethod: 'Nequi'
-            }
+            checkoutForm: { name: '', phone: '', address: '', paymentMethod: 'Nequi' },
+            loading: true
         };
 
-        function cartReducer(state, action) {
+        function storeReducer(state, action) {
             switch (action.type) {
                 case 'SET_PRODUCTS':
-                    return { ...state, products: action.payload, loadingProducts: false };
+                    return { ...state, products: action.payload, loading: false };
                 case 'ADD_TO_CART': {
-                    const { product, quantity, options, purchaseType } = action.payload;
+                    const { product, quantity, selectedColor, isLayaway } = action.payload;
                     const existingIndex = state.cart.findIndex(
-                        item => item.id === product.id && 
-                                JSON.stringify(item.options) === JSON.stringify(options) && 
-                                item.purchaseType === purchaseType
+                        item => item.id === product.id && item.selectedColor === selectedColor && item.isLayaway === isLayaway
                     );
                     let updatedCart = [...state.cart];
                     if (existingIndex > -1) {
                         updatedCart[existingIndex].quantity += quantity;
                     } else {
-                        updatedCart.push({ ...product, quantity, options, purchaseType });
+                        updatedCart.push({ ...product, quantity, selectedColor, isLayaway });
                     }
                     return { ...state, cart: updatedCart };
                 }
@@ -160,58 +84,61 @@
                 }
                 case 'SET_SHARED_CART':
                     return { ...state, cart: action.payload.items, tamperedAlerts: action.payload.alerts };
-                case 'TOGGLE_LIKE': {
-                    const newLikes = { ...state.likes, [action.payload]: !state.likes[action.payload] };
-                    return { ...state, likes: newLikes };
-                }
+                case 'TOGGLE_LIKE':
+                    return {
+                        ...state,
+                        likes: { ...state.likes, [action.payload]: !state.likes[action.payload] }
+                    };
                 case 'SET_AFFILIATE':
                     return { ...state, affiliateRef: action.payload };
-                case 'UPDATE_USER_FORM':
-                    return { ...state, userForm: { ...state.userForm, ...action.payload } };
+                case 'UPDATE_CHECKOUT_FORM':
+                    return { ...state, checkoutForm: { ...state.checkoutForm, ...action.payload } };
                 default:
                     return state;
             }
         }
 
-        function CartProvider({ children }) {
-            const [state, dispatch] = useReducer(cartReducer, initialCartState, (initial) => {
+        function StoreProvider({ children }) {
+            const [state, dispatch] = useReducer(storeReducer, initialStoreState, (initial) => {
                 try {
                     const localCart = localStorage.getItem('ecommerce_cart');
                     const localLikes = localStorage.getItem('ecommerce_likes');
-                    const localForm = localStorage.getItem('ecommerce_user_form');
+                    const localForm = localStorage.getItem('ecommerce_form');
                     return {
                         ...initial,
-                        cart: localCart ? JSON.parse(localCart) : [],
-                        likes: localLikes ? JSON.parse(localLikes) : {},
-                        userForm: localForm ? JSON.parse(localForm) : initial.userForm
+                        cart: localCart ? JSON.parse(localCart) : initial.cart,
+                        likes: localLikes ? JSON.parse(localLikes) : initial.likes,
+                        checkoutForm: localForm ? JSON.parse(localForm) : initial.checkoutForm
                     };
                 } catch {
                     return initial;
                 }
             });
 
-            // Sincronización con el JSON remoto (con respaldo local automático)
+            // Fetch del JSON con versión dinámica y caché local
             useEffect(() => {
-                const fetchProducts = async () => {
-                    try {
-                        const response = await fetch('https://ivn6.github.io/JHNPTA/productos.json?v=' + Date.now());
-                        if (!response.ok) throw new Error('Error al conectar con servidor');
-                        const data = await response.json();
-                        dispatch({ type: 'SET_PRODUCTS', payload: data });
-                        localStorage.setItem('ecommerce_products_cache', JSON.stringify(data));
-                    } catch (err) {
-                        console.warn('Usando catálogo en caché / fallback local por red o CORS:', err);
-                        const cached = localStorage.getItem('ecommerce_products_cache');
-                        dispatch({ 
-                            type: 'SET_PRODUCTS', 
-                            payload: cached ? JSON.parse(cached) : FALLBACK_PRODUCTS 
-                        });
-                    }
-                };
-                fetchProducts();
+                const version = Date.now();
+                const jsonUrl = `https://ivn6.github.io/JHNPTA/productos.json?v=${version}`;
+                
+                fetch(jsonUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (Array.isArray(data) && data.length > 0) {
+                            dispatch({ type: 'SET_PRODUCTS', payload: data });
+                            localStorage.setItem('cached_products', JSON.stringify(data));
+                        }
+                    })
+                    .catch(() => {
+                        const cached = localStorage.getItem('cached_products');
+                        if (cached) {
+                            dispatch({ type: 'SET_PRODUCTS', payload: JSON.parse(cached) });
+                        } else {
+                            dispatch({ type: 'SET_PRODUCTS', payload: FALLBACK_PRODUCTS });
+                        }
+                    });
             }, []);
 
-            // Procesar parámetros URL al iniciar (Afiliados, Carrito Compartido anti-fraude y Vista de Producto único)
+            // Analizar parámetros URL al cargar (Afiliado y Carrito Compartido con anti-fraude)
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const ref = urlParams.get('ref');
@@ -219,7 +146,7 @@
 
                 if (ref) {
                     dispatch({ type: 'SET_AFFILIATE', payload: ref });
-                    localStorage.setItem('ecommerce_affiliate', ref);
+                    localStorage.setItem('affiliate_ref', ref);
                 }
 
                 if (encodedCart && state.products.length > 0) {
@@ -227,31 +154,32 @@
                         const decoded = JSON.parse(atob(encodedCart));
                         let alerts = [];
                         let validItems = decoded.map(sharedItem => {
-                            const official = state.products.find(p => String(p.id) === String(sharedItem.id));
+                            const official = state.products.find(p => p.id == sharedItem.id);
                             if (!official) {
                                 alerts.push(`El producto ID ${sharedItem.id} ya no está disponible.`);
                                 return null;
                             }
-                            if (Number(sharedItem.precio_venta) !== Number(official.precio_venta)) {
-                                alerts.push(`El precio de "${official.producto_Nombre}" fue actualizado al oficial ($${official.precio_venta.toLocaleString()}).`);
+                            const officialPrice = official.precio_venta;
+                            if (sharedItem.price !== officialPrice) {
+                                alerts.push(`Se detectó alteración en "${official.producto_Nombre}". Su precio oficial fue restaurado ($${officialPrice.toLocaleString()}).`);
                             }
-                            return { 
-                                ...official, 
-                                price: official.precio_venta, 
-                                quantity: sharedItem.quantity || 1,
-                                options: sharedItem.options || {},
-                                purchaseType: sharedItem.purchaseType || 'full'
+                            return {
+                                ...official,
+                                price: officialPrice,
+                                quantity: sharedItem.quantity,
+                                selectedColor: sharedItem.selectedColor || '',
+                                isLayaway: sharedItem.isLayaway || false
                             };
                         }).filter(Boolean);
 
                         dispatch({ type: 'SET_SHARED_CART', payload: { items: validItems, alerts } });
                     } catch {
-                        dispatch({ type: 'SET_SHARED_CART', payload: { items: [], alerts: ["El enlace del carrito compartido está dañado o es inválido."] } });
+                        dispatch({ type: 'SET_SHARED_CART', payload: { items: [], alerts: ["El enlace del carrito compartido está corrupto o es inválido."] } });
                     }
                 }
             }, [state.products]);
 
-            // Persistencias locales en cada cambio relevante
+            // Sincronizaciones con LocalStorage
             useEffect(() => {
                 localStorage.setItem('ecommerce_cart', JSON.stringify(state.cart));
             }, [state.cart]);
@@ -261,19 +189,19 @@
             }, [state.likes]);
 
             useEffect(() => {
-                localStorage.setItem('ecommerce_user_form', JSON.stringify(state.userForm));
-            }, [state.userForm]);
+                localStorage.setItem('ecommerce_form', JSON.stringify(state.checkoutForm));
+            }, [state.checkoutForm]);
 
             return (
-                <CartContext.Provider value={{ state, dispatch }}>
+                <StoreContext.Provider value={{ state, dispatch }}>
                     {children}
-                </CartContext.Provider>
+                </StoreContext.Provider>
             );
         }
 
-        const useCart = () => useContext(CartContext);
+        const useStore = () => useContext(StoreContext);
 
-        // --- 3. COMPONENTE DE IMAGEN CON LAZY LOADING OPTIMIZADO ---
+        // --- 3. COMPONENTE DE IMAGEN CON LAZY LOADING Y AHORRO DE DATOS ---
         function LazyImage({ src, alt, className }) {
             const [isLoaded, setIsLoaded] = useState(false);
             const [isInView, setIsInView] = useState(false);
@@ -313,236 +241,184 @@
             );
         }
 
-        // --- 4. MODAL DE DETALLE DE PRODUCTO ---
-        function ProductDetailModal({ product, onClose, onAddToCart }) {
-            if (!product) return null;
-
-            const [selectedColor, setSelectedColor] = useState('');
-            const [selectedSize, setSelectedSize] = useState(product['¿Cuál es la talla?'] || '');
-            const [isLayaway, setIsLayaway] = useState(false);
-
-            const colorsArray = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
-            const price = product.precio_venta || 0;
-            const offerPrice = product.oferta || 0;
-
-            const handleAdd = () => {
-                onAddToCart(product, { color: selectedColor, talla: selectedSize }, isLayaway);
-                onClose();
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[90vh] flex flex-col shadow-2xl">
-                        <div className="relative h-64 sm:h-72 bg-gray-100">
-                            <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full" />
-                            <button onClick={onClose} className="absolute top-3 right-3 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">✕</button>
-                            <span className="absolute bottom-3 left-3 bg-black/80 text-white text-xs px-3 py-1 rounded-full font-medium">
-                                {product['Tipo de producto']}
-                            </span>
-                        </div>
-
-                        <div className="p-5 overflow-y-auto space-y-4 flex-1">
-                            <div>
-                                <h2 className="font-extrabold text-lg sm:text-xl text-gray-900">{product.producto_Nombre}</h2>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xl font-black text-emerald-600">${price.toLocaleString()}</span>
-                                    {offerPrice > 0 && (
-                                        <span className="text-xs line-through text-gray-400">Oferta: ${offerPrice.toLocaleString()}</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            {product['Detalles del producto ( opcional )'] && (
-                                <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-2xl leading-relaxed whitespace-pre-line border border-gray-100">
-                                    {product['Detalles del producto ( opcional )']}
-                                </div>
-                            )}
-
-                            {colorsArray.length > 0 && colorsArray[0] !== '' && (
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 block mb-1.5">Color Disponible:</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {colorsArray.map(col => (
-                                            <button
-                                                key={col}
-                                                onClick={() => setSelectedColor(col)}
-                                                className={`text-xs px-3 py-1.5 rounded-xl border font-medium transition ${selectedColor === col ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-700 bg-white'}`}
-                                            >
-                                                {col}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="pt-2 border-t flex flex-col gap-2">
-                                <label className="text-xs text-gray-600 flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isLayaway}
-                                        onChange={(e) => setIsLayaway(e.target.checked)}
-                                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
-                                    />
-                                    <span>Apartar con adelanto del 50%</span>
-                                </label>
-                                <button
-                                    onClick={handleAdd}
-                                    className="w-full bg-black hover:bg-gray-800 text-white py-3.5 rounded-2xl font-bold text-sm shadow-md active:scale-95 transition"
-                                >
-                                    Añadir al Carrito 🛒
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // --- 5. TARJETA DE PRODUCTO INTELIGENTE ---
+        // --- 4. TARJETA DE PRODUCTO ---
         function ProductCard({ product, onSelect }) {
-            const { state, dispatch } = useCart();
+            const { state, dispatch } = useStore();
             const isLiked = state.likes[product.id];
-            const price = product.precio_venta || 0;
-
-            const handleQuickAdd = (e) => {
-                e.stopPropagation();
-                dispatch({
-                    type: 'ADD_TO_CART',
-                    payload: {
-                        product: product,
-                        quantity: 1,
-                        options: { color: product.colores ? product.colores.split(',')[0] : 'Único' },
-                        purchaseType: 'full'
-                    }
-                });
-            };
-
-            const handleToggleLike = (e) => {
-                e.stopPropagation();
-                dispatch({ type: 'TOGGLE_LIKE', payload: product.id });
-            };
+            const colorsList = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
 
             return (
-                <div 
-                    onClick={() => onSelect(product)}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col justify-between transition-all hover:shadow-md cursor-pointer active:scale-[0.98]"
-                >
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col justify-between transition-all hover:shadow-md">
                     <div>
-                        <div className="relative rounded-xl overflow-hidden mb-2.5 h-40 bg-gray-100">
-                            <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full" />
+                        <div className="relative rounded-xl overflow-hidden mb-2 cursor-pointer" onClick={() => onSelect(product)}>
+                            <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="h-40 w-full rounded-xl" />
+                            {product.oferta && (
+                                <span className="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
+                                    ¡Oferta!
+                                </span>
+                            )}
                             <button
-                                onClick={handleToggleLike}
-                                className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow text-xs transition active:scale-90"
+                                onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
+                                className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90"
                             >
                                 {isLiked ? '❤️' : '🤍'}
                             </button>
-                            <span className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-md font-medium">
-                                {product['Tipo de producto']}
-                            </span>
                         </div>
-                        <h3 className="font-semibold text-xs sm:text-sm text-gray-900 line-clamp-2">{product.producto_Nombre}</h3>
-                        <p className="text-emerald-600 font-extrabold text-sm sm:text-base mt-1">${price.toLocaleString()}</p>
+                        <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                            {product["Tipo de producto"]}
+                        </span>
+                        <h3 className="font-semibold text-xs text-gray-900 line-clamp-2 mt-1 cursor-pointer" onClick={() => onSelect(product)}>
+                            {product.producto_Nombre}
+                        </h3>
+                        <p className="text-emerald-600 font-extrabold text-sm mt-1">
+                            ${product.precio_venta ? product.precio_venta.toLocaleString() : '0'}
+                        </p>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between gap-1">
-                        <span className="text-[10px] text-gray-400">Stock: {product.cantidad}</span>
+                    <div className="pt-2 border-t border-gray-100 mt-2 flex gap-1">
                         <button
-                            onClick={handleQuickAdd}
-                            className="bg-black text-white px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition"
+                            onClick={() => onSelect(product)}
+                            className="w-full bg-gray-900 text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
                         >
-                            + Añadir
+                            Ver Detalles 👁️
                         </button>
                     </div>
                 </div>
             );
         }
 
-        // --- 6. MENÚ LATERAL (DRAWER) PARA PERFIL, LIKES Y GUARDADOS ---
-        function AppDrawer({ isOpen, onClose, products, onSelectProduct }) {
-            const { state } = useCart();
-            if (!isOpen) return null;
+        // --- 5. MODAL DE DETALLE DE PRODUCTO ---
+        function ProductDetailModal({ product, onClose }) {
+            const { dispatch } = useStore();
+            const [selectedColor, setSelectedColor] = useState('');
+            const [isLayaway, setIsLayaway] = useState(false);
+            const [quantity, setQuantity] = useState(1);
 
-            const likedProducts = products.filter(p => state.likes[p.id]);
+            if (!product) return null;
+
+            const colorsList = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
+
+            useEffect(() => {
+                if (colorsList.length > 0) setSelectedColor(colorsList[0]);
+            }, [product]);
+
+            const handleAddToCart = () => {
+                dispatch({
+                    type: 'ADD_TO_CART',
+                    payload: {
+                        product: {
+                            id: product.id,
+                            producto_Nombre: product.producto_Nombre,
+                            price: product.precio_venta,
+                            link_foto: product.link_foto,
+                            category: product["Tipo de producto"]
+                        },
+                        quantity,
+                        selectedColor,
+                        isLayaway
+                    }
+                });
+                alert(`¡${product.producto_Nombre} añadido al carrito!`);
+                onClose();
+            };
 
             return (
-                <div className="fixed inset-0 bg-black/60 z-50 flex justify-start backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white w-4/5 max-w-sm h-full shadow-2xl p-5 flex flex-col justify-between overflow-y-auto">
-                        <div>
-                            <div className="flex justify-between items-center pb-4 border-b">
-                                <h2 className="font-black text-base">👤 Menú & Favoritos</h2>
-                                <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs">✕</button>
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div className="flex justify-between items-center mb-3 pb-2 border-b">
+                            <h2 className="font-bold text-base text-gray-900">Detalles del Producto</h2>
+                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
+                        </div>
+
+                        <div className="relative rounded-2xl overflow-hidden mb-4">
+                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-56 object-cover rounded-2xl" />
+                        </div>
+
+                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                            {product["Tipo de producto"]}
+                        </span>
+                        <h1 className="font-bold text-lg text-gray-900 mt-2">{product.producto_Nombre}</h1>
+                        <p className="text-emerald-600 font-black text-xl mt-1">${product.precio_venta?.toLocaleString()}</p>
+
+                        {/* Detalles Opcionales / HTML support */}
+                        <div className="my-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl">
+                            <div dangerouslySetInnerHTML={{ __html: product["Detalles del producto ( opcional )"] || 'Sin descripción detallada.' }} />
+                        </div>
+
+                        {/* Colores */}
+                        {colorsList.length > 0 && (
+                            <div className="my-3">
+                                <label className="text-xs font-bold text-gray-700 block mb-1">Color disponible:</label>
+                                <div className="flex gap-2">
+                                    {colorsList.map(color => (
+                                        <button
+                                            key={color}
+                                            onClick={() => setSelectedColor(color)}
+                                            className={`px-3 py-1 rounded-lg text-xs font-semibold border ${selectedColor === color ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200'}`}
+                                        >
+                                            {color}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
+                        )}
 
-                            <div className="py-4 space-y-4">
-                                <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-2xl text-xs text-emerald-900">
-                                    <p className="font-bold">✨ Enlace de Afiliado Activo:</p>
-                                    <p className="font-mono text-[11px] mt-1 text-emerald-700 bg-white p-1.5 rounded-lg border border-emerald-200 select-all">
-                                        {state.affiliateRef}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <h3 className="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2">Productos Favoritos ({likedProducts.length})</h3>
-                                    {likedProducts.length === 0 ? (
-                                        <p className="text-xs text-gray-400 italic">No tienes productos marcados con me gusta.</p>
-                                    ) : (
-                                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                            {likedProducts.map(p => (
-                                                <div 
-                                                    key={p.id} 
-                                                    onClick={() => { onSelectProduct(p); onClose(); }}
-                                                    className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition"
-                                                >
-                                                    <img src={p.link_foto} alt={p.producto_Nombre} className="w-10 h-10 object-cover rounded-lg" />
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-semibold text-xs truncate">{p.producto_Nombre}</p>
-                                                        <p className="text-emerald-600 font-bold text-xs">${(p.precio_venta || 0).toLocaleString()}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                        {/* Cantidad y Opciones */}
+                        <div className="flex items-center justify-between my-4 py-2 border-t border-b">
+                            <span className="text-xs font-bold text-gray-700">Cantidad:</span>
+                            <div className="flex items-center border rounded-xl bg-gray-50">
+                                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-1 text-sm font-bold">-</button>
+                                <span className="px-3 text-xs font-bold">{quantity}</span>
+                                <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-1 text-sm font-bold">+</button>
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t text-center text-[10px] text-gray-400">
-                            E-commerce Móvil • React 18 & Tailwind
+                        <div className="mb-4">
+                            <label className="text-xs text-gray-600 flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isLayaway}
+                                    onChange={(e) => setIsLayaway(e.target.checked)}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                                />
+                                <span className="font-medium">Apartar con adelanto (50% de abono inicial)</span>
+                            </label>
                         </div>
+
+                        <button
+                            onClick={handleAddToCart}
+                            className="w-full bg-black text-white py-3 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition"
+                        >
+                            Añadir al Carrito 🛒
+                        </button>
                     </div>
                 </div>
             );
         }
 
-        // --- 7. CARRITO Y CHECKOUT MODAL ---
+        // --- 6. MODAL DE CARRITO Y CHECKOUT EXPRESS ---
         function CartCheckoutModal({ isOpen, onClose }) {
-            const { state, dispatch } = useCart();
-            const [form, setForm] = useState(state.userForm);
-
-            useEffect(() => {
-                setForm(state.userForm);
-            }, [state.userForm]);
-
-            const handleFormChange = (field, value) => {
-                const updated = { ...form, [field]: value };
-                setForm(updated);
-                dispatch({ type: 'UPDATE_USER_FORM', payload: updated });
-            };
+            const { state, dispatch } = useStore();
+            const { checkoutForm } = state;
 
             if (!isOpen) return null;
 
-            const total = state.cart.reduce((acc, item) => acc + ((item.precio_venta || item.price || 0) * item.quantity), 0);
-            const isLayawayOrder = state.cart.some(i => i.purchaseType === 'layaway');
+            const total = state.cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            const isLayawayOrder = state.cart.some(i => i.isLayaway);
             const finalTotalToPay = isLayawayOrder ? total / 2 : total;
+
+            const handleFormChange = (e) => {
+                dispatch({ type: 'UPDATE_CHECKOUT_FORM', payload: { [e.target.name]: e.target.value } });
+            };
 
             const handleShareCart = () => {
                 const ref = state.affiliateRef || 'directo';
-                const cartPayload = btoa(JSON.stringify(state.cart.map(i => ({ 
-                    id: i.id, 
-                    precio_venta: i.precio_venta || i.price, 
-                    quantity: i.quantity, 
-                    options: i.options,
-                    purchaseType: i.purchaseType 
+                const cartPayload = btoa(JSON.stringify(state.cart.map(i => ({
+                    id: i.id,
+                    price: i.price,
+                    quantity: i.quantity,
+                    selectedColor: i.selectedColor,
+                    isLayaway: i.isLayaway
                 }))));
                 const shareUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&cart=${cartPayload}`;
                 
@@ -557,105 +433,97 @@
             const handleSubmitWhatsApp = (e) => {
                 e.preventDefault();
                 const affiliateInfo = state.affiliateRef && state.affiliateRef !== 'directo' ? `🔗 *Asesor / Afiliado:* ${state.affiliateRef}\n` : '';
+                const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* ${i.selectedColor ? `(${i.selectedColor})` : ''} ${i.isLayaway ? '[APARTADO 50%]' : ''} [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
                 
-                const itemsText = state.cart.map((i, index) => 
-                    `*${index + 1}.* ${i.quantity}x *${i.producto_Nombre || i.name}*\n` +
-                    `   • Opciones: ${JSON.stringify(i.options)}\n` +
-                    `   • Subtotal: $${((i.precio_venta || i.price || 0) * i.quantity).toLocaleString()}` +
-                    `${i.purchaseType === 'layaway' ? ' ⚠️ [APARTADO 50%]' : ''}`
-                ).join('\n\n');
-
-                const message = `🛒 *NUEVO PEDIDO - E-COMMERCE*\n\n` +
+                const message = `🛒 *NUEVO PEDIDO DE E-COMMERCE*\n\n` +
                     `${affiliateInfo}` +
-                    `👤 *Cliente:* ${form.name}\n` +
-                    `📞 *Teléfono:* ${form.phone}\n` +
-                    `📍 *Dirección:* ${form.address}\n` +
-                    `💳 *Método de Pago:* ${form.paymentMethod}\n` +
+                    `👤 *Cliente:* ${checkoutForm.name}\n` +
+                    `📞 *Teléfono:* ${checkoutForm.phone}\n` +
+                    `📍 *Dirección:* ${checkoutForm.address}\n` +
+                    `💳 *Pago:* ${checkoutForm.paymentMethod}\n` +
                     `${isLayawayOrder ? '⚠️ *Modalidad:* APARTADO CON ADELANTO (50%)\n' : ''}\n` +
-                    `📦 *PRODUCTOS SELECCIONADOS:*\n${itemsText}\n\n` +
-                    `──────────────────\n` +
-                    `💰 *TOTAL A PAGAR: $${finalTotalToPay.toLocaleString()}*`;
+                    `📦 *Productos:*\n${itemsText}\n\n` +
+                    `💰 *Total a pagar ahora:* $${finalTotalToPay.toLocaleString()}`;
 
                 const whatsappUrl = `https://wa.me/573247356178?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
             };
 
             return (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
                         <div className="flex justify-between items-center mb-4 pb-2 border-b">
-                            <h2 className="font-bold text-base text-gray-900">🛒 Tu Carrito y Checkout</h2>
-                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs">✕</button>
+                            <h2 className="font-bold text-base text-gray-900">Tu Carrito y Pago</h2>
+                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                         </div>
 
                         {state.tamperedAlerts.length > 0 && (
-                            <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-2xl text-xs mb-3 space-y-1">
+                            <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs mb-3 space-y-1">
                                 {state.tamperedAlerts.map((alert, idx) => <p key={idx}>⚠️ {alert}</p>)}
                             </div>
                         )}
 
                         {state.cart.length === 0 ? (
-                            <div className="text-center py-12 text-gray-400 text-xs">Tu carrito está vacío 🛍️</div>
+                            <div className="text-center py-10 text-gray-400 text-sm">Tu carrito está vacío 🛍️</div>
                         ) : (
                             <div className="space-y-4">
-                                <div className="divide-y max-h-52 overflow-y-auto pr-1">
-                                    {state.cart.map((item, idx) => {
-                                        const itemPrice = item.precio_venta || item.price || 0;
-                                        return (
-                                            <div key={idx} className="py-2.5 flex items-center justify-between gap-2 text-xs">
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <img src={item.link_foto} alt={item.producto_Nombre} className="w-12 h-12 object-cover rounded-xl shrink-0 bg-gray-100" />
-                                                    <div className="min-w-0">
-                                                        <p className="font-bold text-gray-900 truncate">{item.producto_Nombre || item.name}</p>
-                                                        <p className="text-[10px] text-gray-500">{JSON.stringify(item.options)}</p>
-                                                        <p className="text-emerald-600 font-bold">${(itemPrice * item.quantity).toLocaleString()}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center border rounded-xl bg-gray-50 shrink-0">
-                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity - 1}})} className="px-2 py-1 text-gray-600">-</button>
-                                                    <span className="px-2 font-bold">{item.quantity}</span>
-                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity + 1}})} className="px-2 py-1 text-gray-600">+</button>
+                                <div className="divide-y max-h-48 overflow-y-auto pr-1">
+                                    {state.cart.map((item, idx) => (
+                                        <div key={idx} className="py-2.5 flex items-center justify-between text-xs gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                                                <div>
+                                                    <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
+                                                    <p className="text-gray-500 text-[10px]">{item.selectedColor} {item.isLayaway && '• (Apartado)'}</p>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-emerald-600">${(item.price * item.quantity).toLocaleString()}</span>
+                                                <div className="flex items-center border rounded-lg bg-gray-50">
+                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity - 1}})} className="px-2 py-0.5">-</button>
+                                                    <span className="px-1.5">{item.quantity}</span>
+                                                    <button onClick={() => dispatch({type: 'UPDATE_QUANTITY', payload: {index: idx, quantity: item.quantity + 1}})} className="px-2 py-0.5">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
 
-                                <button onClick={handleShareCart} className="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 rounded-xl text-xs font-bold transition active:scale-95">
-                                    🔗 Compartir Carrito (Afiliado / Amigos)
+                                <button onClick={handleShareCart} className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-xl text-xs font-bold transition">
+                                    🔗 Compartir Carrito / Enlace de Afiliado
                                 </button>
 
                                 <form onSubmit={handleSubmitWhatsApp} className="space-y-3 pt-2 border-t">
-                                    <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Datos de Envío (Guardados Automáticamente)</h3>
+                                    <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Información de Envío (Guardada autom.)</h3>
                                     <div>
-                                        <label className="text-[11px] text-gray-500">Nombre Completo</label>
-                                        <input required type="text" value={form.name} onChange={e=>handleFormChange('name', e.target.value)} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50 focus:bg-white transition" placeholder="Tu nombre" />
+                                        <label className="text-xs text-gray-500">Nombre Completo</label>
+                                        <input required name="name" type="text" value={checkoutForm.name} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50" />
                                     </div>
                                     <div>
-                                        <label className="text-[11px] text-gray-500">Teléfono / WhatsApp</label>
-                                        <input required type="tel" value={form.phone} onChange={e=>handleFormChange('phone', e.target.value)} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50 focus:bg-white transition" placeholder="3001234567" />
+                                        <label className="text-xs text-gray-500">Teléfono / WhatsApp</label>
+                                        <input required name="phone" type="tel" value={checkoutForm.phone} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50" />
                                     </div>
                                     <div>
-                                        <label className="text-[11px] text-gray-500">Dirección de Entrega</label>
-                                        <input required type="text" value={form.address} onChange={e=>handleFormChange('address', e.target.value)} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50 focus:bg-white transition" placeholder="Calle 123 # 45-67" />
+                                        <label className="text-xs text-gray-500">Dirección de Entrega</label>
+                                        <input required name="address" type="text" value={checkoutForm.address} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50" />
                                     </div>
                                     <div>
-                                        <label className="text-[11px] text-gray-500">Método de Pago</label>
-                                        <select value={form.paymentMethod} onChange={e=>handleFormChange('paymentMethod', e.target.value)} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50">
-                                            <option value="Nequi">Nequi (3247356178)</option>
+                                        <label className="text-xs text-gray-500">Método de Pago</label>
+                                        <select name="paymentMethod" value={checkoutForm.paymentMethod} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50">
+                                            <option value="Nequi">Nequi</option>
                                             <option value="Daviplata">Daviplata</option>
                                             <option value="Contra Entrega">Pago Contra Entrega</option>
                                         </select>
                                     </div>
 
-                                    <div className="bg-gray-50 p-3 rounded-2xl text-xs space-y-1.5 border border-gray-100">
-                                        <div className="flex justify-between text-gray-600"><span>Subtotal:</span><span>${total.toLocaleString()}</span></div>
+                                    <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1">
+                                        <div className="flex justify-between"><span>Subtotal:</span><span>${total.toLocaleString()}</span></div>
                                         {isLayawayOrder && <div className="flex justify-between text-emerald-600 font-medium"><span>Adelanto Requerido (50%):</span><span>${finalTotalToPay.toLocaleString()}</span></div>}
-                                        <div className="flex justify-between font-extrabold text-sm pt-1.5 border-t text-black"><span>Total a Gestionar:</span><span>${finalTotalToPay.toLocaleString()}</span></div>
+                                        <div className="flex justify-between font-bold text-sm pt-1 border-t text-black"><span>Total a Pagar:</span><span>${finalTotalToPay.toLocaleString()}</span></div>
                                     </div>
 
-                                    <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
-                                        <span>Enviar Pedido por WhatsApp</span> 🚀
+                                    <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-extrabold text-sm shadow-lg transition active:scale-95">
+                                        Enviar Pedido a WhatsApp 🚀
                                     </button>
                                 </form>
                             </div>
@@ -665,136 +533,146 @@
             );
         }
 
+        // --- 7. MENÚ LATERAL (HAMBURGUESA) ---
+        function DrawerMenu({ isOpen, onClose }) {
+            const { state } = useStore();
+            const likedIds = Object.keys(state.likes).filter(id => state.likes[id]);
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black/60 z-50 flex justify-end backdrop-blur-sm">
+                    <div className="bg-white w-80 h-full p-5 shadow-2xl flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-center mb-6 pb-2 border-b">
+                                <h2 className="font-bold text-base text-gray-900">Menú y Favoritos</h2>
+                                <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="bg-indigo-50 p-3 rounded-2xl">
+                                    <p className="text-xs font-bold text-indigo-900">❤️ Productos Favoritos</p>
+                                    <p className="text-xs text-indigo-700 mt-0.5">{likedIds.length} artículos guardados en este dispositivo.</p>
+                                </div>
+
+                                <div className="bg-gray-50 p-3 rounded-2xl space-y-1">
+                                    <p className="text-xs font-bold text-gray-800">📌 Enlace de Afiliado Activo:</p>
+                                    <p className="text-xs text-emerald-600 font-mono font-bold">{state.affiliateRef}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t text-center text-xs text-gray-400">
+                            E-commerce Móvil con React & Tailwind
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         // --- 8. APLICACIÓN PRINCIPAL ---
         function App() {
-            const { state, dispatch } = useCart();
-            const [selectedCategory, setSelectedCategory] = useState('todos');
+            const { state } = useStore();
             const [searchTerm, setSearchTerm] = useState('');
+            const [selectedCategory, setSelectedCategory] = useState('todos');
             const [isCartOpen, setIsCartOpen] = useState(false);
-            const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
             const [selectedProduct, setSelectedProduct] = useState(null);
 
-            // Extraer categorías únicas dinámicamente del JSON
-            const categories = ['todos', ...new Set(state.products.map(p => p['Tipo de producto']).filter(Boolean))];
+            // Obtener categorías únicas dinámicamente del JSON
+            const categories = ['todos', ...new Set(state.products.map(p => p["Tipo de producto"]).filter(Boolean))];
 
-            // Buscador inteligente multivariable (barrido por nombre, detalles, tipo, seo y colores)
+            // Buscador inteligente universal (barra de búsqueda barre nombres, tipo, seo y detalles)
             const filteredProducts = state.products.filter(p => {
-                const type = p['Tipo de producto'] || '';
-                const matchesCategory = selectedCategory === 'todos' || type === selectedCategory;
+                const matchesCategory = selectedCategory === 'todos' || p["Tipo de producto"] === selectedCategory;
+                const searchLower = searchTerm.toLowerCase();
+                const nameMatch = p.producto_Nombre?.toLowerCase().includes(searchLower);
+                const typeMatch = p["Tipo de producto"]?.toLowerCase().includes(searchLower);
+                const seoMatch = p.seo?.toLowerCase().includes(searchLower);
+                const detailsMatch = p["Detalles del producto ( opcional )"]?.toLowerCase().includes(searchLower);
+                const colorMatch = p.colores?.toLowerCase().includes(searchLower);
 
-                const searchLower = searchTerm.toLowerCase().trim();
-                if (!searchLower) return matchesCategory;
-
-                const nameMatch = (p.producto_Nombre || '').toLowerCase().includes(searchLower);
-                const detailsMatch = (p['Detalles del producto ( opcional )'] || '').toLowerCase().includes(searchLower);
-                const typeMatch = type.toLowerCase().includes(searchLower);
-                const seoMatch = (p.seo || '').toLowerCase().includes(searchLower);
-                const colorMatch = (p.colores || '').toLowerCase().includes(searchLower);
-
-                return matchesCategory && (nameMatch || detailsMatch || typeMatch || seoMatch || colorMatch);
+                const matchesSearch = !searchTerm || nameMatch || typeMatch || seoMatch || detailsMatch || colorMatch;
+                return matchesCategory && matchesSearch;
             });
 
             const totalCartItems = state.cart.reduce((acc, item) => acc + item.quantity, 0);
 
-            const handleAddToCartFromDetail = (product, options, isLayaway) => {
-                dispatch({
-                    type: 'ADD_TO_CART',
-                    payload: {
-                        product,
-                        quantity: 1,
-                        options,
-                        purchaseType: isLayaway ? 'layaway' : 'full'
-                    }
-                });
-                alert(`¡${product.producto_Nombre} añadido al carrito!`);
-            };
+            if (state.loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                        <div className="text-center space-y-2">
+                            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <p className="text-xs font-semibold text-gray-500">Cargando catálogo inteligente...</p>
+                        </div>
+                    </div>
+                );
+            }
 
             return (
-                <div className="min-h-screen pb-24">
+                <div className="min-h-screen pb-20">
                     {/* Header Principal */}
-                    <header className="sticky top-0 bg-white/95 backdrop-blur-md z-40 border-b border-gray-100 px-4 py-3 shadow-xs">
-                        <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
-                            <button 
-                                onClick={() => setIsDrawerOpen(true)}
-                                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center font-bold text-sm active:scale-95 transition"
-                            >
+                    <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-gray-100 px-4 py-3">
+                        <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
+                            <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-gray-100 rounded-xl text-sm font-bold">
                                 ☰
                             </button>
-                            <h1 className="font-black text-xs sm:text-sm tracking-tight text-gray-900">E-COMMERCE MÓVIL</h1>
+                            <div className="flex-1 max-w-xs">
+                                <input
+                                    type="text"
+                                    placeholder="Buscar (ej. báscula, ropa, negro)..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-gray-100 border border-transparent focus:border-black rounded-full px-3.5 py-1.5 text-xs outline-none transition"
+                                />
+                            </div>
                             <button
                                 onClick={() => setIsCartOpen(true)}
-                                className="relative bg-black text-white px-3.5 py-2 rounded-full text-xs font-bold flex items-center gap-1 active:scale-95 transition shadow-sm"
+                                className="relative bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 active:scale-95 transition"
                             >
                                 🛒 {totalCartItems > 0 && <span className="bg-emerald-500 text-white rounded-full px-1.5 py-0.2 text-[10px]">{totalCartItems}</span>}
                             </button>
                         </div>
-                        {/* Buscador inteligente */}
-                        <div className="max-w-xl mx-auto mt-2.5">
-                            <input
-                                type="text"
-                                placeholder="🔍 Buscar por nombre, detalles, SEO o colores..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-gray-100 border border-transparent focus:border-black rounded-2xl px-4 py-2 text-xs outline-none transition shadow-inner"
-                            />
-                        </div>
                     </header>
 
-                    {/* Categorías deslizables */}
-                    <nav className="max-w-xl mx-auto px-4 py-3 overflow-x-auto flex gap-2 no-scrollbar">
+                    {/* Categorías Dinámicas */}
+                    <nav className="max-w-2xl mx-auto px-4 py-3 overflow-x-auto flex gap-2 no-scrollbar">
                         {categories.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
-                                className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition shadow-xs ${selectedCategory === cat ? 'bg-black text-white' : 'bg-white border border-gray-200 text-gray-600'}`}
+                                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition capitalize ${selectedCategory === cat ? 'bg-black text-white shadow' : 'bg-white border border-gray-200 text-gray-600'}`}
                             >
                                 {cat === 'todos' ? '🔥 Todos' : cat}
                             </button>
                         ))}
                     </nav>
 
-                    {/* Contenido / Grid de Productos (Adaptado a 2 columnas para celular) */}
-                    <main className="max-w-xl mx-auto px-4 py-1">
-                        {state.loadingProducts ? (
-                            <div className="text-center py-20 text-gray-400 text-xs animate-pulse">Cargando catálogo inteligente...</div>
-                        ) : (
-                            <div className="grid grid-cols-2 gap-3">
-                                {filteredProducts.map(product => (
-                                    <ProductCard 
-                                        key={product.id} 
-                                        product={product} 
-                                        onSelect={(p) => setSelectedProduct(p)} 
-                                    />
-                                ))}
-                            </div>
-                        )}
-                        {!state.loadingProducts && filteredProducts.length === 0 && (
-                            <div className="text-center py-20 text-gray-400 text-xs">No se encontraron productos con tu búsqueda.</div>
+                    {/* Grid de Productos Móvil (1 o 2 columnas adaptables) */}
+                    <main className="max-w-2xl mx-auto px-4 py-2">
+                        <div className="grid grid-cols-2 gap-3">
+                            {filteredProducts.map(product => (
+                                <ProductCard key={product.id} product={product} onSelect={setSelectedProduct} />
+                            ))}
+                        </div>
+                        {filteredProducts.length === 0 && (
+                            <div className="text-center py-16 text-gray-400 text-sm">No se encontraron productos con esos filtros.</div>
                         )}
                     </main>
 
-                    {/* Modales y Drawers */}
-                    <ProductDetailModal 
-                        product={selectedProduct} 
-                        onClose={() => setSelectedProduct(null)} 
-                        onAddToCart={handleAddToCartFromDetail} 
-                    />
+                    {/* Modales */}
+                    <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
                     <CartCheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-                    <AppDrawer 
-                        isOpen={isDrawerOpen} 
-                        onClose={() => setIsDrawerOpen(false)} 
-                        products={state.products} 
-                        onSelectProduct={(p) => setSelectedProduct(p)} 
-                    />
+                    <DrawerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
                 </div>
             );
         }
 
-        // Renderizar Aplicación en el DOM
+        // Renderizar la Aplicación envuelta en el StoreProvider
         ReactDOM.render(
-            <CartProvider>
+            <StoreProvider>
                 <App />
-            </CartProvider>,
+            </StoreProvider>,
             document.getElementById('root')
         );
     </script>
