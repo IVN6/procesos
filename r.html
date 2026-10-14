@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-commerce Móvil de Alto Rendimiento</title>
+    <title>E-commerce Móvil Inteligente</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM CDN -->
@@ -18,11 +18,11 @@
     <script type="text/babel">
         const { useState, useEffect, useReducer, createContext, useContext, useRef } = React;
 
-        // --- 1. DATOS DE FALLBACK INICIAL (Basados en el JSON oficial)[span_1](start_span)[span_1](end_span) ---
+        // --- 1. DATOS DE FALLBACK (Basados en tu JSON oficial)[span_0](start_span)[span_0](end_span) ---
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia y 12 parámetros[span_2](start_span)[span_2](end_span).",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia y 12 parámetros[span_1](start_span)[span_1](end_span).",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
@@ -32,7 +32,7 @@
             },
             {
                 "Tipo de producto": "Belleza",
-                "Detalles del producto ( opcional )": "Cepillo alisador profesional con placa protectora y modo reposo[span_3](start_span)[span_3](end_span).",
+                "Detalles del producto ( opcional )": "Cepillo alisador profesional con placa protectora y modo reposo[span_2](start_span)[span_2](end_span).",
                 "id": "P-393464",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/937481/17201499561712355262266b129a-198e-43e9-919f-fa15f49b5aaa.jpg?w=300&strip=all&quality=60",
                 "cantidad": 4,
@@ -42,7 +42,7 @@
             }
         ];
 
-        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL AVANZADO) ---
+        // --- 2. CONTEXT Y REDUCER ---
         const StoreContext = createContext();
 
         const initialStoreState = {
@@ -51,7 +51,8 @@
             likes: {},
             affiliateRef: 'directo',
             tamperedAlerts: [],
-            checkoutForm: { name: '', phone: '', address: '', paymentMethod: 'Nequi' },
+            checkoutForm: { name: '', phone: '', address: '', paymentMethod: 'Nequi', notes: '' },
+            toastMessage: null,
             loading: true
         };
 
@@ -59,6 +60,8 @@
             switch (action.type) {
                 case 'SET_PRODUCTS':
                     return { ...state, products: action.payload, loading: false };
+                case 'SHOW_TOAST':
+                    return { ...state, toastMessage: action.payload };
                 case 'ADD_TO_CART': {
                     const { product, quantity, selectedColor, isLayaway } = action.payload;
                     const existingIndex = state.cart.findIndex(
@@ -70,7 +73,7 @@
                     } else {
                         updatedCart.push({ ...product, quantity, selectedColor, isLayaway });
                     }
-                    return { ...state, cart: updatedCart };
+                    return { ...state, cart: updatedCart, toastMessage: `¡${product.producto_Nombre} añadido al carrito!` };
                 }
                 case 'UPDATE_QUANTITY': {
                     const { index, quantity } = action.payload;
@@ -85,10 +88,8 @@
                 case 'SET_SHARED_CART':
                     return { ...state, cart: action.payload.items, tamperedAlerts: action.payload.alerts };
                 case 'TOGGLE_LIKE':
-                    return {
-                        ...state,
-                        likes: { ...state.likes, [action.payload]: !state.likes[action.payload] }
-                    };
+                    const newStateLikes = { ...state.likes, [action.payload]: !state.likes[action.payload] };
+                    return { ...state, likes: newStateLikes };
                 case 'SET_AFFILIATE':
                     return { ...state, affiliateRef: action.payload };
                 case 'UPDATE_CHECKOUT_FORM':
@@ -115,7 +116,7 @@
                 }
             });
 
-            // Fetch del JSON con versión dinámica y caché local
+            // Cargar JSON remoto con versión y caché local[span_3](start_span)[span_3](end_span)
             useEffect(() => {
                 const version = Date.now();
                 const jsonUrl = `https://ivn6.github.io/JHNPTA/productos.json?v=${version}`;
@@ -138,7 +139,7 @@
                     });
             }, []);
 
-            // Analizar parámetros URL al cargar (Afiliado y Carrito Compartido con anti-fraude)
+            // Manejo de URL (Afiliados y Carrito compartido)
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const ref = urlParams.get('ref');
@@ -161,7 +162,7 @@
                             }
                             const officialPrice = official.precio_venta;
                             if (sharedItem.price !== officialPrice) {
-                                alerts.push(`Se detectó alteración en "${official.producto_Nombre}". Su precio oficial fue restaurado ($${officialPrice.toLocaleString()}).`);
+                                alerts.push(`Se detectó alteración en "${official.producto_Nombre}". Precio oficial restaurado ($${officialPrice.toLocaleString()}).`);
                             }
                             return {
                                 ...official,
@@ -174,12 +175,11 @@
 
                         dispatch({ type: 'SET_SHARED_CART', payload: { items: validItems, alerts } });
                     } catch {
-                        dispatch({ type: 'SET_SHARED_CART', payload: { items: [], alerts: ["El enlace del carrito compartido está corrupto o es inválido."] } });
+                        dispatch({ type: 'SET_SHARED_CART', payload: { items: [], alerts: ["El enlace del carrito compartido es inválido."] } });
                     }
                 }
             }, [state.products]);
 
-            // Sincronizaciones con LocalStorage
             useEffect(() => {
                 localStorage.setItem('ecommerce_cart', JSON.stringify(state.cart));
             }, [state.cart]);
@@ -201,7 +201,29 @@
 
         const useStore = () => useContext(StoreContext);
 
-        // --- 3. COMPONENTE DE IMAGEN CON LAZY LOADING Y AHORRO DE DATOS ---
+        // --- 3. TOAST NOTIFICATION FLOTANTE ---
+        function Toast() {
+            const { state, dispatch } = useStore();
+            useEffect(() => {
+                if (state.toastMessage) {
+                    const timer = setTimeout(() => {
+                        dispatch({ type: 'SHOW_TOAST', payload: null });
+                    }, 3000);
+                    return () => clearTimeout(timer);
+                }
+            }, [state.toastMessage]);
+
+            if (!state.toastMessage) return null;
+
+            return (
+                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-medium flex items-center gap-2 animate-bounce">
+                    <span>✨</span>
+                    <span>{state.toastMessage}</span>
+                </div>
+            );
+        }
+
+        // --- 4. IMAGEN OPTIMIZADA CON CONTENEDOR LIMPIO ---
         function LazyImage({ src, alt, className }) {
             const [isLoaded, setIsLoaded] = useState(false);
             const [isInView, setIsInView] = useState(false);
@@ -222,18 +244,18 @@
             }, []);
 
             return (
-                <div ref={imgRef} className={`relative overflow-hidden bg-gray-100 ${className}`}>
+                <div ref={imgRef} className={`relative overflow-hidden bg-white flex items-center justify-center ${className}`}>
                     {isInView && (
                         <img
                             src={src}
                             alt={alt}
                             loading="lazy"
                             onLoad={() => setIsLoaded(true)}
-                            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            className={`w-full h-full object-contain transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                         />
                     )}
                     {!isLoaded && (
-                        <div className="absolute inset-0 animate-pulse bg-gray-200 flex items-center justify-center text-[10px] text-gray-400">
+                        <div className="absolute inset-0 animate-pulse bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">
                             Cargando...
                         </div>
                     )}
@@ -241,28 +263,47 @@
             );
         }
 
-        // --- 4. TARJETA DE PRODUCTO ---
+        // --- 5. TARJETA DE PRODUCTO ---
         function ProductCard({ product, onSelect }) {
             const { state, dispatch } = useStore();
             const isLiked = state.likes[product.id];
-            const colorsList = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
+
+            const handleShareProduct = (e) => {
+                e.stopPropagation();
+                const shareUrl = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
+                if (navigator.share) {
+                    navigator.share({ title: product.producto_Nombre, url: shareUrl });
+                } else {
+                    navigator.clipboard.writeText(shareUrl);
+                    dispatch({ type: 'SHOW_TOAST', payload: '¡Enlace del producto copiado!' });
+                }
+            };
 
             return (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col justify-between transition-all hover:shadow-md">
                     <div>
-                        <div className="relative rounded-xl overflow-hidden mb-2 cursor-pointer" onClick={() => onSelect(product)}>
-                            <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="h-40 w-full rounded-xl" />
+                        <div className="relative rounded-xl overflow-hidden mb-2 cursor-pointer bg-gray-50 h-40" onClick={() => onSelect(product)}>
+                            <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="h-full w-full rounded-xl" />
                             {product.oferta && (
                                 <span className="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
                                     ¡Oferta!
                                 </span>
                             )}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
-                                className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90"
-                            >
-                                {isLiked ? '❤️' : '🤍'}
-                            </button>
+                            <div className="absolute top-2 right-2 flex gap-1">
+                                <button
+                                    onClick={handleShareProduct}
+                                    className="bg-white/90 p-1.5 rounded-full shadow text-xs transition active:scale-90"
+                                    title="Compartir producto"
+                                >
+                                    🔗
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
+                                    className="bg-white/90 p-1.5 rounded-full shadow text-xs transition active:scale-90"
+                                >
+                                    {isLiked ? '❤️' : '🤍'}
+                                </button>
+                            </div>
                         </div>
                         <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
                             {product["Tipo de producto"]}
@@ -275,7 +316,7 @@
                         </p>
                     </div>
 
-                    <div className="pt-2 border-t border-gray-100 mt-2 flex gap-1">
+                    <div className="pt-2 border-t border-gray-100 mt-2">
                         <button
                             onClick={() => onSelect(product)}
                             className="w-full bg-gray-900 text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
@@ -287,7 +328,7 @@
             );
         }
 
-        // --- 5. MODAL DE DETALLE DE PRODUCTO ---
+        // --- 6. MODAL DE DETALLE DE PRODUCTO ---
         function ProductDetailModal({ product, onClose }) {
             const { dispatch } = useStore();
             const [selectedColor, setSelectedColor] = useState('');
@@ -318,8 +359,17 @@
                         isLayaway
                     }
                 });
-                alert(`¡${product.producto_Nombre} añadido al carrito!`);
                 onClose();
+            };
+
+            const handleShareThisProduct = () => {
+                const shareUrl = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
+                if (navigator.share) {
+                    navigator.share({ title: product.producto_Nombre, url: shareUrl });
+                } else {
+                    navigator.clipboard.writeText(shareUrl);
+                    dispatch({ type: 'SHOW_TOAST', payload: '¡Enlace copiado al portapapeles!' });
+                }
             };
 
             return (
@@ -330,8 +380,14 @@
                             <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                         </div>
 
-                        <div className="relative rounded-2xl overflow-hidden mb-4">
-                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-56 object-cover rounded-2xl" />
+                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 h-64">
+                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-contain" />
+                            <button
+                                onClick={handleShareThisProduct}
+                                className="absolute top-3 right-3 bg-white/90 px-3 py-1.5 rounded-full shadow text-xs font-bold flex items-center gap-1.5"
+                            >
+                                🔗 Compartir
+                            </button>
                         </div>
 
                         <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
@@ -340,12 +396,10 @@
                         <h1 className="font-bold text-lg text-gray-900 mt-2">{product.producto_Nombre}</h1>
                         <p className="text-emerald-600 font-black text-xl mt-1">${product.precio_venta?.toLocaleString()}</p>
 
-                        {/* Detalles Opcionales / HTML support */}
-                        <div className="my-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl">
+                        <div className="my-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl leading-relaxed">
                             <div dangerouslySetInnerHTML={{ __html: product["Detalles del producto ( opcional )"] || 'Sin descripción detallada.' }} />
                         </div>
 
-                        {/* Colores */}
                         {colorsList.length > 0 && (
                             <div className="my-3">
                                 <label className="text-xs font-bold text-gray-700 block mb-1">Color disponible:</label>
@@ -363,7 +417,6 @@
                             </div>
                         )}
 
-                        {/* Cantidad y Opciones */}
                         <div className="flex items-center justify-between my-4 py-2 border-t border-b">
                             <span className="text-xs font-bold text-gray-700">Cantidad:</span>
                             <div className="flex items-center border rounded-xl bg-gray-50">
@@ -396,7 +449,7 @@
             );
         }
 
-        // --- 6. MODAL DE CARRITO Y CHECKOUT EXPRESS ---
+        // --- 7. MODAL DE CARRITO Y CHECKOUT EXPRESS ---
         function CartCheckoutModal({ isOpen, onClose }) {
             const { state, dispatch } = useStore();
             const { checkoutForm } = state;
@@ -426,7 +479,7 @@
                     navigator.share({ title: 'Mi Carrito de Compras', url: shareUrl });
                 } else {
                     navigator.clipboard.writeText(shareUrl);
-                    alert('¡Enlace de carrito copiado con éxito!');
+                    dispatch({ type: 'SHOW_TOAST', payload: '¡Enlace de carrito copiado!' });
                 }
             };
 
@@ -434,6 +487,7 @@
                 e.preventDefault();
                 const affiliateInfo = state.affiliateRef && state.affiliateRef !== 'directo' ? `🔗 *Asesor / Afiliado:* ${state.affiliateRef}\n` : '';
                 const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* ${i.selectedColor ? `(${i.selectedColor})` : ''} ${i.isLayaway ? '[APARTADO 50%]' : ''} [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
+                const notesText = checkoutForm.notes ? `📝 *Comentarios:* ${checkoutForm.notes}\n` : '';
                 
                 const message = `🛒 *NUEVO PEDIDO DE E-COMMERCE*\n\n` +
                     `${affiliateInfo}` +
@@ -441,6 +495,7 @@
                     `📞 *Teléfono:* ${checkoutForm.phone}\n` +
                     `📍 *Dirección:* ${checkoutForm.address}\n` +
                     `💳 *Pago:* ${checkoutForm.paymentMethod}\n` +
+                    `${notesText}` +
                     `${isLayawayOrder ? '⚠️ *Modalidad:* APARTADO CON ADELANTO (50%)\n' : ''}\n` +
                     `📦 *Productos:*\n${itemsText}\n\n` +
                     `💰 *Total a pagar ahora:* $${finalTotalToPay.toLocaleString()}`;
@@ -471,7 +526,7 @@
                                     {state.cart.map((item, idx) => (
                                         <div key={idx} className="py-2.5 flex items-center justify-between text-xs gap-2">
                                             <div className="flex items-center gap-2">
-                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-contain bg-gray-50 border" />
                                                 <div>
                                                     <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
                                                     <p className="text-gray-500 text-[10px]">{item.selectedColor} {item.isLayaway && '• (Apartado)'}</p>
@@ -490,11 +545,11 @@
                                 </div>
 
                                 <button onClick={handleShareCart} className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-xl text-xs font-bold transition">
-                                    🔗 Compartir Carrito / Enlace de Afiliado
+                                    🔗 Compartir Carrito (Afiliados / Amigos)
                                 </button>
 
                                 <form onSubmit={handleSubmitWhatsApp} className="space-y-3 pt-2 border-t">
-                                    <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Información de Envío (Guardada autom.)</h3>
+                                    <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Información de Envío</h3>
                                     <div>
                                         <label className="text-xs text-gray-500">Nombre Completo</label>
                                         <input required name="name" type="text" value={checkoutForm.name} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50" />
@@ -515,6 +570,10 @@
                                             <option value="Contra Entrega">Pago Contra Entrega</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500">Comentarios Adicionales (Opcional)</label>
+                                        <textarea name="notes" placeholder="Ej. Dejar con el celador, Nequi del familiar, etc." value={checkoutForm.notes} onChange={handleFormChange} className="w-full p-2.5 border rounded-xl text-xs bg-gray-50 h-16 resize-none" />
+                                    </div>
 
                                     <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1">
                                         <div className="flex justify-between"><span>Subtotal:</span><span>${total.toLocaleString()}</span></div>
@@ -533,16 +592,17 @@
             );
         }
 
-        // --- 7. MENÚ LATERAL (HAMBURGUESA) ---
-        function DrawerMenu({ isOpen, onClose }) {
+        // --- 8. MENÚ HAMBURGUESA Y FAVORITOS ---
+        function DrawerMenu({ isOpen, onClose, onSelectProduct }) {
             const { state } = useStore();
             const likedIds = Object.keys(state.likes).filter(id => state.likes[id]);
+            const likedProducts = state.products.filter(p => likedIds.includes(String(p.id)));
 
             if (!isOpen) return null;
 
             return (
                 <div className="fixed inset-0 bg-black/60 z-50 flex justify-end backdrop-blur-sm">
-                    <div className="bg-white w-80 h-full p-5 shadow-2xl flex flex-col justify-between">
+                    <div className="bg-white w-80 h-full p-5 shadow-2xl flex flex-col justify-between overflow-y-auto">
                         <div>
                             <div className="flex justify-between items-center mb-6 pb-2 border-b">
                                 <h2 className="font-bold text-base text-gray-900">Menú y Favoritos</h2>
@@ -551,8 +611,26 @@
 
                             <div className="space-y-4">
                                 <div className="bg-indigo-50 p-3 rounded-2xl">
-                                    <p className="text-xs font-bold text-indigo-900">❤️ Productos Favoritos</p>
-                                    <p className="text-xs text-indigo-700 mt-0.5">{likedIds.length} artículos guardados en este dispositivo.</p>
+                                    <p className="text-xs font-bold text-indigo-900 mb-2">❤️ Mis Favoritos ({likedProducts.length})</p>
+                                    {likedProducts.length === 0 ? (
+                                        <p className="text-[11px] text-indigo-600">No tienes productos guardados aún.</p>
+                                    ) : (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {likedProducts.map(lp => (
+                                                <div 
+                                                    key={lp.id} 
+                                                    onClick={() => { onSelectProduct(lp); onClose(); }} 
+                                                    className="flex items-center gap-2 bg-white p-1.5 rounded-xl cursor-pointer shadow-sm hover:bg-gray-50 transition"
+                                                >
+                                                    <img src={lp.link_foto} alt="" className="w-8 h-8 object-contain rounded-lg bg-gray-50" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[11px] font-bold text-gray-800 truncate">{lp.producto_Nombre}</p>
+                                                        <p className="text-[10px] text-emerald-600 font-bold">${lp.precio_venta?.toLocaleString()}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="bg-gray-50 p-3 rounded-2xl space-y-1">
@@ -562,7 +640,7 @@
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t text-center text-xs text-gray-400">
+                        <div className="pt-4 border-t text-center text-xs text-gray-400 mt-4">
                             E-commerce Móvil con React & Tailwind
                         </div>
                     </div>
@@ -570,7 +648,7 @@
             );
         }
 
-        // --- 8. APLICACIÓN PRINCIPAL ---
+        // --- 9. APP PRINCIPAL Y MANEJADOR DE HISTORIAL ---
         function App() {
             const { state } = useStore();
             const [searchTerm, setSearchTerm] = useState('');
@@ -579,10 +657,61 @@
             const [isMenuOpen, setIsMenuOpen] = useState(false);
             const [selectedProduct, setSelectedProduct] = useState(null);
 
-            // Obtener categorías únicas dinámicamente del JSON
+            // Sincronizar producto con Deep Linking (?product=ID) al iniciar
+            useEffect(() => {
+                if (state.products.length > 0) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const prodId = urlParams.get('product');
+                    if (prodId) {
+                        const found = state.products.find(p => String(p.id) === String(prodId));
+                        if (found) setSelectedProduct(found);
+                    }
+                }
+            }, [state.products]);
+
+            // Manejo del botón "Atrás" del navegador/celular (Popstate)
+            useEffect(() => {
+                const handlePopState = () => {
+                    if (selectedProduct) setSelectedProduct(null);
+                    else if (isCartOpen) setIsCartOpen(false);
+                    else if (isMenuOpen) setIsMenuOpen(false);
+                };
+                window.addEventListener('popstate', handlePopState);
+                return () => window.removeEventListener('popstate', handlePopState);
+            }, [selectedProduct, isCartOpen, isMenuOpen]);
+
+            const handleOpenProduct = (product) => {
+                window.history.pushState({ modal: 'product' }, '');
+                setSelectedProduct(product);
+            };
+
+            const handleCloseProduct = () => {
+                setSelectedProduct(null);
+                if (window.history.state) window.history.back();
+            };
+
+            const handleOpenCart = () => {
+                window.history.pushState({ modal: 'cart' }, '');
+                setIsCartOpen(true);
+            };
+
+            const handleCloseCart = () => {
+                setIsCartOpen(false);
+                if (window.history.state) window.history.back();
+            };
+
+            const handleOpenMenu = () => {
+                window.history.pushState({ modal: 'menu' }, '');
+                setIsMenuOpen(true);
+            };
+
+            const handleCloseMenu = () => {
+                setIsMenuOpen(false);
+                if (window.history.state) window.history.back();
+            };
+
             const categories = ['todos', ...new Set(state.products.map(p => p["Tipo de producto"]).filter(Boolean))];
 
-            // Buscador inteligente universal (barra de búsqueda barre nombres, tipo, seo y detalles)
             const filteredProducts = state.products.filter(p => {
                 const matchesCategory = selectedCategory === 'todos' || p["Tipo de producto"] === selectedCategory;
                 const searchLower = searchTerm.toLowerCase();
@@ -592,8 +721,7 @@
                 const detailsMatch = p["Detalles del producto ( opcional )"]?.toLowerCase().includes(searchLower);
                 const colorMatch = p.colores?.toLowerCase().includes(searchLower);
 
-                const matchesSearch = !searchTerm || nameMatch || typeMatch || seoMatch || detailsMatch || colorMatch;
-                return matchesCategory && matchesSearch;
+                return matchesCategory && (!searchTerm || nameMatch || typeMatch || seoMatch || detailsMatch || colorMatch);
             });
 
             const totalCartItems = state.cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -611,23 +739,24 @@
 
             return (
                 <div className="min-h-screen pb-20">
-                    {/* Header Principal */}
+                    <Toast />
+                    {/* Header */}
                     <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-gray-100 px-4 py-3">
                         <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
-                            <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-gray-100 rounded-xl text-sm font-bold">
+                            <button onClick={handleOpenMenu} className="p-2 bg-gray-100 rounded-xl text-sm font-bold">
                                 ☰
                             </button>
                             <div className="flex-1 max-w-xs">
                                 <input
                                     type="text"
-                                    placeholder="Buscar (ej. báscula, ropa, negro)..."
+                                    placeholder="Buscar productos..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full bg-gray-100 border border-transparent focus:border-black rounded-full px-3.5 py-1.5 text-xs outline-none transition"
                                 />
                             </div>
                             <button
-                                onClick={() => setIsCartOpen(true)}
+                                onClick={handleOpenCart}
                                 className="relative bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 active:scale-95 transition"
                             >
                                 🛒 {totalCartItems > 0 && <span className="bg-emerald-500 text-white rounded-full px-1.5 py-0.2 text-[10px]">{totalCartItems}</span>}
@@ -635,7 +764,7 @@
                         </div>
                     </header>
 
-                    {/* Categorías Dinámicas */}
+                    {/* Categorías */}
                     <nav className="max-w-2xl mx-auto px-4 py-3 overflow-x-auto flex gap-2 no-scrollbar">
                         {categories.map(cat => (
                             <button
@@ -648,11 +777,11 @@
                         ))}
                     </nav>
 
-                    {/* Grid de Productos Móvil (1 o 2 columnas adaptables) */}
+                    {/* Grid */}
                     <main className="max-w-2xl mx-auto px-4 py-2">
                         <div className="grid grid-cols-2 gap-3">
                             {filteredProducts.map(product => (
-                                <ProductCard key={product.id} product={product} onSelect={setSelectedProduct} />
+                                <ProductCard key={product.id} product={product} onSelect={handleOpenProduct} />
                             ))}
                         </div>
                         {filteredProducts.length === 0 && (
@@ -660,15 +789,14 @@
                         )}
                     </main>
 
-                    {/* Modales */}
-                    <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
-                    <CartCheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-                    <DrawerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+                    {/* Modales con soporte de historial */}
+                    <ProductDetailModal product={selectedProduct} onClose={handleCloseProduct} />
+                    <CartCheckoutModal isOpen={isCartOpen} onClose={handleCloseCart} />
+                    <DrawerMenu isOpen={isMenuOpen} onClose={handleCloseMenu} onSelectProduct={handleOpenProduct} />
                 </div>
             );
         }
 
-        // Renderizar la Aplicación envuelta en el StoreProvider
         ReactDOM.render(
             <StoreProvider>
                 <App />
