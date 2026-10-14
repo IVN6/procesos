@@ -200,7 +200,7 @@
             );
         }
 
-        // --- 4. LAZY IMAGE ---
+        // --- 4. LAZY IMAGE CON OBJECT-CONTAIN (Muestra la imagen completa sin recortar) ---
         function LazyImage({ src, alt, className }) {
             const [isLoaded, setIsLoaded] = useState(false);
             const [isInView, setIsInView] = useState(false);
@@ -218,14 +218,14 @@
             }, []);
 
             return (
-                <div ref={imgRef} className={`relative overflow-hidden bg-gray-100 ${className}`}>
+                <div ref={imgRef} className={`relative overflow-hidden bg-gray-50 flex items-center justify-center ${className}`}>
                     {isInView && (
                         <img
                             src={src}
                             alt={alt}
                             loading="lazy"
                             onLoad={() => setIsLoaded(true)}
-                            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            className={`w-full h-full object-contain transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                         />
                     )}
                     {!isLoaded && (
@@ -242,6 +242,26 @@
             const { state, dispatch } = useStore();
             const isLiked = state.likes[product.id];
 
+            const handleQuickAddToCart = (e) => {
+                e.stopPropagation();
+                const colorsList = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
+                dispatch({
+                    type: 'ADD_TO_CART',
+                    payload: {
+                        product: {
+                            id: product.id,
+                            producto_Nombre: product.producto_Nombre,
+                            price: product.precio_venta,
+                            link_foto: product.link_foto,
+                            category: product["Tipo de producto"]
+                        },
+                        quantity: 1,
+                        selectedColor: colorsList[0] || '',
+                        isLayaway: false
+                    }
+                });
+            };
+
             const handleShareProduct = (e) => {
                 e.stopPropagation();
                 const ref = state.affiliateRef || 'directo';
@@ -256,13 +276,13 @@
                         <div className="relative rounded-xl overflow-hidden mb-2 aspect-square cursor-pointer bg-gray-50" onClick={() => onSelect(product)}>
                             <LazyImage src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full rounded-xl" />
                             {product.oferta && (
-                                <span className="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
+                                <span className="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow z-10">
                                     ¡Oferta!
                                 </span>
                             )}
                             <button
                                 onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_LIKE', payload: product.id }); }}
-                                className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90"
+                                className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full shadow text-sm transition active:scale-90 z-10"
                             >
                                 {isLiked ? '❤️' : '🤍'}
                             </button>
@@ -280,10 +300,17 @@
 
                     <div className="pt-2 border-t border-gray-100 mt-2 flex gap-1.5">
                         <button
-                            onClick={() => onSelect(product)}
-                            className="flex-1 bg-gray-900 text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
+                            onClick={handleQuickAddToCart}
+                            className="flex-1 bg-black text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition"
                         >
-                            Ver 👁️
+                            Añadir 🛒
+                        </button>
+                        <button
+                            onClick={() => onSelect(product)}
+                            className="bg-gray-100 text-gray-800 px-2.5 py-2 rounded-xl text-xs font-bold active:scale-95 transition"
+                            title="Ver detalles"
+                        >
+                            👁️
                         </button>
                         <button
                             onClick={handleShareProduct}
@@ -297,20 +324,20 @@
             );
         }
 
-        // --- 6. MODAL DE DETALLE DE PRODUCTO ---
+        // --- 6. MODAL DE DETALLE DE PRODUCTO (Hooks ordenados correctamente) ---
         function ProductDetailModal({ product, onClose }) {
             const { dispatch, state } = useStore();
             const [selectedColor, setSelectedColor] = useState('');
             const [isLayaway, setIsLayaway] = useState(false);
             const [quantity, setQuantity] = useState(1);
 
-            if (!product) return null;
-
-            const colorsList = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
+            const colorsList = product && product.colores ? product.colores.split(',').map(c => c.trim()) : [];
 
             useEffect(() => {
                 if (colorsList.length > 0) setSelectedColor(colorsList[0]);
             }, [product]);
+
+            if (!product) return null; // Early return colocado DESPUÉS de los hooks
 
             const handleAddToCart = () => {
                 dispatch({
@@ -346,8 +373,8 @@
                             <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                         </div>
 
-                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-100 aspect-square max-h-72 mx-auto">
-                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-cover rounded-2xl" />
+                        <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 aspect-square max-h-72 mx-auto flex items-center justify-center">
+                            <img src={product.link_foto} alt={product.producto_Nombre} className="w-full h-full object-contain rounded-2xl" />
                         </div>
 
                         <div className="flex justify-between items-center">
@@ -487,7 +514,7 @@
                                     {state.cart.map((item, idx) => (
                                         <div key={idx} className="py-2.5 flex items-center justify-between text-xs gap-2">
                                             <div className="flex items-center gap-2">
-                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                                                <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-contain bg-gray-50" />
                                                 <div>
                                                     <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
                                                     <p className="text-gray-500 text-[10px]">{item.selectedColor} {item.isLayaway && '• (Apartado)'}</p>
@@ -579,7 +606,7 @@
                                         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                             {likedProducts.map(p => (
                                                 <div key={p.id} onClick={() => { onClose(); onSelectProduct(p); }} className="flex items-center gap-2 bg-white p-2 rounded-xl cursor-pointer hover:shadow-sm">
-                                                    <img src={p.link_foto} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                                                    <img src={p.link_foto} alt="" className="w-8 h-8 rounded-lg object-contain bg-gray-50" />
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-[11px] font-bold text-gray-800 truncate">{p.producto_Nombre}</p>
                                                         <p className="text-[10px] text-emerald-600 font-bold">${p.precio_venta?.toLocaleString()}</p>
