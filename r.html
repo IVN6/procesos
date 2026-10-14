@@ -22,7 +22,7 @@
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_0](start_span)[span_0](end_span).",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_1](start_span)[span_1](end_span).",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
@@ -32,7 +32,7 @@
             }
         ];
 
-        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL CON AUTOCORRECCIÓN DE STOCK) ---
+        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL CON POOL DE STOCK UNIFICADO) ---
         const StoreContext = createContext();
 
         const initialStoreState = {
@@ -67,15 +67,19 @@
                     const officialProd = state.products.find(p => String(p.id) === String(product.id));
                     const maxStock = officialProd ? officialProd.cantidad : 999;
 
+                    // Sumar todas las unidades de este ID en el carrito (sin importar el color elegido)
+                    const currentTotalQtyInCart = state.cart
+                        .filter(item => String(item.id) === String(product.id))
+                        .reduce((sum, item) => sum + item.quantity, 0);
+
+                    if (currentTotalQtyInCart + quantity > maxStock) {
+                        return { ...state, toastMessage: `⚠️ Stock máximo alcanzado (${maxStock} disponibles en total).` };
+                    }
+
                     const existingIndex = state.cart.findIndex(
                         item => String(item.id) === String(product.id) && item.selectedColor === selectedColor
                     );
                     let updatedCart = [...state.cart];
-                    const currentQtyInCart = existingIndex > -1 ? updatedCart[existingIndex].quantity : 0;
-
-                    if (currentQtyInCart + quantity > maxStock) {
-                        return { ...state, toastMessage: `⚠️ Stock máximo alcanzado (${maxStock} disponibles).` };
-                    }
 
                     if (existingIndex > -1) {
                         updatedCart[existingIndex].quantity += quantity;
@@ -91,8 +95,13 @@
                     const officialProd = state.products.find(p => String(p.id) === String(item.id));
                     const maxStock = officialProd ? officialProd.cantidad : 999;
 
-                    if (quantity > maxStock) {
-                        return { ...state, toastMessage: `⚠️ Solo hay ${maxStock} unidades disponibles.` };
+                    // Calcular la cantidad de otros ítems con el mismo ID en el carrito
+                    const otherItemsQty = updatedCart
+                        .filter((cartItem, idx) => String(cartItem.id) === String(item.id) && idx !== index)
+                        .reduce((sum, cartItem) => sum + cartItem.quantity, 0);
+
+                    if (otherItemsQty + quantity > maxStock) {
+                        return { ...state, toastMessage: `⚠️ Solo hay ${maxStock} unidades disponibles en total.` };
                     }
 
                     if (quantity <= 0) {
@@ -427,7 +436,7 @@
                                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                             </div>
 
-                            {/* Contenedor de imagen expandido para adaptarse fluidamente a imágenes verticales y horizontales */}
+                            {/* Contenedor optimizado para fotos verticales y horizontales */}
                             <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 w-full max-h-[55vh] flex items-center justify-center p-1">
                                 <img src={product.link_foto} alt={product.producto_Nombre} className="w-full max-h-[55vh] object-contain rounded-xl" />
                             </div>
@@ -480,7 +489,7 @@
                             )}
                         </div>
 
-                        {/* Footer Sticky Sólido y sin huecos flotantes */}
+                        {/* Footer Sticky Sólido */}
                         <div className="sticky bottom-0 bg-white pt-3 pb-1 border-t border-gray-100 mt-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
                             <button
                                 onClick={handleAddToCart}
@@ -522,7 +531,6 @@
                 const ref = state.affiliateRef || 'directo';
                 const shareCartUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&cart=${cartPayload}`;
 
-                // Mensaje limpio sin mención explícita de afiliado en el texto visible
                 const message = `🛒 *NUEVO PEDIDO DE E-COMMERCE*\n\n` +
                     `👤 *Cliente:* ${checkoutForm.name}\n` +
                     `📞 *Teléfono:* ${checkoutForm.phone}\n` +
@@ -730,13 +738,15 @@
                 }
             }, [state.loading, state.products]);
 
+            // Construir categorías con 'oferta' ubicado estrictamente al final
             const baseCategories = [...new Set(state.products.map(p => p["Tipo de producto"]).filter(Boolean))];
-            const categories = ['todos', 'favoritos', ...baseCategories];
+            const categories = ['todos', 'favoritos', ...baseCategories, 'oferta'];
 
             const filteredProducts = state.products.filter(p => {
                 const matchesCategory = 
                     selectedCategory === 'todos' ? true :
                     selectedCategory === 'favoritos' ? !!state.likes[p.id] :
+                    selectedCategory === 'oferta' ? !!p.oferta :
                     p["Tipo de producto"] === selectedCategory;
 
                 const searchLower = searchTerm.toLowerCase();
@@ -800,7 +810,7 @@
                         </div>
                     </header>
 
-                    {/* Categorías Fijas (Sticky debajo del Header) */}
+                    {/* Categorías Fijas con 'Oferta' al final */}
                     <nav className="sticky top-[57px] bg-white/95 backdrop-blur-md z-30 max-w-2xl mx-auto px-4 py-2.5 overflow-x-auto flex gap-2 no-scrollbar border-b border-gray-100 shadow-xs">
                         {categories.map(cat => (
                             <button
@@ -808,7 +818,7 @@
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition capitalize ${selectedCategory === cat ? 'bg-black text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                             >
-                                {cat === 'todos' ? '🔥 Todos' : cat === 'favoritos' ? '❤️ Favoritos' : cat}
+                                {cat === 'todos' ? '🔥 Todos' : cat === 'favoritos' ? '❤️ Favoritos' : cat === 'oferta' ? '🏷️ Oferta' : cat}
                             </button>
                         ))}
                     </nav>
