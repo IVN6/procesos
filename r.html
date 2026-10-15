@@ -22,7 +22,7 @@
         const FALLBACK_PRODUCTS = [
             {
                 "Tipo de producto": "Tecnologia",
-                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia[span_1](start_span)[span_1](end_span).",
+                "Detalles del producto ( opcional )": "Herramienta avanzada para el monitoreo de tu salud con bioimpedancia.",
                 "id": "p010",
                 "link_foto": "https://i0.wp.com/d39ru7awumhhs2.cloudfront.net/colombia/products/998204/1721506941D_NQ_NP_977936-MLU73467456468_122023-O.webp?w=300&strip=all&quality=60",
                 "cantidad": 5,
@@ -32,7 +32,7 @@
             }
         ];
 
-        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL CON POOL DE STOCK UNIFICADO) ---
+        // --- 2. CONTEXT Y REDUCER (ESTADO GLOBAL CON STOCK DIRECTO POR ID) ---
         const StoreContext = createContext();
 
         const initialStoreState = {
@@ -63,28 +63,22 @@
                     return { ...state, products: newProducts, cart: updatedCart, loading: false };
                 }
                 case 'ADD_TO_CART': {
-                    const { product, quantity, selectedColor } = action.payload;
+                    const { product, quantity } = action.payload;
                     const officialProd = state.products.find(p => String(p.id) === String(product.id));
                     const maxStock = officialProd ? officialProd.cantidad : 999;
 
-                    // Sumar todas las unidades de este ID en el carrito (sin importar el color elegido)
-                    const currentTotalQtyInCart = state.cart
-                        .filter(item => String(item.id) === String(product.id))
-                        .reduce((sum, item) => sum + item.quantity, 0);
-
-                    if (currentTotalQtyInCart + quantity > maxStock) {
-                        return { ...state, toastMessage: `⚠️ Stock máximo alcanzado (${maxStock} disponibles en total).` };
-                    }
-
-                    const existingIndex = state.cart.findIndex(
-                        item => String(item.id) === String(product.id) && item.selectedColor === selectedColor
-                    );
+                    const existingIndex = state.cart.findIndex(item => String(item.id) === String(product.id));
                     let updatedCart = [...state.cart];
+                    const currentQtyInCart = existingIndex > -1 ? updatedCart[existingIndex].quantity : 0;
+
+                    if (currentQtyInCart + quantity > maxStock) {
+                        return { ...state, toastMessage: `⚠️ Stock máximo alcanzado (${maxStock} disponibles).` };
+                    }
 
                     if (existingIndex > -1) {
                         updatedCart[existingIndex].quantity += quantity;
                     } else {
-                        updatedCart.push({ ...product, quantity, selectedColor });
+                        updatedCart.push({ ...product, quantity });
                     }
                     return { ...state, cart: updatedCart, toastMessage: `¡${product.producto_Nombre} añadido al carrito!` };
                 }
@@ -95,13 +89,8 @@
                     const officialProd = state.products.find(p => String(p.id) === String(item.id));
                     const maxStock = officialProd ? officialProd.cantidad : 999;
 
-                    // Calcular la cantidad de otros ítems con el mismo ID en el carrito
-                    const otherItemsQty = updatedCart
-                        .filter((cartItem, idx) => String(cartItem.id) === String(item.id) && idx !== index)
-                        .reduce((sum, cartItem) => sum + cartItem.quantity, 0);
-
-                    if (otherItemsQty + quantity > maxStock) {
-                        return { ...state, toastMessage: `⚠️ Solo hay ${maxStock} unidades disponibles en total.` };
+                    if (quantity > maxStock) {
+                        return { ...state, toastMessage: `⚠️ Solo hay ${maxStock} unidades disponibles.` };
                     }
 
                     if (quantity <= 0) {
@@ -192,8 +181,7 @@
                             return {
                                 ...official,
                                 price: officialPrice,
-                                quantity: finalQty,
-                                selectedColor: sharedItem.selectedColor || ''
+                                quantity: finalQty
                             };
                         }).filter(Boolean);
 
@@ -285,7 +273,6 @@
             const handleQuickAddToCart = (e) => {
                 e.stopPropagation();
                 if (isOutOfStock) return;
-                const colorsList = product.colores ? product.colores.split(',').map(c => c.trim()) : [];
                 dispatch({
                     type: 'ADD_TO_CART',
                     payload: {
@@ -296,8 +283,7 @@
                             link_foto: product.link_foto,
                             category: product["Tipo de producto"]
                         },
-                        quantity: 1,
-                        selectedColor: colorsList[0] || ''
+                        quantity: 1
                     }
                 });
             };
@@ -373,13 +359,9 @@
         // --- 6. MODAL DE DETALLE DE PRODUCTO ---
         function ProductDetailModal({ product, onClose }) {
             const { dispatch, state } = useStore();
-            const [selectedColor, setSelectedColor] = useState('');
             const [quantity, setQuantity] = useState(1);
 
-            const colorsList = product && product.colores ? product.colores.split(',').map(c => c.trim()) : [];
-
             useEffect(() => {
-                if (colorsList.length > 0) setSelectedColor(colorsList[0]);
                 if (product) setQuantity(1);
             }, [product]);
 
@@ -413,8 +395,7 @@
                             link_foto: product.link_foto,
                             category: product["Tipo de producto"]
                         },
-                        quantity,
-                        selectedColor
+                        quantity
                     }
                 });
                 onClose();
@@ -436,7 +417,7 @@
                                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold">✕</button>
                             </div>
 
-                            {/* Contenedor optimizado para fotos verticales y horizontales */}
+                            {/* Contenedor de imagen expandido para adaptarse fluidamente */}
                             <div className="relative rounded-2xl overflow-hidden mb-4 bg-gray-50 w-full max-h-[55vh] flex items-center justify-center p-1">
                                 <img src={product.link_foto} alt={product.producto_Nombre} className="w-full max-h-[55vh] object-contain rounded-xl" />
                             </div>
@@ -459,23 +440,6 @@
                             <div className="my-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl leading-relaxed">
                                 <div dangerouslySetInnerHTML={{ __html: product["Detalles del producto ( opcional )"] || 'Sin descripción detallada.' }} />
                             </div>
-
-                            {colorsList.length > 0 && (
-                                <div className="my-3">
-                                    <label className="text-xs font-bold text-gray-700 block mb-1">Color disponible:</label>
-                                    <div className="flex gap-2">
-                                        {colorsList.map(color => (
-                                            <button
-                                                key={color}
-                                                onClick={() => setSelectedColor(color)}
-                                                className={`px-3 py-1 rounded-lg text-xs font-semibold border ${selectedColor === color ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200'}`}
-                                            >
-                                                {color}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
 
                             {!isOutOfStock && (
                                 <div className="flex items-center justify-between my-4 py-2 border-t border-b">
@@ -519,14 +483,13 @@
 
             const handleSubmitWhatsApp = (e) => {
                 e.preventDefault();
-                const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* ${i.selectedColor ? `(${i.selectedColor})` : ''} [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
+                const itemsText = state.cart.map(i => `- ${i.quantity}x *${i.producto_Nombre}* [$${(i.price * i.quantity).toLocaleString()}]`).join('\n');
                 const notesText = checkoutForm.notes ? `📝 *Notas adicionales:* ${checkoutForm.notes}\n` : '';
                 
                 const cartPayload = btoa(JSON.stringify(state.cart.map(i => ({
                     id: i.id,
                     price: i.price,
-                    quantity: i.quantity,
-                    selectedColor: i.selectedColor
+                    quantity: i.quantity
                 }))));
                 const ref = state.affiliateRef || 'directo';
                 const shareCartUrl = `${window.location.origin}${window.location.pathname}?ref=${ref}&cart=${cartPayload}`;
@@ -573,7 +536,7 @@
                                                     <img src={item.link_foto} alt="" className="w-10 h-10 rounded-lg object-contain bg-gray-50" />
                                                     <div>
                                                         <p className="font-bold text-gray-900 line-clamp-1">{item.producto_Nombre}</p>
-                                                        <p className="text-gray-500 text-[10px]">{item.selectedColor} {item.quantity >= maxStock && <span className="text-amber-600">(Máx. stock)</span>}</p>
+                                                        {item.quantity >= maxStock && <p className="text-[10px] text-amber-600">(Máx. stock)</p>}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -738,7 +701,6 @@
                 }
             }, [state.loading, state.products]);
 
-            // Construir categorías con 'oferta' ubicado estrictamente al final
             const baseCategories = [...new Set(state.products.map(p => p["Tipo de producto"]).filter(Boolean))];
             const categories = ['todos', 'favoritos', ...baseCategories, 'oferta'];
 
@@ -853,3 +815,4 @@
     </script>
 </body>
 </html>
+
