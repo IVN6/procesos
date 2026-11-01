@@ -374,15 +374,22 @@ Eres la pintora de tu propio camino y tu futuro brilla ✨
 
         <!-- Paleta de Colores Principales e Intensos -->
         <div class="arcade-palette">
-            <span class="palette-label">Pinta:</span>
-            <button class="color-btn active" style="background:#0f172a; color:#0f172a" data-color="#0f172a" title="Negro"></button>
-            <button class="color-btn" style="background:#ef4444; color:#ef4444" data-color="#ef4444" title="Rojo Puro"></button>
-            <button class="color-btn" style="background:#2563eb; color:#2563eb" data-color="#2563eb" title="Azul Intenso"></button>
-            <button class="color-btn" style="background:#eab308; color:#eab308" data-color="#eab308" title="Amarillo Vivo"></button>
-            <button class="color-btn" style="background:#16a34a; color:#16a34a" data-color="#16a34a" title="Verde"></button>
-            <button class="color-btn" style="background:#f97316; color:#f97316" data-color="#f97316" title="Naranja"></button>
-            <button class="color-btn" style="background:#9333ea; color:#9333ea" data-color="#9333ea" title="Morado"></button>
-        </div>
+    <span class="palette-label">Pinta:</span>
+    <!-- Originales -->
+
+    <button class="color-btn" style="background:#ef4444; color:#ef4444" data-color="#ef4444" title="Rojo Puro"></button>
+    <button class="color-btn" style="background:#2563eb; color:#2563eb" data-color="#2563eb" title="Azul Intenso"></button>
+    <button class="color-btn" style="background:#eab308; color:#eab308" data-color="#eab308" title="Amarillo Vivo"></button>
+    <button class="color-btn" style="background:#16a34a; color:#16a34a" data-color="#16a34a" title="Verde"></button>
+    <button class="color-btn" style="background:#f97316; color:#f97316" data-color="#f97316" title="Naranja"></button>
+    <button class="color-btn" style="background:#9333ea; color:#9333ea" data-color="#9333ea" title="Morado"></button>
+    <!-- Nuevos -->
+    <button class="color-btn" style="background:#ec4899; color:#ec4899" data-color="#ec4899" title="Rosa"></button>
+    <button class="color-btn" style="background:#06b6d4; color:#06b6d4" data-color="#06b6d4" title="Cian"></button>
+    <button class="color-btn" style="background:#b45309; color:#b45309" data-color="#b45309" title="Marrón"></button>
+    <button class="color-btn" style="background:#64748b; color:#64748b" data-color="#64748b" title="Gris"></button>
+                <button class="color-btn active" style="background:#0f172a; color:#0f172a" data-color="#0f172a" title="Negro"></button>
+</div>
 
         <div class="progress-bar-container">
             <div id="progressBar"></div>
@@ -408,7 +415,7 @@ Eres la pintora de tu propio camino y tu futuro brilla ✨
         let pathIndex = 0, pointIndex = 0, done = 0, totalPoints = 0;
         let timer = null, paused = false, finished = false;
         let lastPoint = null;
-        let currentColor = "#0f172a";
+        let currentColor = "#06b6d4";
         let currentLineWidth = 2.0;
         let targetOpacityVal = 0.28;
         let messagesList = [];
