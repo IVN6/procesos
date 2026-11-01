@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Una Sorpresa Especial Para Ti! 🎁</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #151d30;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --text-color: #f8fafc;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Pantalla de Regalo Inicial 🎁 */
+        #giftOverlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0b0f19 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+            text-align: center;
+            padding: 20px;
+            transition: opacity 0.5s ease;
+        }
+        .gift-box {
+            font-size: 100px;
+            animation: arcadeBounce 1s infinite alternate ease-in-out;
+            filter: drop-shadow(0 0 25px #ec4899);
+        }
+        @keyframes arcadeBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        /* Contenedor Principal Amplio */
+        .main-stage {
+            width: 92vw;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Botón discreto de ajustes */
+        .settings-btn {
+            position: absolute;
+            top: -42px;
+            right: 0;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+        .settings-btn:hover { background: #334155; color: white; }
+
+        /* Panel de Configuración */
+        #settingsPanel {
+            display: none;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 14px;
+            margin-bottom: 15px;
+            border: 1px solid #334155;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 9px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            margin-top: 4px;
+            font-size: 0.9rem;
+        }
+
+        /* Tarjeta de Mensaje Destacado con Letras Más Grandes y Animación 3D */
+        #messageCard {
+            width: 100%;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+            border-left: 6px solid #38bdf8;
+            border-right: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 18px 24px;
+            border-radius: 16px;
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 14px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.6), inset 0 0 20px rgba(56, 189, 248, 0.08);
+            min-height: 3.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        /* Animación de Entrada para el Mensaje */
+        .msg-animated {
+            animation: msgPop3D 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes msgPop3D {
+            0% {
+                opacity: 0;
+                transform: scale(0.85) rotateX(-20deg) translateY(-15px);
+                filter: blur(4px);
+            }
+            70% {
+                transform: scale(1.03) rotateX(5deg) translateY(2px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotateX(0deg) translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        /* Lienzo Flexible Amplio */
+        .canvas-wrapper {
+            width: 100%;
+            max-height: 70vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .canvas-container {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #overlayImg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+        }
+
+        /* Paleta con Colores Principales Directos */
+        .arcade-palette {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: rgba(21, 29, 48, 0.85);
+            padding: 10px 20px;
+            border-radius: 35px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            margin-bottom: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        .palette-label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 4px;
+        }
+        .color-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .color-btn:hover {
+            transform: scale(1.25) translateY(-3px);
+            border-color: #ffffff;
+        }
+        .color-btn.active {
+            transform: scale(1.25);
+            border-color: #ffffff;
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        /* Barra de Progreso */
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #38bdf8, #ef4444, #eab308);
+            transition: width 0.1s linear;
+        }
+
+        /* Controles de barra inferior */
+        .controls-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-simple {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .btn-simple:hover { background: #334155; transform: translateY(-1px); border-color: #475569; }
+        .btn-simple:active { transform: scale(0.96); }
+
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 15, 25, 0.96);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            font-size: 1.2rem;
+            color: var(--accent);
+            font-weight: 600;
+            gap: 15px;
+            display: none;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(56, 189, 248, 0.2);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de Regalo Inicial 🎁 -->
+    <div id="giftOverlay" onclick="openGift()">
+        <div class="gift-box">🎁</div>
+        <h1 style="color: #38bdf8; margin: 15px 0 5px 0; font-size: 2rem;">¡Tienes una sorpresa especial!</h1>
+        <p style="color: #94a3b8; font-size: 1.1rem;">Haz clic para abrir tu regalo</p>
+    </div>
+
+    <!-- Pantalla de Carga Segura -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div>Preparando obra maestra... ⏳</div>
+    </div>
+
+    <div class="main-stage">
+        <button class="settings-btn" id="cfgToggleBtn" onclick="toggleSettings()">⚙️ Editar Regalo</button>
+
+        <!-- Panel de Configuración -->
+        <div id="settingsPanel">
+            <h3 style="margin-top:0; color:#38bdf8; font-size: 1.1rem;">Configuración de la Sorpresa</h3>
+            <div class="controls-grid">
+                <div>
+                    <label>Enlace de la Foto (URL):</label>
+                    <input type="text" id="imageUrl" placeholder="https://...">
+                </div>
+                <div>
+                    <label>Mensajes Principales (3 de Cumpleaños):</label>
+                    <textarea id="messagesInput" rows="3">¡Feliz Cumpleaños! 🎉
+Eres la pintora de tu propio camino y tu futuro brilla ✨
+¡Que este nuevo año de vida esté lleno de momentos mágicos! 🎂</textarea>
+                </div>
+                <div>
+                    <label>Emoji Dibujante:</label>
+                    <select id="cursorEmoji">
+                        <option value="🖌️">🖌️ Pincel</option>
+                        <option value="✏️">✏️ Lápiz</option>
+                        <option value="✨">✨ Magia</option>
+                        <option value="💖">💖 Corazón</option>
+                      <option value="🎃"> 🎃Cabalaza</option>
+                      
+                    </select>
+                </div>
+                <div>
+                    <label>Opacidad Final Foto (%):</label>
+                    <input type="number" id="targetOpacity" min="0" max="100" value="28">
+                </div>
+            </div>
+            <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="hideMenuInLink" checked style="width: auto; margin:0;">
+                <label for="hideMenuInLink" style="cursor: pointer; color: #cbd5e1;">Ocultar botón de edición en el link compartido</label>
+            </div>
+            <div style="margin-top:14px; display:flex; gap:10px;">
+                <button class="btn-simple" style="background:#0284c7; width:100%; justify-content:center;" onclick="generateShareLink()">🔗 Copiar Link para Enviar</button>
+            </div>
+        </div>
+
+        <!-- Mensaje Flotante con Letras Grandes -->
+        <div id="messageCard"><span class="msg-animated">Cargando tus mensajes...</span></div>
+
+        <!-- Lienzo Flexible Amplio -->
+        <div class="canvas-wrapper">
+            <div class="canvas-container" id="canvasBox">
+                <img id="overlayImg" alt="Foto Original">
+                <canvas id="inkCanvas"></canvas>
+                <canvas id="cursorCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Paleta de Colores Principales e Intensos -->
+        <div class="arcade-palette">
+            <span class="palette-label">Pinta:</span>
+            <button class="color-btn active" style="background:#0f172a; color:#0f172a" data-color="#0f172a" title="Negro"></button>
+            <button class="color-btn" style="background:#ef4444; color:#ef4444" data-color="#ef4444" title="Rojo Puro"></button>
+            <button class="color-btn" style="background:#2563eb; color:#2563eb" data-color="#2563eb" title="Azul Intenso"></button>
+            <button class="color-btn" style="background:#eab308; color:#eab308" data-color="#eab308" title="Amarillo Vivo"></button>
+            <button class="color-btn" style="background:#16a34a; color:#16a34a" data-color="#16a34a" title="Verde"></button>
+            <button class="color-btn" style="background:#f97316; color:#f97316" data-color="#f97316" title="Naranja"></button>
+            <button class="color-btn" style="background:#9333ea; color:#9333ea" data-color="#9333ea" title="Morado"></button>
+        </div>
+
+        <div class="progress-bar-container">
+            <div id="progressBar"></div>
+        </div>
+
+        <!-- Controles sencillos -->
+        <div class="controls-toolbar">
+            <button class="btn-simple" id="btnPlay">▶ Replay</button>
+            <button class="btn-simple" id="btnPause">⏸ Pausa</button>
+            <button class="btn-simple" onclick="changeLineWidth(-0.5)">➖ Trazo</button>
+            <button class="btn-simple" onclick="changeLineWidth(0.5)">➕ Trazo</button>
+            <button class="btn-simple" id="btnMusic" onclick="toggleMusic()">🔊 Música</button>
+        </div>
+    </div>
+
+    <!-- OpenCV.js con respaldo de carga garantizada -->
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()" onerror="onOpenCvError()"></script>
+
+    <script>
+        let cvReady = false;
+        let paths = [];
+        let completedSegments = [];
+        let pathIndex = 0, pointIndex = 0, done = 0, totalPoints = 0;
+        let timer = null, paused = false, finished = false;
+        let lastPoint = null;
+        let currentColor = "#0f172a";
+        let currentLineWidth = 2.0;
+        let targetOpacityVal = 0.28;
+        let messagesList = [];
+        let currentMsgIdx = -1;
+        let musicPlaying = false;
+        let audioCtx = null, musicTimer = null;
+        let loadTimeout = null;
+
+        const inkCanvas = document.getElementById("inkCanvas");
+        const cursorCanvas = document.getElementById("cursorCanvas");
+        const ctx = inkCanvas.getContext("2d");
+        const cctx = cursorCanvas.getContext("2d");
+        const canvasBox = document.getElementById("canvasBox");
+        const overlayImg = document.getElementById("overlayImg");
+
+        function loadParamsFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has("img")) {
+                document.getElementById("imageUrl").value = decodeURIComponent(params.get("img"));
+            }
+            if (params.has("msg")) {
+                document.getElementById("messagesInput").value = decodeURIComponent(params.get("msg")).replace(/\|/g, "\n");
+            }
+            if (params.has("op")) {
+                let op = parseInt(params.get("op"));
+                document.getElementById("targetOpacity").value = op;
+                targetOpacityVal = op / 100;
+            }
+            if (params.has("hideBtn") && params.get("hideBtn") === "1") {
+                document.getElementById("cfgToggleBtn").style.display = "none";
+                document.getElementById("hideMenuInLink").checked = true;
+            }
+        }
+
+        function onOpenCvReady() {
+            cvReady = true;
+            if (loadTimeout) clearTimeout(loadTimeout);
+            loadParamsFromUrl();
+            loadImage();
+        }
+
+        function onOpenCvError() {
+            console.warn("OpenCV no pudo cargar externamente, usando modo seguro.");
+            cvReady = true;
+            if (loadTimeout) clearTimeout(loadTimeout);
+            loadParamsFromUrl();
+            loadImage();
+        }
+
+        function loadImage() {
+            let url = document.getElementById("imageUrl").value.trim();
+            if (!url) {
+                url = "";
+                document.getElementById("imageUrl").value = url;
+            }
+
+            loadTimeout = setTimeout(() => {
+                document.getElementById("loadingOverlay").style.display = "none";
+            }, 8000);
+
+            let img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => processImage(img);
+            img.onerror = () => {
+                document.getElementById("loadingOverlay").style.display = "none";
+                alert("No se pudo cargar la imagen. Usando imagen de muestra.");
+                img.src = "https://lh3.googleusercontent.com/d/143-VvnLchH4llzLh_HwrA4pCHikZdBpE=w469-ra?authuser=0";
+            };
+            img.src = url;
+        }
+
+        function processImage(imgObj) {
+            document.getElementById("loadingOverlay").style.display = "flex";
+
+            setTimeout(() => {
+                let maxW = window.innerWidth * 0.92;
+                let maxH = window.innerHeight * 0.68;
+                
+                let ratio = Math.min(maxW / imgObj.width, maxH / imgObj.height);
+                let w = Math.round(imgObj.width * ratio);
+                let h = Math.round(imgObj.height * ratio);
+
+                canvasBox.style.width = w + "px";
+                canvasBox.style.height = h + "px";
+                inkCanvas.width = w;
+                inkCanvas.height = h;
+                cursorCanvas.width = w;
+                cursorCanvas.height = h;
+
+                overlayImg.src = imgObj.src;
+
+                let tempCanvas = document.createElement("canvas");
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+                let tctx = tempCanvas.getContext("2d");
+                tctx.drawImage(imgObj, 0, 0, w, h);
+
+                paths = [];
+
+                if (window.cv && cv.Mat) {
+                    try {
+                        let src = cv.imread(tempCanvas);
+                        let gray = new cv.Mat();
+                        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+                        
+                        let blurred = new cv.Mat();
+                        cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
+                        
+                        let edges = new cv.Mat();
+                        cv.Canny(blurred, edges, 40, 110);
+
+                        let contours = new cv.MatVector();
+                        let hierarchy = new cv.Mat();
+                        cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+                        for (let i = 0; i < contours.size(); ++i) {
+                            let cnt = contours.get(i);
+                            if (cnt.rows < 4) continue;
+                            let approx = new cv.Mat();
+                            cv.approxPolyDP(cnt, approx, 1.2, true);
+                            let pts = [];
+                            for (let j = 0; j < approx.rows; j++) {
+                                pts.push([approx.intAt(j, 0), approx.intAt(j, 1)]);
+                            }
+                            if (pts.length >= 2) paths.push(pts);
+                            approx.delete();
+                        }
+
+                        src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete();
+                    } catch(e) {
+                        console.error("Error en procesamiento OpenCV:", e);
+                    }
+                }
+
+                if (paths.length < 10) {
+                    for (let y = 20; y < h; y += 20) {
+                        let linePts = [];
+                        for (let x = 0; x < w; x += 10) {
+                            linePts.push([x, y]);
+                        }
+                        paths.push(linePts);
+                    }
+                }
+
+                paths.sort((a, b) => b.length - a.length);
+                paths = paths.slice(0, 180);
+
+                totalPoints = paths.reduce((sum, p) => sum + p.length + 1, 0);
+                messagesList = document.getElementById("messagesInput").value.split("\n").filter(m => m.trim() !== "");
+                targetOpacityVal = (parseInt(document.getElementById("targetOpacity").value) || 28) / 100;
+
+                if (loadTimeout) clearTimeout(loadTimeout);
+                document.getElementById("loadingOverlay").style.display = "none";
+            }, 60);
+        }
+
+        function openGift() {
+            let gift = document.getElementById("giftOverlay");
+            gift.style.opacity = "0";
+            setTimeout(() => { gift.style.display = "none"; }, 500);
+            startMusic();
+            restartAnimation();
+        }
+
+        function restartAnimation() {
+            if (timer) clearTimeout(timer);
+            
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, inkCanvas.width, inkCanvas.height);
+            cctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+            overlayImg.style.opacity = "0";
+            
+            pathIndex = 0;
+            pointIndex = 0;
+            done = 0;
+            finished = false;
+            paused = false;
+            lastPoint = null;
+            completedSegments = [];
+            currentMsgIdx = -1;
+
+            updateUI();
+            drawBatch();
+        }
+
+        function drawCursor(x, y) {
+            cctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+            let emoji = document.getElementById("cursorEmoji").value;
+            cctx.font = "28px sans-serif";
+            cctx.textAlign = "center";
+            cctx.textBaseline = "middle";
+            cctx.fillText(emoji, x, y);
+        }
+
+        function drawBatch() {
+            if (paused || finished) return;
+
+            let stepsThisFrame = 1;
+            let used = 0;
+
+            ctx.lineWidth = currentLineWidth;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            while (used < stepsThisFrame && pathIndex < paths.length) {
+                let path = paths[pathIndex];
+
+                if (pointIndex === 0) {
+                    lastPoint = path[0];
+                    pointIndex = 1;
+                    drawCursor(lastPoint[0], lastPoint[1]);
+                }
+
+                if (pointIndex < path.length) {
+                    let p = path[pointIndex];
+                    
+                    ctx.strokeStyle = currentColor;
+                    ctx.beginPath();
+                    ctx.moveTo(lastPoint[0], lastPoint[1]);
+                    ctx.lineTo(p[0], p[1]);
+                    ctx.stroke();
+
+                    completedSegments.push({
+                        from: lastPoint,
+                        to: p,
+                        color: currentColor,
+                        width: currentLineWidth
+                    });
+
+                    drawCursor(p[0], p[1]);
+                    
+                    lastPoint = p;
+                    pointIndex++;
+                    done++;
+                    used++;
+                } else {
+                    pathIndex++;
+                    pointIndex = 0;
+                    lastPoint = null;
+                    done++;
+                    used++;
+                }
+            }
+
+            updateUI();
+
+            if (pathIndex >= paths.length) {
+                finishAnimation();
+                return;
+            }
+
+            timer = setTimeout(drawBatch, 35);
+        }
+
+        function updateUI() {
+            let pct = totalPoints ? Math.min(100, (done / totalPoints) * 100) : 0;
+            document.getElementById("progressBar").style.width = pct + "%";
+
+            overlayImg.style.opacity = (pct / 100) * targetOpacityVal;
+
+            if (messagesList.length > 0) {
+                let idx = Math.min(Math.floor((pct / 100) * messagesList.length), messagesList.length - 1);
+                if (idx !== currentMsgIdx) {
+                    currentMsgIdx = idx;
+                    let msgCard = document.getElementById("messageCard");
+                    msgCard.innerHTML = `<span class="msg-animated">${messagesList[currentMsgIdx]}</span>`;
+                }
+            }
+        }
+
+        function finishAnimation() {
+            if (timer) clearTimeout(timer);
+            finished = true;
+            cctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+            
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, inkCanvas.width, inkCanvas.height);
+            
+            for (let seg of completedSegments) {
+                ctx.strokeStyle = seg.color;
+                ctx.lineWidth = seg.width;
+                ctx.beginPath();
+                ctx.moveTo(seg.from[0], seg.from[1]);
+                ctx.lineTo(seg.to[0], seg.to[1]);
+                ctx.stroke();
+            }
+
+            overlayImg.style.opacity = targetOpacityVal;
+            document.getElementById("progressBar").style.width = "100%";
+        }
+
+        function changeLineWidth(delta) {
+            currentLineWidth = Math.max(1, Math.min(8, currentLineWidth + delta));
+        }
+
+        function startMusic() {
+            if (musicPlaying) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                musicPlaying = true;
+                
+                const notes = [
+                    {f: 264, d: 400}, {f: 264, d: 200}, {f: 297, d: 600}, {f: 264, d: 600}, {f: 352, d: 600}, {f: 330, d: 1200},
+                    {f: 264, d: 400}, {f: 264, d: 200}, {f: 297, d: 600}, {f: 264, d: 600}, {f: 396, d: 600}, {f: 352, d: 1200},
+                    {f: 264, d: 400}, {f: 264, d: 200}, {f: 528, d: 600}, {f: 440, d: 600}, {f: 352, d: 600}, {f: 330, d: 600}, {f: 297, d: 1200},
+                    {f: 466, d: 400}, {f: 466, d: 200}, {f: 440, d: 600}, {f: 352, d: 600}, {f: 396, d: 600}, {f: 352, d: 1200}
+                ];
+
+                let noteIdx = 0;
+                function playNextNote() {
+                    if (!musicPlaying) return;
+                    let note = notes[noteIdx];
+                    noteIdx = (noteIdx + 1) % notes.length;
+
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(note.f, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (note.d / 1000) * 0.9);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + (note.d / 1000));
+
+                    musicTimer = setTimeout(playNextNote, note.d);
+                }
+                playNextNote();
+            } catch(e) {}
+        }
+
+        function toggleMusic() {
+            musicPlaying = !musicPlaying;
+            let btn = document.getElementById("btnMusic");
+            if (musicPlaying) {
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                startMusic();
+                btn.textContent = "🔊 Música";
+            } else {
+                if (musicTimer) clearTimeout(musicTimer);
+                if (audioCtx) audioCtx.suspend();
+                btn.textContent = "🔇 Mute";
+            }
+        }
+
+        /* Selección directa de colores principales */
+        document.querySelectorAll(".color-btn").forEach(btn => {
+            btn.addEventListener("click", function() {
+                document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("active"));
+                this.classList.add("active");
+                currentColor = this.getAttribute("data-color");
+            });
+        });
+
+        function toggleSettings() {
+            let p = document.getElementById("settingsPanel");
+            p.style.display = p.style.display === "block" ? "none" : "block";
+        }
+
+        function generateShareLink() {
+            let imgUrl = document.getElementById("imageUrl").value.trim();
+            let rawMsgs = document.getElementById("messagesInput").value.trim().replace(/\n/g, "|");
+            let opacityVal = document.getElementById("targetOpacity").value;
+            let hideBtn = document.getElementById("hideMenuInLink").checked ? "1" : "0";
+
+            let params = new URLSearchParams();
+            if (imgUrl) params.set("img", encodeURIComponent(imgUrl));
+            if (rawMsgs) params.set("msg", encodeURIComponent(rawMsgs));
+            params.set("op", opacityVal);
+            params.set("hideBtn", hideBtn);
+
+            let shareUrl = window.location.origin + window.location.pathname + "?" + params.toString();
+
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert("✨ ¡Link copiado al portapapeles!\n\nAl abrirlo, la otra persona verá directamente la caja de regalo 🎁 y se ocultará el menú de edición si así lo elegiste.");
+            }).catch(() => {
+                prompt("Copia este enlace para enviarlo:", shareUrl);
+            });
+        }
+
+        document.getElementById("btnPlay").addEventListener("click", () => {
+            if (finished) restartAnimation();
+            else if (paused) { paused = false; drawBatch(); }
+        });
+        document.getElementById("btnPause").addEventListener("click", () => { paused = true; });
+    </script>
+</body>
+</html>
